@@ -1,6 +1,6 @@
 ## Luke Young Personal Site 
 
-- I used a this template which I found online.
+- I used this template which I found online.
 - This site is subject to change and is fairly new. I plan to update it with new ideas over time. 
  
 
