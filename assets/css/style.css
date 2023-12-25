@@ -11,17 +11,17 @@
 --------------------------------------------------------------*/
 body {
   font-family: "Arial", sans-serif;
-  color: #d0c4a9;
-  background-color: #4a394b;
+  color: #f7e3a5;
+  background-color: #043529;
 }
 
 a {
-  color: #8e6eda;
+  color: #f7e3a5;
   text-decoration: underline;
 }
 
 a:hover {
-  color: #057ded;
+  color: #f1c14e;
   text-decoration: underline;
 }
 
@@ -44,7 +44,7 @@ h6 {
     right: 20px;
     bottom: 20px;
     z-index: 996;
-    background: #a184cc;
+    background: #276cc5;
     width: 45px;
     height: 45px;
     border-radius: 55px;
@@ -58,7 +58,7 @@ h6 {
   }
   
   .back-to-top:hover {
-    background: #8e6eda;
+    background: #276cc5;
     color: #f0f0f0;
   }
   
@@ -301,7 +301,7 @@ h6 {
   font-size: 64px;
   font-weight: 700;
   line-height: 56px;
-  color: #45505b;
+  color: #000000;
 }
 
 #hero p {
@@ -312,7 +312,7 @@ h6 {
 }
 
 #hero p span {
-  color: #0563bb;
+  color: #000000;
   letter-spacing: 1px;
 }
 
@@ -379,7 +379,7 @@ section {
   display: block;
   width: 120px;
   height: 1px;
-  background: #ddd;
+  background: #c4b4b4;
   bottom: 1px;
   left: calc(50% - 60px);
 }
@@ -493,7 +493,7 @@ section {
   display: block;
   font-weight: 600;
   font-family: "Poppins", sans-serif;
-  color: #45505b;
+  color: #e6edf5;
 }
 
 .skills .progress .skill .val {
@@ -520,13 +520,13 @@ section {
   font-weight: 700;
   margin-top: 20px;
   margin-bottom: 20px;
-  color: #45505b;
+  color: #ddeeff;
 }
 
 .resume .resume-item {
   padding: 0 0 20px 20px;
   margin-top: -2px;
-  border-left: 2px solid #0563bb;
+  border-left: 2px solid #3970a3;
   position: relative;
 }
 
@@ -542,7 +542,7 @@ section {
 
 .resume .resume-item h5 {
   font-size: 16px;
-  background: #f7f8f9;
+  background: #05412f;
   padding: 5px 15px;
   display: inline-block;
   font-weight: 600;
