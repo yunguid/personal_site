@@ -291,6 +291,7 @@
   fetch('https://sr841bt1e6.execute-api.us-east-2.amazonaws.com/prod')
     .then(response => response.json())
     .then(data => {
+      console.log("Data received:", data);
       const productionList = document.getElementById('production-list');
       data.forEach(item => {
         const div = document.createElement('div');
