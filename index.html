@@ -219,7 +219,8 @@
       <div class="container" data-aos="fade-up">
         <div class="section-title">
           <h2>Music</h2>
-          <p>Learning to play the piano has been one of the most rewarding challenges and gifts that I have experienced in my life. Aside from the discipline required to practice, I learned to interpret complex emotions and feelings that these composers infused in their work. Below I have attached a few of my piano recordings.</p>
+          <p>Learning to play the piano has been one of the most rewarding challenges and gifts that I have experienced in my life. Aside from the discipline required to practice, I learned to interpret complex emotions and feelings that these composers infused in their work. Below I have attached a few of my piano recordings. 
+          </p>
         </div>
         <div class="row">
           <div class="col-lg-12">
@@ -234,10 +235,15 @@
               <li><a href="https://www.youtube.com/watch?v=Ade9Xnlt4ws" target="_blank">A. Dvorak - Violin Sonata First Movement</a></li>
             </ul>
           </div>
+          <div id="productions">
+            <h3>Productions</h3>
+            <div id="production-list">
+              <!-- Music metadata will be added here -->
+            </div>
+          </div>
         </div>
       </div>
     </section>
-
 
   </main><!-- End #main -->
 
@@ -279,6 +285,34 @@
 
   <!-- Template Main JS File -->
   <script src="assets/js/main.js"></script>
+  <script src="assets/vendor/waypoints/noframework.waypoints.js"></script>
+  <script>
+      document.addEventListener('DOMContentLoaded', function() {
+  fetch('https://sr841bt1e6.execute-api.us-east-2.amazonaws.com/prod')
+    .then(response => response.json())
+    .then(data => {
+      const productionList = document.getElementById('production-list');
+      data.forEach(item => {
+        const div = document.createElement('div');
+        div.innerHTML = `
+          <h3>${item.title}</h3>
+          <p>${item.artist}</p>
+          <audio controls>
+            <source src="${item.url}" type="audio/mpeg">
+            Your browser does not support the audio element.
+          </audio>
+        `;
+        productionList.appendChild(div);
+      });
+    })
+    .catch(error => {
+      console.error('Error fetching music metadata:', error);
+    });
+  });
+  </script>
+
+  
+
 
 </body>
 
