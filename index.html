@@ -291,7 +291,6 @@
 <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1188.0.min.js"></script>
 <script>
   document.addEventListener('DOMContentLoaded', function() {
-    // Your updated code here
     const s3BaseUrl = 'https://lukemusicbucket.s3.us-east-2.amazonaws.com';
 
     const musicFiles = [
@@ -305,8 +304,8 @@
       const fileUrl = `${s3BaseUrl}/${item.fileName}`;
 
       const audioPlayerHtml = `
-        <h3>${item.title}</h3>
-        <p>${item.artist}</p>
+        <h3 style="font-family: 'Times New Roman', sans-serif; font-size: 20px !important;">${item.title}</h3>
+        <p style="font-family: 'Times New Roman', serif; font-size: 16px !important;">${item.artist}</p>
         <audio controls>
           <source src="${fileUrl}" type="audio/mpeg">
           Your browser does not support the audio element.
