@@ -286,8 +286,9 @@
   <!-- Template Main JS File -->
   <script src="assets/js/main.js"></script>
   <script src="assets/vendor/waypoints/noframework.waypoints.js"></script>
-  <script>
-    import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
+  
+  <script type="module">
+    import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";  
     document.addEventListener('DOMContentLoaded', function() {
       const client = new S3Client({});
   
