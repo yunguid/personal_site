@@ -288,8 +288,10 @@
   <script src="assets/vendor/waypoints/noframework.waypoints.js"></script>
   
   <script type="module">
-    import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";  
-    document.addEventListener('DOMContentLoaded', function() {
+    import { S3Client, GetObjectCommand } from "https://cdn.jsdelivr.net/npm/@aws-sdk/client-s3/dist/es/S3Client.js";
+    import { GetObjectCommand } from "https://cdn.jsdelivr.net/npm/@aws-sdk/client-s3/dist/es/commands/GetObjectCommand.js";
+  
+    document.addEventListener('DOMContentLoaded', async function() {
       const client = new S3Client({});
   
       const command = new GetObjectCommand({
@@ -297,17 +299,13 @@
         Key: "hello-s3.txt",
       });
   
-      async function fetchData() {
-        try {
-          const response = await client.send(command);
-          const str = await response.Body.text();
-          console.log(str);
-        } catch (err) {
-          console.error(err);
-        }
+      try {
+        const response = await client.send(command);
+        const str = await response.Body.text();
+        console.log(str);
+      } catch (err) {
+        console.error(err);
       }
-  
-      fetchData();
   
       const s3BucketUrl = 'https://lukemusicbucket.s3.us-east-2.amazonaws.com';
       const musicFiles = [
