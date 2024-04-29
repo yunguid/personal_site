@@ -273,63 +273,47 @@
   <a href="#" class="back-to-top d-flex align-items-center justify-content-center"><i class="bi bi-arrow-up-short"></i></a>
 
   <!-- Vendor JS Files -->
-  <script src="assets/vendor/purecounter/purecounter_vanilla.js"></script>
-  <script src="assets/vendor/aos/aos.js"></script>
-  <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-  <script src="assets/vendor/glightbox/js/glightbox.min.js"></script>
-  <script src="assets/vendor/isotope-layout/isotope.pkgd.min.js"></script>
-  <script src="assets/vendor/swiper/swiper-bundle.min.js"></script>
-  <script src="assets/vendor/typed.js/typed.umd.js"></script>
-  <script src="assets/vendor/waypoints/noframework.waypoints.js"></script>
-  <script src="assets/vendor/php-email-form/validate.js"></script>
+<script src="assets/vendor/purecounter/purecounter_vanilla.js"></script>
+<script src="assets/vendor/aos/aos.js"></script>
+<script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+<script src="assets/vendor/glightbox/js/glightbox.min.js"></script>
+<script src="assets/vendor/isotope-layout/isotope.pkgd.min.js"></script>
+<script src="assets/vendor/swiper/swiper-bundle.min.js"></script>
+<script src="assets/vendor/typed.js/typed.umd.js"></script>
+<script src="assets/vendor/waypoints/noframework.waypoints.js"></script>
+<script src="assets/vendor/php-email-form/validate.js"></script>
 
-  <!-- Template Main JS File -->
-  <script src="assets/js/main.js"></script>
-  <script src="assets/vendor/waypoints/noframework.waypoints.js"></script>
-  
-  <script src="https://cdn.jsdelivr.net/npm/tslib/tslib.es6.js"></script>
-  <script type="module">
-    import { S3Client, GetObjectCommand } from "https://cdn.jsdelivr.net/npm/@aws-sdk/client-s3/dist/es/S3Client.js";
-  
-    document.addEventListener('DOMContentLoaded', async function() {
-      const client = new S3Client({});
-      const command = new GetObjectCommand({
-        Bucket: "test-bucket",
-        Key: "hello-s3.txt",
-      });
-  
-      try {
-        const response = await client.send(command);
-        const str = await response.Body.text();
-        console.log(str);
-      } catch (err) {
-        console.error(err);
-      }
-  
-      const s3BucketUrl = 'https://lukemusicbucket.s3.us-east-2.amazonaws.com';
-      const musicFiles = [
-        { title: 'Song 1', artist: 'Artist 1', fileName: 'song1.mp3' },
-        { title: 'Song 2', artist: 'Artist 2', fileName: 'song2.mp3' },
-        // Add more music files as needed
-      ];
-  
-      const productionList = document.getElementById('production-list');
-  
-      musicFiles.forEach(item => {
-        const div = document.createElement('div');
-        div.innerHTML = `
-          <h3>${item.title}</h3>
-          <p>${item.artist}</p>
-          <audio controls>
-            <source src="${s3BucketUrl}/${item.fileName}" type="audio/mpeg">
-            Your browser does not support the audio element.
-          </audio>
-        `;
-        productionList.appendChild(div);
-      });
+<!-- Template Main JS File -->
+<script src="assets/js/main.js"></script>
+<script src="assets/vendor/waypoints/noframework.waypoints.js"></script>
+
+<!-- AWS SDK and Custom Script -->
+<script src="https://sdk.amazonaws.com/js/aws-sdk-2.1188.0.min.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', async function() {
+    const s3 = new AWS.S3();
+
+    const s3BucketUrl = 'https://lukemusicbucket.s3.us-east-2.amazonaws.com';
+    const musicFiles = [
+      { title: 'liftoff3', artist: 'Artist 1', fileName: 'liftoff3.aif' }
+    ];
+
+    const productionList = document.getElementById('production-list');
+
+    musicFiles.forEach(item => {
+      const div = document.createElement('div');
+      div.innerHTML = `
+        <h3>${item.title}</h3>
+        <p>${item.artist}</p>
+        <audio controls>
+          <source src="${s3BucketUrl}/${item.fileName}" type="audio/mpeg">
+          Your browser does not support the audio element.
+        </audio>
+      `;
+      productionList.appendChild(div);
     });
-  </script>
-  
+  });
+</script>
 
 
 </body>
