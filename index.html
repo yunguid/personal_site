@@ -289,11 +289,9 @@
   
   <script type="module">
     import { S3Client, GetObjectCommand } from "https://cdn.jsdelivr.net/npm/@aws-sdk/client-s3/dist/es/S3Client.js";
-    import { GetObjectCommand } from "https://cdn.jsdelivr.net/npm/@aws-sdk/client-s3/dist/es/commands/GetObjectCommand.js";
   
     document.addEventListener('DOMContentLoaded', async function() {
       const client = new S3Client({});
-  
       const command = new GetObjectCommand({
         Bucket: "test-bucket",
         Key: "hello-s3.txt",
