@@ -290,32 +290,35 @@
 <!-- AWS SDK and Custom Script -->
 <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1188.0.min.js"></script>
 <script>
-  document.addEventListener('DOMContentLoaded', async function() {
-    const s3 = new AWS.S3();
+  document.addEventListener('DOMContentLoaded', function() {
+    // Your updated code here
+    const s3BaseUrl = 'https://lukemusicbucket.s3.us-east-2.amazonaws.com';
 
-    const s3BucketUrl = 'https://lukemusicbucket.s3.us-east-2.amazonaws.com';
     const musicFiles = [
-      { title: 'liftoff3', artist: 'Artist 1', fileName: 'liftoff3.aif' }
+      { title: 'Rome Streetz', artist: 'Artist 1', fileName: 'romestreetz.mp3' },
+      // Add more music files as needed
     ];
 
     const productionList = document.getElementById('production-list');
 
     musicFiles.forEach(item => {
-      const div = document.createElement('div');
-      div.innerHTML = `
+      const fileUrl = `${s3BaseUrl}/${item.fileName}`;
+
+      const audioPlayerHtml = `
         <h3>${item.title}</h3>
         <p>${item.artist}</p>
         <audio controls>
-          <source src="${s3BucketUrl}/${item.fileName}" type="audio/mpeg">
+          <source src="${fileUrl}" type="audio/mpeg">
           Your browser does not support the audio element.
         </audio>
       `;
+
+      const div = document.createElement('div');
+      div.innerHTML = audioPlayerHtml;
       productionList.appendChild(div);
     });
   });
 </script>
-
-
 </body>
-
 </html>
+
