@@ -122,33 +122,34 @@
     document.addEventListener('DOMContentLoaded', function () {
       const gallery = document.querySelector('.gallery');
 
-      fetch('get_montana_photos.php')
+      fetch('images.json')
         .then(response => response.json())
         .then(data => {
-          if (data.error) {
+          if (Array.isArray(data)) {
+            data.forEach(filename => {
+              const img = document.createElement('img');
+
+              // Extract image name for descriptive alt text
+              const imageName = filename.substring(filename.lastIndexOf('/') + 1, filename.lastIndexOf('.'));
+              const formattedName = imageName.replace(/_/g, ' ');
+
+              img.src = filename;
+              img.alt = `Montana Photo: ${formattedName}`;
+              img.className = 'glightbox';
+              img.loading = 'lazy'; // Enable lazy loading
+              gallery.appendChild(img);
+              console.log('Added image:', filename); // Debug log
+            });
+
+            // Initialize GLightbox
+            const lightbox = GLightbox({
+              selector: '.glightbox'
+            });
+          } else if (data.error) {
             gallery.innerHTML = `<p>${data.error}</p>`;
-            return;
+          } else {
+            gallery.innerHTML = '<p>Unexpected data format.</p>';
           }
-
-          data.forEach(filename => {
-            const img = document.createElement('img');
-
-            // Extract image name for descriptive alt text
-            const imageName = filename.substring(filename.lastIndexOf('/') + 1, filename.lastIndexOf('.'));
-            const formattedName = imageName.replace(/_/g, ' ');
-
-            img.src = filename;
-            img.alt = `Montana Photo: ${formattedName}`;
-            img.className = 'glightbox';
-            img.loading = 'lazy'; // Enable lazy loading
-            gallery.appendChild(img);
-            console.log('Added image:', filename); // Debug log
-          });
-
-          // Initialize GLightbox
-          const lightbox = GLightbox({
-            selector: '.glightbox'
-          });
         })
         .catch(error => {
           console.error('Error fetching images:', error);
