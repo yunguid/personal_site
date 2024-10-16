@@ -132,9 +132,15 @@
 
           data.forEach(filename => {
             const img = document.createElement('img');
+
+            // Extract image name for descriptive alt text
+            const imageName = filename.substring(filename.lastIndexOf('/') + 1, filename.lastIndexOf('.'));
+            const formattedName = imageName.replace(/_/g, ' ');
+
             img.src = filename;
-            img.alt = 'Montana Photo';
+            img.alt = `Montana Photo: ${formattedName}`;
             img.className = 'glightbox';
+            img.loading = 'lazy'; // Enable lazy loading
             gallery.appendChild(img);
             console.log('Added image:', filename); // Debug log
           });

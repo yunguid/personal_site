@@ -13,7 +13,7 @@ try {
         throw new Exception("Directory does not exist");
     }
 
-    // Updated pattern to include web-friendly formats
+    // Include web-friendly image formats
     $images = glob($directory . "*.{jpg,jpeg,png,gif}", GLOB_BRACE);
 
     if ($images === false) {
@@ -23,7 +23,7 @@ try {
     if (empty($images)) {
         echo json_encode(["error" => "No images found in directory"]);
     } else {
-        // Convert to relative paths for the browser to access
+        // Convert to relative paths for browser access
         $relativeImages = array_map(function($image) {
             return $image;
         }, $images);
