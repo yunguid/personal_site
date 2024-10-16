@@ -37,15 +37,24 @@
       padding: 20px;
     }
 
-    .gallery img {
+    .gallery a {
+      display: block;
       width: 100%;
       height: 250px;
-      object-fit: cover;
+      overflow: hidden;
       border-radius: 5px;
+      position: relative;
       transition: transform 0.3s ease-in-out;
     }
 
-    .gallery img:hover {
+    .gallery a img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s ease-in-out;
+    }
+
+    .gallery a:hover img {
       transform: scale(1.05);
     }
   </style>
@@ -76,8 +85,8 @@
           <p>Photos from my time in the Bob Marshall Wilderness, Montana</p>
         </div>
 
-        <div class="gallery">
-          <!-- JavaScript will populate this section with images -->
+        <div class="gallery" id="gallery">
+          <!-- Images will be dynamically added here -->
         </div>
 
       </div>
@@ -118,43 +127,59 @@
   <!-- Template Main JS File -->
   <script src="assets/js/main.js"></script>
 
+  <!-- Updated Gallery Script -->
   <script>
     document.addEventListener('DOMContentLoaded', function () {
-      const gallery = document.querySelector('.gallery');
+      const gallery = document.getElementById('gallery');
+      const bucketUrl = 'https://lukeyoung-montana-gallery.s3.amazonaws.com/assets/img/montana_pics/';
+      const imageNames = [
+        'FullSizeRender (1).jpg',
+        'FullSizeRender (2).jpg',
+        'FullSizeRender.jpg',
+        'IMG_0812.jpg',
+        'IMG_1848.jpg',
+        'IMG_1905.jpg',
+        'IMG_2033.jpg',
+        'IMG_2051.jpg',
+        'IMG_4325.jpg',
+        'IMG_5392.jpg',
+        'IMG_5399.jpg',
+        'IMG_5401.jpg',
+        'IMG_5404.jpg',
+        'IMG_5417.jpg',
+        'IMG_5424.jpg',
+        'IMG_5425.jpg',
+        'IMG_5426.jpg',
+        'IMG_5429.jpg'
+      ];
 
-      fetch('images.json')
-        .then(response => response.json())
-        .then(data => {
-          if (Array.isArray(data)) {
-            data.forEach(filename => {
-              const img = document.createElement('img');
+      imageNames.forEach(imageName => {
+        // Create anchor element for GLightbox
+        const link = document.createElement('a');
+        link.href = bucketUrl + encodeURIComponent(imageName);
+        link.className = 'glightbox';
+        link.setAttribute('data-gallery', 'montana-gallery');
+        link.setAttribute('data-title', `Montana Photo: ${imageName.replace('.jpg', '').replace(/_/g, ' ')}`);
 
-              // Extract image name for descriptive alt text
-              const imageName = filename.substring(filename.lastIndexOf('/') + 1, filename.lastIndexOf('.'));
-              const formattedName = imageName.replace(/_/g, ' ');
+        // Create image element
+        const img = document.createElement('img');
+        img.src = bucketUrl + imageName;
+        img.alt = `Montana Photo: ${imageName.replace('.jpg', '').replace(/_/g, ' ')}`;
+        img.loading = 'lazy';
 
-              img.src = filename;
-              img.alt = `Montana Photo: ${formattedName}`;
-              img.className = 'glightbox';
-              img.loading = 'lazy'; // Enable lazy loading
-              gallery.appendChild(img);
-              console.log('Added image:', filename); // Debug log
-            });
+        // Append image to link, then link to gallery
+        link.appendChild(img);
+        gallery.appendChild(link);
+      });
 
-            // Initialize GLightbox
-            const lightbox = GLightbox({
-              selector: '.glightbox'
-            });
-          } else if (data.error) {
-            gallery.innerHTML = `<p>${data.error}</p>`;
-          } else {
-            gallery.innerHTML = '<p>Unexpected data format.</p>';
-          }
-        })
-        .catch(error => {
-          console.error('Error fetching images:', error);
-          gallery.innerHTML = '<p>Error loading images.</p>';
-        });
+      // Initialize GLightbox
+      const lightbox = GLightbox({
+        selector: '.glightbox',
+        loop: true,
+        zoomable: true,
+        draggable: false,
+        touchNavigation: true
+      });
     });
   </script>
 
