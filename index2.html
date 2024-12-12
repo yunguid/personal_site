@@ -350,6 +350,7 @@
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     const books = [
+      { title: "The Beginning of Infinity", author: "David Deutsch", isRead: false, currentlyReading: true },
       { title: "The Fountainhead", author: "Ayn Rand", isRead: true},
       { title: "Atlas Shrugged", author: "Ayn Rand", isRead: true },
       { title: "The Lessons of History", author: "Will and Ariel Durant", isRead: true },
@@ -367,7 +368,7 @@
       bookElement.className = 'book-item';
       bookElement.innerHTML = `
         <h3>${book.title}</h3>
-        <p>by ${book.author} ${book.isRead ? '✓' : 'ⓧ'}</p>
+        <p>by ${book.author} ${book.currentlyReading ? '📖' : book.isRead ? '✓' : 'ⓧ'}</p>
       `;
       booksList.appendChild(bookElement);
     });
