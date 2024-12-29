@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Leetcode Explanations - Luke R. Young</title>
+
+  <!-- Tailwind CSS -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+    rel="stylesheet"
+  />
+
+  <!-- (Optional) Inter font used by tldraw -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700&display=swap"
+    rel="stylesheet"
+  />
+
+  <!-- Supabase client (UMD). This sets a global "supabase" variable. -->
+  <script
+    src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.6.0/dist/umd/supabase.js"
+    defer
+  ></script>
+
+  <!-- tldraw styles -->
+  <link
+    href="https://unpkg.com/@tldraw/tldraw@2.0.0-canary.f8c87e7d5ccd/dist/tldraw.css"
+    rel="stylesheet"
+  />
+
+  <!-- tldraw library -->
+  <script
+    src="https://unpkg.com/@tldraw/tldraw@2.0.0-canary.f8c87e7d5ccd/dist/tldraw.js"
+    defer
+  ></script>
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+    }
+    #tldraw-wrapper {
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body class="bg-white">
+
+  <!-- Nav Bar -->
+  <nav class="bg-white shadow-lg">
+    <div class="max-w-6xl mx-auto px-4">
+      <div class="flex justify-between">
+        <!-- Left side (brand) -->
+        <div class="flex space-x-7">
+          <div>
+            <a href="index.html" class="flex items-center py-4 px-2">
+              <span class="font-semibold text-gray-500 text-lg">Luke R. Young</span>
+            </a>
+          </div>
+        </div>
+        <!-- Right side (unlock/lock button) -->
+        <div class="flex items-center">
+          <button
+            id="loginButton"
+            class="py-2 px-4 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Unlock Editor
+          </button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main content container -->
+  <div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-8">Leetcode Problem Explanations</h1>
+    <!-- Fixed-size container for Tldraw -->
+    <div style="position: fixed; inset: 100px 0 0 0;">
+      <div id="tldraw-wrapper"></div>
+    </div>
+  </div>
+
+  <!-- Our custom script must come AFTER supabase & tldraw so that "supabase" and "tldraw" are defined -->
+  <script defer>
+    // Password to unlock the editor
+    const EDITOR_PASSWORD = '31323';
+
+    // Track whether the user is authenticated
+    let isAuthenticated = false;
+    let app; // We'll store our TldrawApp instance here
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      // 1) Create a Supabase client
+      const supabaseClient = supabase.createClient(
+        'https://smijbqqtzijulgoqihwt.supabase.co', // REPLACE with your project URL
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNtaWpicXF0emlqdWxnb3FpaHd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU0MjAzNzUsImV4cCI6MjA1MDk5NjM3NX0.Y8InkycsJWkZv7ltHvpJJ9UWntrR5NYWbTm2m9AHyG8' // REPLACE with your anon key
+      );
+
+      // 2) Create a TldrawApp instance
+      app = new tldraw.TldrawApp({
+        container: document.getElementById('tldraw-wrapper'),
+        onMount: async (editor) => {
+          // Start in read-only mode
+          editor.setReadOnly(true);
+
+          // Try loading an existing drawing from Supabase
+          const { data, error } = await supabaseClient
+            .from('drawings')
+            .select('content')
+            .eq('id', 'leetcode-explanations')
+            .single();
+
+          if (data?.content) {
+            editor.loadDocument(data.content);
+          }
+
+          // Listen for changes so we can save them (when unlocked)
+          editor.on('change', async () => {
+            if (!isAuthenticated) return; // If locked, do not save
+            await supabaseClient
+              .from('drawings')
+              .upsert({
+                id: 'leetcode-explanations',
+                content: editor.getDocument(),
+              });
+          });
+        },
+      });
+
+      // Unlock / Lock button
+      const loginButton = document.getElementById('loginButton');
+      loginButton.addEventListener('click', async () => {
+        if (!isAuthenticated) {
+          // Currently locked; prompt for password
+          const password = prompt('Enter password to unlock editor:');
+          if (password === EDITOR_PASSWORD) {
+            isAuthenticated = true;
+            loginButton.textContent = 'Lock Editor';
+            app.editor.setReadOnly(false);
+            alert('Editor is now unlocked. You can draw and changes will be saved.');
+          } else {
+            alert('Wrong password!');
+          }
+        } else {
+          // Currently unlocked; lock it again
+          isAuthenticated = false;
+          loginButton.textContent = 'Unlock Editor';
+          app.editor.setReadOnly(true);
+          alert('Editor locked. Changes will not be saved.');
+        }
+      });
+    });
+  </script>
+
+</body>
+</html>
