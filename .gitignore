@@ -1,3 +1,6 @@
 /assets/img/montana_pics/
 .aider*
 .env
+# Build outputs
+leetcode/dist/
+leetcode/assets/
