@@ -2,39 +2,105 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Leetcode Explanations - Luke R. Young</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="./assets/index-UnqlWaXn.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-S0BPUkzz.css">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  />
+  <title>Tldraw with Manual Save</title>
+  <link
+    href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+    rel="stylesheet"
+  />
+  <style>
+    body,
+    div,
+    button {
+      font-family: 'Times New Roman', serif;
+    }
+
+    .dark-mode {
+      background-color: #1a202c;
+      color: #fff;
+    }
+
+    #navigation {
+      position: fixed;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(255, 255, 255, 0.9);
+      padding: 1rem;
+      border-radius: 0 1rem 1rem 0;
+      box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+      z-index: 10000;
+    }
+
+    .dark-mode #navigation {
+      background: rgba(26, 32, 44, 0.9);
+    }
+
+    .nav-icon {
+      font-family: 'Times New Roman', serif;
+      cursor: pointer;
+      padding: 10px;
+      transition: all 0.3s ease;
+      font-size: 16px;
+      text-align: left;
+      margin-bottom: 0.5rem;
+    }
+
+    .nav-icon:hover {
+      color: #3b82f6;
+    }
+
+    #loginButton,
+    #saveButton {
+      font-family: 'Times New Roman', serif;
+      background-color: #3b82f6;
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 0.375rem;
+      transition: background-color 0.2s;
+      outline: none;
+      border: none;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    #loginButton:hover,
+    #saveButton:hover {
+      background-color: #2563eb;
+    }
+
+    /* Hide the Save button by default (only show when unlocked) */
+    #saveButton {
+      display: none;
+    }
+  </style>
+  <script type="module" crossorigin src="/assets/index-B9Fzmocb.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-S0BPUkzz.css">
 </head>
 <body class="bg-white">
-  <nav class="bg-white shadow-lg">
-    <div class="max-w-6xl mx-auto px-4">
-      <div class="flex justify-between">
-        <div class="flex space-x-7">
-          <div>
-            <a href="../index.html" class="flex items-center py-4 px-2">
-              <span class="font-semibold text-gray-500 text-lg">Luke R. Young</span>
-            </a>
-          </div>
-        </div>
-        <div class="flex items-center">
-          <button
-            id="loginButton"
-            class="py-2 px-4 bg-blue-500 text-white rounded hover:bg-blue-600"
-          >
-            Unlock Editor
-          </button>
-        </div>
-      </div>
-    </div>
+  <nav id="navigation" class="flex flex-col space-y-4">
+    <div id="darkModeToggle" class="nav-icon">☀️</div>
+    <a href="../index.html" class="nav-icon">Home</a>
+    <button id="loginButton" class="nav-icon">Unlock Editor</button>
+    <button id="saveButton" class="nav-icon">Save</button>
   </nav>
 
-  <div class="container mx-auto px-4 py-8">
-    <h1 class="text-3xl font-bold mb-8">Leetcode Problem Explanations</h1>
-    <div id="tldraw-wrapper"></div>
-  </div>
+  <div id="tldraw-wrapper"></div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const darkModeToggle = document.getElementById('darkModeToggle');
+      darkModeToggle.addEventListener('click', () => {
+        document.body.classList.toggle('dark-mode');
+        darkModeToggle.textContent = document.body.classList.contains('dark-mode')
+          ? '☀️'
+          : '🌙';
+      });
+    });
+  </script>
 </body>
 </html>
+
