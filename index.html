@@ -367,11 +367,10 @@
         document.addEventListener('DOMContentLoaded', () => {
             const asciiContainer = document.getElementById('asciiArt');
             const generator = new JuliaSetGenerator(80, 40);
-            let mouseX = 0, mouseY = 0;
-            let targetX = 0, targetY = 0;
 
             // Dark mode toggle
             const darkModeToggle = document.getElementById('darkModeToggle');
+            darkModeToggle.textContent = '🌙'; // Start with moon in light mode
             darkModeToggle.addEventListener('click', () => {
                 document.body.classList.toggle('dark-mode');
                 darkModeToggle.textContent = document.body.classList.contains('dark-mode') ? '☀️' : '🌙';
@@ -401,17 +400,8 @@
                 observer.observe(section);
             });
 
-            document.addEventListener('mousemove', (e) => {
-                const rect = asciiContainer.getBoundingClientRect();
-                targetX = ((e.clientX - rect.left) / rect.width - 0.5);
-                targetY = ((e.clientY - rect.top) / rect.height - 0.5);
-            });
-
             function animate() {
-                mouseX += (targetX - mouseX) * 0.1;
-                mouseY += (targetY - mouseY) * 0.1;
-
-                asciiContainer.textContent = generator.generateFrame(mouseX, mouseY);
+                asciiContainer.textContent = generator.generateFrame(0, 0);
                 requestAnimationFrame(animate);
             }
 
