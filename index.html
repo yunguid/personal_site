@@ -76,6 +76,64 @@
             background: rgba(26, 32, 44, 0.9);
         }
 
+        /* Mobile Navigation */
+        @media (max-width: 768px) {
+            #navigation {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                top: auto;
+                transform: none;
+                display: flex;
+                flex-direction: row;
+                justify-content: space-around;
+                align-items: center;
+                border-radius: 1rem 1rem 0 0;
+                padding: 0.5rem;
+            }
+
+            .nav-icon {
+                font-size: 14px;
+                padding: 8px;
+            }
+
+            main {
+                padding-left: 0 !important;
+                padding-bottom: 60px;
+            }
+
+            .ascii-art {
+                font-size: 8px;
+                padding: 1rem;
+            }
+
+            .section {
+                padding: 1rem !important;
+            }
+
+            /* Grid adjustments for mobile */
+            .grid {
+                grid-template-columns: 1fr !important;
+            }
+
+            /* Image adjustments for mobile */
+            img {
+                max-width: 100%;
+                height: auto;
+            }
+
+            /* Audio player adjustments */
+            audio {
+                width: 100%;
+            }
+
+            /* Book cards adjustments */
+            .book-card {
+                margin: 0.5rem 0;
+            }
+        }
+
         @media (min-width: 768px) {
             .ascii-art {
                 font-size: 14px;
@@ -87,6 +145,7 @@
             border-radius: 0.5rem;
             padding: 1rem;
             transition: all 0.3s ease;
+            background-color: white;
         }
 
         .book-card:hover {
@@ -110,16 +169,6 @@
             font-weight: bold;
         }
 
-        .book-card {
-            background-color: white;
-            transition: all 0.3s ease;
-        }
-
-        .dark-mode .book-card {
-            background-color: #2d3748;
-            border-color: #4a5568;
-        }
-
         audio {
             border-radius: 8px;
             margin-top: 4px;
@@ -131,7 +180,7 @@
     </style>
 </head>
 <body class="bg-white text-gray-900 transition-colors duration-300 font-serif">
-    <nav id="navigation" class="flex flex-col space-y-4 font-serif">
+    <nav id="navigation" class="flex md:flex-col space-y-0 md:space-y-4 font-serif">
         <div id="darkModeToggle" class="nav-icon">☀️</div>
         <div class="nav-icon active" data-section="hero">Home</div>
         <div class="nav-icon" data-section="about">About</div>
@@ -141,7 +190,7 @@
         <a href="leetcode/index.html" class="nav-icon">Leetcode</a>
     </nav>
 
-    <main class="pl-16">
+    <main class="pl-16 md:pl-16">
         <section id="hero" class="section min-h-screen flex items-center justify-center">
             <pre id="asciiArt" class="ascii-art"></pre>
         </section>
@@ -271,6 +320,9 @@
     </main>
 
     <script>
+        // Device detection
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        
         // Complex number helper class
         class Complex {
             constructor(real, imag) {
@@ -299,15 +351,21 @@
 
         class JuliaSetGenerator {
             constructor(width, height) {
-                this.width = width;
-                this.height = height;
+                // Adjust dimensions for mobile
+                if (isMobile) {
+                    this.width = Math.floor(width * 0.6);
+                    this.height = Math.floor(height * 0.6);
+                } else {
+                    this.width = width;
+                    this.height = height;
+                }
                 this.maxIterations = 50;
                 this.time = 0;
                 this.chars = ' .:-=+*#%@';
                 this.centerText = "LUKE YOUNG";
                 this.centerTextPos = {
-                    x: Math.floor((width - this.centerText.length) / 2),
-                    y: Math.floor(height / 2)
+                    x: Math.floor((this.width - this.centerText.length) / 2),
+                    y: Math.floor(this.height / 2)
                 };
             }
 
@@ -366,11 +424,12 @@
         // Initialize and animate
         document.addEventListener('DOMContentLoaded', () => {
             const asciiContainer = document.getElementById('asciiArt');
-            const generator = new JuliaSetGenerator(80, 40);
+            // Initialize with mobile-optimized dimensions
+            const generator = new JuliaSetGenerator(isMobile ? 40 : 80, isMobile ? 20 : 40);
 
             // Dark mode toggle
             const darkModeToggle = document.getElementById('darkModeToggle');
-            darkModeToggle.textContent = '🌙'; // Start with moon in light mode
+            darkModeToggle.textContent = '🌙';
             darkModeToggle.addEventListener('click', () => {
                 document.body.classList.toggle('dark-mode');
                 darkModeToggle.textContent = document.body.classList.contains('dark-mode') ? '☀️' : '🌙';
@@ -383,18 +442,33 @@
                     navIcons.forEach(i => i.classList.remove('active'));
                     icon.classList.add('active');
                     const sectionId = icon.getAttribute('data-section');
-                    document.getElementById(sectionId).scrollIntoView({ behavior: 'smooth' });
+                    document.getElementById(sectionId).scrollIntoView({ 
+                        behavior: 'smooth',
+                        block: isMobile ? 'start' : 'center'
+                    });
                 });
             });
 
-            // Section visibility
+            // Section visibility with mobile optimization
             const observer = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
                     if (entry.isIntersecting) {
                         entry.target.classList.add('visible');
+                        // Update navigation on scroll
+                        const sectionId = entry.target.id;
+                        navIcons.forEach(icon => {
+                            if (icon.getAttribute('data-section') === sectionId) {
+                                icon.classList.add('active');
+                            } else {
+                                icon.classList.remove('active');
+                            }
+                        });
                     }
                 });
-            }, { threshold: 0.1 });
+            }, { 
+                threshold: isMobile ? 0.1 : 0.3,
+                rootMargin: isMobile ? '0px 0px -50px 0px' : '0px'
+            });
 
             document.querySelectorAll('.section').forEach(section => {
                 observer.observe(section);
