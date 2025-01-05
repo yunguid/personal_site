@@ -28,6 +28,42 @@
       border-radius: 0 1rem 1rem 0;
       box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
       z-index: 10000;
+      transition: transform 0.3s ease;
+    }
+
+    #navigation.collapsed {
+      transform: translateY(-50%) translateX(calc(-100% + 20px));
+    }
+
+    #navigation.collapsed .nav-content {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .nav-content {
+      opacity: 1;
+      transition: opacity 0.2s ease;
+    }
+
+    #collapseToggle {
+      position: absolute;
+      right: -5px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(255, 255, 255, 0.9);
+      width: 20px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      border-radius: 0 5px 5px 0;
+      box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+      font-size: 12px;
+    }
+
+    #navigation.collapsed #collapseToggle {
+      transform: translateY(-50%) rotate(180deg);
     }
 
     .nav-icon {
@@ -84,9 +120,12 @@
 </head>
 <body class="bg-white">
   <nav id="navigation" class="flex flex-col space-y-4">
-    <a href="../index.html" class="nav-icon">Home</a>
-    <button id="loginButton" class="nav-icon">Unlock Editor</button>
-    <button id="saveButton" class="nav-icon">Save</button>
+    <div id="collapseToggle">▶</div>
+    <div class="nav-content">
+      <a href="../index.html" class="nav-icon">Home</a>
+      <button id="loginButton" class="nav-icon">Unlock Editor</button>
+      <button id="saveButton" class="nav-icon">Save</button>
+    </div>
   </nav>
 
   <div id="tldraw-wrapper"></div>
@@ -96,8 +135,15 @@
     document.addEventListener('DOMContentLoaded', () => {
       const saveButton = document.getElementById('saveButton');
       const autoSaveIndicator = document.getElementById('autoSaveIndicator');
+      const navigation = document.getElementById('navigation');
+      const collapseToggle = document.getElementById('collapseToggle');
       let hasUnsavedChanges = false;
       let isEditorUnlocked = false;
+
+      // Add collapse toggle functionality
+      collapseToggle.addEventListener('click', () => {
+        navigation.classList.toggle('collapsed');
+      });
 
       // Function to show auto-save indicator
       function showAutoSaveIndicator() {
