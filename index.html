@@ -188,6 +188,7 @@
         <div class="nav-icon" data-section="music">Music</div>
         <div class="nav-icon" data-section="books">Books</div>
         <a href="leetcode/index.html" class="nav-icon">Leetcode</a>
+        <a href="private.html" class="nav-icon">Private</a>
     </nav>
 
     <main class="pl-16 md:pl-16">
@@ -374,6 +375,7 @@
                     x: Math.floor((this.width - this.centerText.length) / 2),
                     y: Math.floor(this.height / 2)
                 };
+                this.hasSecretLink = true;
             }
 
             mapToComplex(x, y) {
@@ -485,6 +487,25 @@
                 asciiContainer.textContent = generator.generateFrame(0, 0);
                 requestAnimationFrame(animate);
             }
+            
+            // Add secret link to the name
+            asciiContainer.addEventListener('click', function(e) {
+                // Check if click is near the center text
+                const rect = asciiContainer.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                const clickY = e.clientY - rect.top;
+                
+                // Calculate the approximate area where the name is displayed
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                const textWidth = generator.centerText.length * 10; // Approximate width
+                
+                // Check if click is in the name area
+                if (Math.abs(clickY - centerY) < 20 && 
+                    Math.abs(clickX - centerX) < textWidth / 2) {
+                    window.location.href = 'private.html';
+                }
+            });
 
             animate();
         });

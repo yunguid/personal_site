@@ -157,47 +157,42 @@
         </header>
         
         <main class="max-w-3xl mx-auto py-12 px-6 relative z-10">
-            <!-- Blog Post 1 -->
-            <article class="blog-post mb-12 pl-6 pt-2 pb-6 rounded-lg elegant-shadow parallax-section" data-speed="0.03">
-                <p class="date text-sm mb-3">May 15, 2024</p>
-                <h2 class="text-2xl font-bold mb-4">Morning Reflections</h2>
-                <div class="prose">
-                    <p class="mb-4">The quiet hours of early morning have always been my sanctuary. Before the world awakens, there's a stillness that allows thoughts to flow without interruption.</p>
-                    <div class="quote px-8 py-4 my-6 text-lg text-gray-700">
-                        <p>The sun is new each day.</p>
-                    </div>
-                    <p class="text-right text-sm text-gray-500">— Heraclitus</p>
-                    <p class="mt-4">I've been contemplating how each sunrise offers the possibility of renewal. No matter what happened yesterday, today brings fresh opportunities to create, to connect, to be present.</p>
+            <!-- Blog Controls -->
+            <div class="flex justify-between items-center mb-8">
+                <h2 class="text-2xl font-bold">My Thoughts</h2>
+                <button id="new-post-btn" class="sunset-gradient text-white px-4 py-2 rounded-md hover:opacity-90 transition-opacity">
+                    New Entry
+                </button>
+            </div>
+
+            <!-- New Post Form -->
+            <div id="post-form" class="mb-12 glass-card p-6 rounded-lg hidden">
+                <div class="mb-4">
+                    <label for="post-title" class="block mb-2 font-semibold">Title</label>
+                    <input type="text" id="post-title" class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-400">
                 </div>
-            </article>
-            
-            <!-- Blog Post 2 -->
-            <article class="blog-post mb-12 pl-6 pt-2 pb-6 rounded-lg elegant-shadow parallax-section" data-speed="0.05">
-                <p class="date text-sm mb-3">May 10, 2024</p>
-                <h2 class="text-2xl font-bold mb-4">On Creative Persistence</h2>
-                <div class="prose">
-                    <p class="mb-4">Started a new project today after weeks of creative block. There's something powerful about pushing through resistance.</p>
-                    <div class="quote px-8 py-4 my-6 text-lg text-gray-700">
-                        <p>Don't think about making art, just get it done. Let everyone else decide if it's good or bad, whether they love it or hate it. While they are deciding, make even more art.</p>
-                    </div>
-                    <p class="text-right text-sm text-gray-500">— Andy Warhol</p>
-                    <p class="mt-4">I'm learning that inspiration often comes after you've already begun. The act of creating itself generates the energy to continue creating.</p>
+                <div class="mb-4">
+                    <label for="post-content" class="block mb-2 font-semibold">Content</label>
+                    <textarea id="post-content" rows="8" class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-400"></textarea>
                 </div>
-            </article>
-            
-            <!-- Blog Post 3 -->
-            <article class="blog-post mb-12 pl-6 pt-2 pb-6 rounded-lg elegant-shadow parallax-section" data-speed="0.07">
-                <p class="date text-sm mb-3">May 5, 2024</p>
-                <h2 class="text-2xl font-bold mb-4">Sunset Thoughts</h2>
-                <div class="prose">
-                    <p class="mb-4">Watched the sunset from my window today. The sky was painted in shades of blood orange and deep purple.</p>
-                    <div class="quote px-8 py-4 my-6 text-lg text-gray-700">
-                        <p>There's a sunrise and a sunset every single day, and they're absolutely free. Don't miss so many of them.</p>
-                    </div>
-                    <p class="text-right text-sm text-gray-500">— Jo Walton</p>
-                    <p class="mt-4">Nature provides daily spectacles if we only take the time to notice them. These moments of beauty require no tickets, no reservations—just our attention.</p>
+                <div class="flex space-x-2 justify-end">
+                    <button id="cancel-post" class="px-4 py-2 border rounded-md hover:bg-gray-100 transition-colors">Cancel</button>
+                    <button id="save-post" class="sunset-gradient text-white px-4 py-2 rounded-md hover:opacity-90 transition-opacity">Save</button>
                 </div>
-            </article>
+                <input type="hidden" id="post-id" value="">
+            </div>
+
+            <!-- Post container -->
+            <div id="posts-container" class="space-y-8">
+                <!-- Blog posts will be loaded here dynamically -->
+                <div class="text-center py-12" id="loading-posts">
+                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-orange-500"></div>
+                    <p class="mt-2 text-gray-600">Loading your thoughts...</p>
+                </div>
+                <div class="hidden text-center py-12" id="no-posts">
+                    <p class="text-gray-600">No thoughts yet. Click "New Entry" to add one.</p>
+                </div>
+            </div>
         </main>
     </div>
 
@@ -320,16 +315,157 @@
             });
         }
         
+        // Blog Database Management
+        class BlogDB {
+            constructor() {
+                this.dbName = 'sunlitThoughtsDB';
+                this.dbVersion = 1;
+                this.storeName = 'posts';
+                this.db = null;
+                this.init();
+            }
+            
+            init() {
+                return new Promise((resolve, reject) => {
+                    const request = indexedDB.open(this.dbName, this.dbVersion);
+                    
+                    request.onerror = event => {
+                        console.error('Database error:', event.target.error);
+                        reject('Could not open database');
+                    };
+                    
+                    request.onsuccess = event => {
+                        this.db = event.target.result;
+                        console.log('Database opened successfully');
+                        resolve(this.db);
+                    };
+                    
+                    request.onupgradeneeded = event => {
+                        const db = event.target.result;
+                        if (!db.objectStoreNames.contains(this.storeName)) {
+                            const store = db.createObjectStore(this.storeName, { keyPath: 'id', autoIncrement: true });
+                            store.createIndex('title', 'title', { unique: false });
+                            store.createIndex('date', 'date', { unique: false });
+                            console.log('Object store created');
+                        }
+                    };
+                });
+            }
+            
+            async getAllPosts() {
+                await this.init();
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction([this.storeName], 'readonly');
+                    const store = transaction.objectStore(this.storeName);
+                    const request = store.getAll();
+                    
+                    request.onsuccess = () => {
+                        resolve(request.result.sort((a, b) => new Date(b.date) - new Date(a.date)));
+                    };
+                    
+                    request.onerror = event => {
+                        console.error('Error fetching posts:', event.target.error);
+                        reject('Failed to fetch posts');
+                    };
+                });
+            }
+            
+            async addPost(post) {
+                await this.init();
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction([this.storeName], 'readwrite');
+                    const store = transaction.objectStore(this.storeName);
+                    const request = store.add(post);
+                    
+                    request.onsuccess = () => {
+                        resolve(request.result);
+                    };
+                    
+                    request.onerror = event => {
+                        console.error('Error adding post:', event.target.error);
+                        reject('Failed to add post');
+                    };
+                });
+            }
+            
+            async updatePost(post) {
+                await this.init();
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction([this.storeName], 'readwrite');
+                    const store = transaction.objectStore(this.storeName);
+                    const request = store.put(post);
+                    
+                    request.onsuccess = () => {
+                        resolve(request.result);
+                    };
+                    
+                    request.onerror = event => {
+                        console.error('Error updating post:', event.target.error);
+                        reject('Failed to update post');
+                    };
+                });
+            }
+            
+            async deletePost(id) {
+                await this.init();
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction([this.storeName], 'readwrite');
+                    const store = transaction.objectStore(this.storeName);
+                    const request = store.delete(id);
+                    
+                    request.onsuccess = () => {
+                        resolve();
+                    };
+                    
+                    request.onerror = event => {
+                        console.error('Error deleting post:', event.target.error);
+                        reject('Failed to delete post');
+                    };
+                });
+            }
+            
+            async getPost(id) {
+                await this.init();
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction([this.storeName], 'readonly');
+                    const store = transaction.objectStore(this.storeName);
+                    const request = store.get(id);
+                    
+                    request.onsuccess = () => {
+                        resolve(request.result);
+                    };
+                    
+                    request.onerror = event => {
+                        console.error('Error fetching post:', event.target.error);
+                        reject('Failed to fetch post');
+                    };
+                });
+            }
+        }
+        
         document.addEventListener('DOMContentLoaded', function() {
             // Initialize Three.js
             init();
             
-            // Password validation
+            // Database instance
+            const blogDB = new BlogDB();
+            
+            // UI Elements
             const submitBtn = document.getElementById('submit-btn');
             const passwordInput = document.getElementById('password-input');
             const passwordForm = document.getElementById('password-form');
             const content = document.getElementById('content');
             const errorMessage = document.getElementById('error-message');
+            const newPostBtn = document.getElementById('new-post-btn');
+            const postForm = document.getElementById('post-form');
+            const postsContainer = document.getElementById('posts-container');
+            const loadingElement = document.getElementById('loading-posts');
+            const noPostsElement = document.getElementById('no-posts');
+            const postTitleInput = document.getElementById('post-title');
+            const postContentInput = document.getElementById('post-content');
+            const postIdInput = document.getElementById('post-id');
+            const savePostBtn = document.getElementById('save-post');
+            const cancelPostBtn = document.getElementById('cancel-post');
             
             // The password to access the content
             const correctPassword = "08151769";
@@ -340,6 +476,7 @@
                 showContent();
             }
             
+            // Event Listeners
             submitBtn.addEventListener('click', validatePassword);
             passwordInput.addEventListener('keyup', function(event) {
                 if (event.key === 'Enter') {
@@ -347,6 +484,18 @@
                 }
             });
             
+            newPostBtn.addEventListener('click', () => {
+                resetForm();
+                postForm.classList.remove('hidden');
+            });
+            
+            cancelPostBtn.addEventListener('click', () => {
+                postForm.classList.add('hidden');
+            });
+            
+            savePostBtn.addEventListener('click', handleSavePost);
+            
+            // Functions
             function validatePassword() {
                 if (passwordInput.value === correctPassword) {
                     sessionStorage.setItem('privateAuth', 'true');
@@ -364,6 +513,9 @@
                 // Initialize parallax after content is shown
                 handleParallax();
                 
+                // Load blog posts
+                loadPosts();
+                
                 // Animation for header
                 gsap.from('.animate-header', {
                     opacity: 0,
@@ -371,8 +523,44 @@
                     duration: 1,
                     ease: "power2.out"
                 });
+            }
+            
+            async function loadPosts() {
+                try {
+                    const posts = await blogDB.getAllPosts();
+                    displayPosts(posts);
+                } catch (error) {
+                    console.error('Error loading posts:', error);
+                    alert('Failed to load posts. Please try again.');
+                } finally {
+                    loadingElement.classList.add('hidden');
+                }
+            }
+            
+            function displayPosts(posts) {
+                // Clear previous posts
+                const postsOnly = Array.from(postsContainer.children).filter(child => 
+                    child.id !== 'loading-posts' && child.id !== 'no-posts'
+                );
+                postsOnly.forEach(post => post.remove());
                 
-                // Staggered animation for blog posts
+                if (posts.length === 0) {
+                    noPostsElement.classList.remove('hidden');
+                    return;
+                }
+                
+                noPostsElement.classList.add('hidden');
+                
+                // Create and append posts
+                posts.forEach((post, index) => {
+                    const postElement = createPostElement(post, index);
+                    postsContainer.appendChild(postElement);
+                });
+                
+                // Apply parallax to new elements
+                handleParallax();
+                
+                // Animate posts
                 gsap.from('.blog-post', {
                     opacity: 0,
                     y: 50,
@@ -380,6 +568,124 @@
                     duration: 0.8,
                     ease: "back.out(1.7)"
                 });
+            }
+            
+            function createPostElement(post, index) {
+                const article = document.createElement('article');
+                article.className = `blog-post pl-6 pt-2 pb-6 rounded-lg elegant-shadow parallax-section`;
+                article.dataset.speed = 0.03 + (index * 0.02);
+                article.dataset.id = post.id;
+                
+                const formattedDate = new Date(post.date).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+                
+                article.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <p class="date text-sm mb-3">${formattedDate}</p>
+                        <div class="flex space-x-2">
+                            <button class="edit-post-btn text-blue-500 hover:text-blue-700">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                </svg>
+                            </button>
+                            <button class="delete-post-btn text-red-500 hover:text-red-700">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <h2 class="text-2xl font-bold mb-4">${post.title}</h2>
+                    <div class="prose">
+                        <p class="mb-4">${post.content.replace(/\n/g, '<br>')}</p>
+                    </div>
+                `;
+                
+                // Add event listeners
+                article.querySelector('.edit-post-btn').addEventListener('click', () => {
+                    editPost(post.id);
+                });
+                
+                article.querySelector('.delete-post-btn').addEventListener('click', () => {
+                    deletePost(post.id);
+                });
+                
+                return article;
+            }
+            
+            async function handleSavePost() {
+                const title = postTitleInput.value.trim();
+                const content = postContentInput.value.trim();
+                const id = postIdInput.value ? parseInt(postIdInput.value) : null;
+                
+                if (!title || !content) {
+                    alert('Please fill in both title and content');
+                    return;
+                }
+                
+                try {
+                    if (id) {
+                        // Update existing post
+                        const post = await blogDB.getPost(id);
+                        post.title = title;
+                        post.content = content;
+                        post.updated = new Date().toISOString();
+                        await blogDB.updatePost(post);
+                    } else {
+                        // Add new post
+                        const post = {
+                            title,
+                            content,
+                            date: new Date().toISOString(),
+                            updated: null
+                        };
+                        await blogDB.addPost(post);
+                    }
+                    
+                    postForm.classList.add('hidden');
+                    resetForm();
+                    loadPosts();
+                } catch (error) {
+                    console.error('Error saving post:', error);
+                    alert('Failed to save post. Please try again.');
+                }
+            }
+            
+            async function editPost(id) {
+                try {
+                    const post = await blogDB.getPost(id);
+                    postTitleInput.value = post.title;
+                    postContentInput.value = post.content;
+                    postIdInput.value = post.id;
+                    postForm.classList.remove('hidden');
+                    postForm.scrollIntoView({ behavior: 'smooth' });
+                } catch (error) {
+                    console.error('Error editing post:', error);
+                    alert('Failed to edit post. Please try again.');
+                }
+            }
+            
+            async function deletePost(id) {
+                if (!confirm('Are you sure you want to delete this post?')) {
+                    return;
+                }
+                
+                try {
+                    await blogDB.deletePost(id);
+                    loadPosts();
+                } catch (error) {
+                    console.error('Error deleting post:', error);
+                    alert('Failed to delete post. Please try again.');
+                }
+            }
+            
+            function resetForm() {
+                postTitleInput.value = '';
+                postContentInput.value = '';
+                postIdInput.value = '';
             }
         });
     </script>
