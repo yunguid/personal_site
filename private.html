@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sunlit Thoughts - Luke R. Young</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Lora:ital@0;1&display=swap">
+    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.4/dist/gsap.min.js"></script>
+    <style>
+        /* General font styles */
+        body {
+            font-family: 'Lora', serif;
+            color: #433;
+            margin: 0;
+            overflow-x: hidden;
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Playfair Display', serif;
+        }
+
+        #three-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        .overlay {
+            background: rgba(255, 249, 245, 0.8);
+            position: relative;
+            z-index: 1;
+        }
+        
+        .blog-post {
+            border-left: 4px solid #FF6347;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(8px);
+        }
+        
+        .blog-post:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 15px -3px rgba(222, 109, 89, 0.2);
+        }
+        
+        .date {
+            color: #FF6347;
+            font-style: italic;
+        }
+
+        .sunset-gradient {
+            background: linear-gradient(135deg, #FF6347, #FF8C69);
+        }
+        
+        #password-form {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            position: relative;
+            z-index: 10;
+        }
+
+        #content {
+            display: none;
+        }
+        
+        .elegant-shadow {
+            box-shadow: 0 10px 15px -3px rgba(222, 109, 89, 0.1), 0 4px 6px -2px rgba(222, 109, 89, 0.05);
+        }
+        
+        .quote {
+            font-family: 'Playfair Display', serif;
+            font-style: italic;
+            position: relative;
+        }
+        
+        .quote:before {
+            content: """;
+            font-size: 2rem;
+            position: absolute;
+            left: -1rem;
+            top: -0.5rem;
+            color: #FF6347;
+            opacity: 0.6;
+        }
+        
+        .quote:after {
+            content: """;
+            font-size: 2rem;
+            position: absolute;
+            right: -1rem;
+            bottom: -1.5rem;
+            color: #FF6347;
+            opacity: 0.6;
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 2;
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(8px);
+            border-radius: 0.5rem;
+            padding: 2rem;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(10px);
+            border-radius: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .glass-card:hover {
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+            transform: translateY(-5px);
+        }
+
+        .parallax-section {
+            transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+    </style>
+</head>
+<body>
+    <canvas id="three-canvas"></canvas>
+
+    <div id="password-form" class="max-w-md mx-auto p-8 rounded-lg">
+        <div class="glass-card p-8 rounded-lg">
+            <h2 class="text-3xl font-bold mb-6 text-center text-gray-800">Sunlit Thoughts</h2>
+            <p class="mb-4 text-center text-gray-600">Enter the password to access this personal blog</p>
+            <div class="space-y-4 w-full">
+                <input type="password" id="password-input" class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-400" placeholder="Enter password">
+                <button id="submit-btn" class="w-full sunset-gradient hover:opacity-90 text-white font-bold py-2 px-4 rounded-md transition-colors">Enter</button>
+            </div>
+            <p id="error-message" class="text-red-500 mt-4 text-center hidden">Incorrect password. Please try again.</p>
+        </div>
+    </div>
+
+    <div id="content">
+        <header class="py-16 relative">
+            <div class="max-w-5xl mx-auto px-6">
+                <div class="header-content">
+                    <div class="flex justify-between items-center mb-4">
+                        <h1 class="text-4xl md:text-5xl font-bold text-gray-800 animate-header">Sunlit Thoughts</h1>
+                        <a href="index.html" class="text-orange-600 hover:text-orange-700 font-semibold">← Home</a>
+                    </div>
+                    <p class="text-xl text-gray-700 italic">A collection of quotes and personal reflections</p>
+                </div>
+            </div>
+        </header>
+        
+        <main class="max-w-3xl mx-auto py-12 px-6 relative z-10">
+            <!-- Blog Post 1 -->
+            <article class="blog-post mb-12 pl-6 pt-2 pb-6 rounded-lg elegant-shadow parallax-section" data-speed="0.03">
+                <p class="date text-sm mb-3">May 15, 2024</p>
+                <h2 class="text-2xl font-bold mb-4">Morning Reflections</h2>
+                <div class="prose">
+                    <p class="mb-4">The quiet hours of early morning have always been my sanctuary. Before the world awakens, there's a stillness that allows thoughts to flow without interruption.</p>
+                    <div class="quote px-8 py-4 my-6 text-lg text-gray-700">
+                        <p>The sun is new each day.</p>
+                    </div>
+                    <p class="text-right text-sm text-gray-500">— Heraclitus</p>
+                    <p class="mt-4">I've been contemplating how each sunrise offers the possibility of renewal. No matter what happened yesterday, today brings fresh opportunities to create, to connect, to be present.</p>
+                </div>
+            </article>
+            
+            <!-- Blog Post 2 -->
+            <article class="blog-post mb-12 pl-6 pt-2 pb-6 rounded-lg elegant-shadow parallax-section" data-speed="0.05">
+                <p class="date text-sm mb-3">May 10, 2024</p>
+                <h2 class="text-2xl font-bold mb-4">On Creative Persistence</h2>
+                <div class="prose">
+                    <p class="mb-4">Started a new project today after weeks of creative block. There's something powerful about pushing through resistance.</p>
+                    <div class="quote px-8 py-4 my-6 text-lg text-gray-700">
+                        <p>Don't think about making art, just get it done. Let everyone else decide if it's good or bad, whether they love it or hate it. While they are deciding, make even more art.</p>
+                    </div>
+                    <p class="text-right text-sm text-gray-500">— Andy Warhol</p>
+                    <p class="mt-4">I'm learning that inspiration often comes after you've already begun. The act of creating itself generates the energy to continue creating.</p>
+                </div>
+            </article>
+            
+            <!-- Blog Post 3 -->
+            <article class="blog-post mb-12 pl-6 pt-2 pb-6 rounded-lg elegant-shadow parallax-section" data-speed="0.07">
+                <p class="date text-sm mb-3">May 5, 2024</p>
+                <h2 class="text-2xl font-bold mb-4">Sunset Thoughts</h2>
+                <div class="prose">
+                    <p class="mb-4">Watched the sunset from my window today. The sky was painted in shades of blood orange and deep purple.</p>
+                    <div class="quote px-8 py-4 my-6 text-lg text-gray-700">
+                        <p>There's a sunrise and a sunset every single day, and they're absolutely free. Don't miss so many of them.</p>
+                    </div>
+                    <p class="text-right text-sm text-gray-500">— Jo Walton</p>
+                    <p class="mt-4">Nature provides daily spectacles if we only take the time to notice them. These moments of beauty require no tickets, no reservations—just our attention.</p>
+                </div>
+            </article>
+        </main>
+    </div>
+
+    <script>
+        // Three.js Background Animation
+        let scene, camera, renderer;
+        let particles, geometry, material;
+        let mouseX = 0, mouseY = 0;
+        let windowHalfX = window.innerWidth / 2;
+        let windowHalfY = window.innerHeight / 2;
+        
+        function init() {
+            // Scene setup
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+            camera.position.z = 1000;
+            
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ 
+                canvas: document.getElementById('three-canvas'),
+                alpha: true,
+                antialias: true
+            });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setClearColor(0xfff9f5, 1);
+            
+            // Particles
+            const particleCount = 1000;
+            geometry = new THREE.BufferGeometry();
+            
+            const positions = new Float32Array(particleCount * 3);
+            const colors = new Float32Array(particleCount * 3);
+            const sizes = new Float32Array(particleCount);
+            
+            const colorChoices = [
+                new THREE.Color(0xFF6347), // Tomato
+                new THREE.Color(0xFF8C69), // Salmon
+                new THREE.Color(0xFFDAB9), // PeachPuff
+                new THREE.Color(0xFFA07A)  // LightSalmon
+            ];
+            
+            for (let i = 0; i < particleCount; i++) {
+                // Position
+                positions[i * 3] = (Math.random() - 0.5) * 2000;
+                positions[i * 3 + 1] = (Math.random() - 0.5) * 2000;
+                positions[i * 3 + 2] = (Math.random() - 0.5) * 2000;
+                
+                // Colors
+                const color = colorChoices[Math.floor(Math.random() * colorChoices.length)];
+                colors[i * 3] = color.r;
+                colors[i * 3 + 1] = color.g;
+                colors[i * 3 + 2] = color.b;
+                
+                // Sizes
+                sizes[i] = Math.random() * 5 + 1;
+            }
+            
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+            
+            material = new THREE.PointsMaterial({
+                size: 5,
+                sizeAttenuation: true,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.6
+            });
+            
+            particles = new THREE.Points(geometry, material);
+            scene.add(particles);
+            
+            // Event listeners
+            document.addEventListener('mousemove', onDocumentMouseMove);
+            window.addEventListener('resize', onWindowResize);
+            
+            // Start animation
+            animate();
+        }
+        
+        function onWindowResize() {
+            windowHalfX = window.innerWidth / 2;
+            windowHalfY = window.innerHeight / 2;
+            
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+        
+        function onDocumentMouseMove(event) {
+            mouseX = (event.clientX - windowHalfX) * 0.05;
+            mouseY = (event.clientY - windowHalfY) * 0.05;
+        }
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            particles.rotation.x += 0.0005;
+            particles.rotation.y += 0.0003;
+            
+            camera.position.x += (mouseX - camera.position.x) * 0.01;
+            camera.position.y += (-mouseY - camera.position.y) * 0.01;
+            
+            renderer.render(scene, camera);
+        }
+
+        // Parallax effect for blog posts
+        function handleParallax() {
+            const parallaxElements = document.querySelectorAll('.parallax-section');
+            
+            window.addEventListener('scroll', function() {
+                const scrollY = window.scrollY;
+                
+                parallaxElements.forEach(element => {
+                    const speed = parseFloat(element.getAttribute('data-speed'));
+                    const yOffset = scrollY * speed;
+                    element.style.transform = `translateY(${yOffset}px)`;
+                });
+            });
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize Three.js
+            init();
+            
+            // Password validation
+            const submitBtn = document.getElementById('submit-btn');
+            const passwordInput = document.getElementById('password-input');
+            const passwordForm = document.getElementById('password-form');
+            const content = document.getElementById('content');
+            const errorMessage = document.getElementById('error-message');
+            
+            // The password to access the content
+            const correctPassword = "08151769";
+            
+            // Check if already authenticated
+            const isAuthenticated = sessionStorage.getItem('privateAuth');
+            if (isAuthenticated === 'true') {
+                showContent();
+            }
+            
+            submitBtn.addEventListener('click', validatePassword);
+            passwordInput.addEventListener('keyup', function(event) {
+                if (event.key === 'Enter') {
+                    validatePassword();
+                }
+            });
+            
+            function validatePassword() {
+                if (passwordInput.value === correctPassword) {
+                    sessionStorage.setItem('privateAuth', 'true');
+                    showContent();
+                } else {
+                    errorMessage.classList.remove('hidden');
+                    passwordInput.value = '';
+                }
+            }
+            
+            function showContent() {
+                passwordForm.style.display = 'none';
+                content.style.display = 'block';
+                
+                // Initialize parallax after content is shown
+                handleParallax();
+                
+                // Animation for header
+                gsap.from('.animate-header', {
+                    opacity: 0,
+                    y: 30,
+                    duration: 1,
+                    ease: "power2.out"
+                });
+                
+                // Staggered animation for blog posts
+                gsap.from('.blog-post', {
+                    opacity: 0,
+                    y: 50,
+                    stagger: 0.2,
+                    duration: 0.8,
+                    ease: "back.out(1.7)"
+                });
+            }
+        });
+    </script>
+</body>
+</html>
