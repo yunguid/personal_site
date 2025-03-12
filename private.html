@@ -3,23 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stormy Reflections - Luke R. Young</title>
+    <title>Reflections - Luke R. Young</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=Crimson+Pro:wght@300;400;600&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600&family=Merriweather:wght@300;400&display=swap">
     <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.4/dist/gsap.min.js"></script>
     <style>
         /* General font styles */
         body {
-            font-family: 'Crimson Pro', serif;
-            color: #e1e7f0;
+            font-family: 'Merriweather', serif;
+            color: #e2e8f0;
             margin: 0;
             overflow-x: hidden;
-            background-color: #0f172a;
+            background-color: #1a202c;
         }
         
         h1, h2, h3, h4, h5, h6 {
-            font-family: 'EB Garamond', serif;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 300;
         }
 
         #three-canvas {
@@ -38,24 +39,25 @@
         }
         
         .blog-post {
-            border-left: 4px solid #64748b;
-            transition: all 0.3s ease;
-            background: rgba(30, 41, 59, 0.7);
+            border-left: 0;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+            transition: all 0.4s ease;
+            background: rgba(26, 32, 44, 0.5);
             backdrop-filter: blur(8px);
         }
         
         .blog-post:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 15px -3px rgba(15, 23, 42, 0.5);
+            background: rgba(26, 32, 44, 0.7);
         }
         
         .date {
             color: #94a3b8;
-            font-style: italic;
+            font-weight: 300;
+            letter-spacing: 0.05em;
         }
 
         .ocean-gradient {
-            background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+            background: #334155;
         }
         
         #password-form {
@@ -77,52 +79,31 @@
         }
         
         .quote {
-            font-family: 'EB Garamond', serif;
-            font-style: italic;
+            font-family: 'Merriweather', serif;
+            font-weight: 300;
             position: relative;
-        }
-        
-        .quote:before {
-            content: """;
-            font-size: 2rem;
-            position: absolute;
-            left: -1rem;
-            top: -0.5rem;
-            color: #60a5fa;
-            opacity: 0.8;
-        }
-        
-        .quote:after {
-            content: """;
-            font-size: 2rem;
-            position: absolute;
-            right: -1rem;
-            bottom: -1.5rem;
-            color: #60a5fa;
-            opacity: 0.8;
+            padding: 0 1.5rem;
+            border-left: 2px solid #475569;
         }
 
         .header-content {
             position: relative;
             z-index: 2;
-            background: rgba(30, 41, 59, 0.6);
-            backdrop-filter: blur(8px);
-            border-radius: 0;
-            padding: 2rem;
-            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+            background: transparent;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.1);
         }
 
         .glass-card {
-            background: rgba(30, 41, 59, 0.6);
+            background: rgba(26, 32, 44, 0.4);
             backdrop-filter: blur(10px);
-            border-radius: 0;
-            border: 1px solid rgba(96, 165, 250, 0.1);
-            transition: all 0.3s ease;
+            border: 0;
+            transition: all 0.4s ease;
         }
 
         .glass-card:hover {
-            box-shadow: 0 5px 15px rgba(15, 23, 42, 0.5);
-            transform: translateY(-2px);
+            background: rgba(26, 32, 44, 0.6);
         }
 
         .parallax-section {
@@ -131,9 +112,11 @@
         
         /* Input fields & button overrides */
         input, textarea {
-            background-color: rgba(15, 23, 42, 0.8) !important;
+            background-color: rgba(26, 32, 44, 0.6) !important;
             color: #e2e8f0 !important;
-            border-color: #475569 !important;
+            border: none !important;
+            border-bottom: 1px solid #475569 !important;
+            border-radius: 0 !important;
         }
         
         input::placeholder, textarea::placeholder {
@@ -142,8 +125,18 @@
         }
         
         input:focus, textarea:focus {
-            outline-color: #3b82f6 !important;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3) !important;
+            outline: none !important;
+            border-color: #64748b !important;
+            box-shadow: none !important;
+        }
+        
+        button {
+            border-radius: 0 !important;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 300;
+            font-size: 0.9rem;
         }
     </style>
 </head>
@@ -152,11 +145,10 @@
 
     <div id="password-form" class="max-w-md mx-auto p-8 rounded-lg">
         <div class="glass-card p-8 rounded-lg">
-            <h2 class="text-3xl font-bold mb-6 text-center text-blue-100">Stormy Reflections</h2>
-            <p class="mb-4 text-center text-slate-300">Enter the password to access this personal journal</p>
-            <div class="space-y-4 w-full">
-                <input type="password" id="password-input" class="w-full px-4 py-2 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter password">
-                <button id="submit-btn" class="w-full ocean-gradient hover:opacity-90 text-white font-semibold py-2 px-4 transition-colors">Enter</button>
+            <h2 class="text-2xl mb-8 text-center uppercase tracking-widest text-slate-300">Reflections</h2>
+            <div class="space-y-6 w-full">
+                <input type="password" id="password-input" class="w-full px-0 py-2 focus:outline-none" placeholder="Password">
+                <button id="submit-btn" class="w-full ocean-gradient hover:opacity-80 text-slate-100 py-3 transition-colors">ENTER</button>
             </div>
             <p id="error-message" class="text-red-500 mt-4 text-center hidden">Incorrect password. Please try again.</p>
         </div>
@@ -167,36 +159,32 @@
             <div class="max-w-5xl mx-auto px-6">
                 <div class="header-content">
                     <div class="flex justify-between items-center mb-4">
-                        <h1 class="text-4xl md:text-5xl font-bold text-blue-100 animate-header">Stormy Reflections</h1>
-                        <a href="index.html" class="text-blue-400 hover:text-blue-300 font-semibold">← Home</a>
+                        <h1 class="text-3xl tracking-wide text-slate-200 animate-header uppercase">Reflections</h1>
+                        <a href="index.html" class="text-slate-400 hover:text-slate-300">←</a>
                     </div>
-                    <p class="text-xl text-slate-300 italic">Thoughts amidst the tempest of life</p>
                 </div>
             </div>
         </header>
         
         <main class="max-w-3xl mx-auto py-12 px-6 relative z-10">
             <!-- Blog Controls -->
-            <div class="flex justify-between items-center mb-8">
-                <h2 class="text-2xl font-bold">My Thoughts</h2>
-                <button id="new-post-btn" class="ocean-gradient text-white px-4 py-2 hover:opacity-90 transition-opacity">
-                    New Entry
+            <div class="flex justify-end mb-12">
+                <button id="new-post-btn" class="ocean-gradient text-slate-200 px-6 py-2 hover:opacity-80 transition-opacity">
+                    NEW
                 </button>
             </div>
 
             <!-- New Post Form -->
-            <div id="post-form" class="mb-12 glass-card p-6 rounded-lg hidden">
-                <div class="mb-4">
-                    <label for="post-title" class="block mb-2 font-semibold">Title</label>
-                    <input type="text" id="post-title" class="w-full px-4 py-2 border focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <div id="post-form" class="mb-12 glass-card p-8 hidden">
+                <div class="mb-6">
+                    <input type="text" id="post-title" class="w-full px-0 py-2" placeholder="Title">
                 </div>
-                <div class="mb-4">
-                    <label for="post-content" class="block mb-2 font-semibold">Content</label>
-                    <textarea id="post-content" rows="8" class="w-full px-4 py-2 border focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                <div class="mb-8">
+                    <textarea id="post-content" rows="6" class="w-full px-0 py-2" placeholder="Write your thoughts..."></textarea>
                 </div>
-                <div class="flex space-x-2 justify-end">
-                    <button id="cancel-post" class="px-4 py-2 border hover:bg-slate-800 text-slate-300 border-slate-600 transition-colors">Cancel</button>
-                    <button id="save-post" class="ocean-gradient text-white px-4 py-2 hover:opacity-90 transition-opacity">Save</button>
+                <div class="flex space-x-4 justify-end">
+                    <button id="cancel-post" class="px-6 py-2 text-slate-400 hover:text-slate-300 transition-colors">CANCEL</button>
+                    <button id="save-post" class="ocean-gradient text-slate-200 px-6 py-2 hover:opacity-80 transition-opacity">SAVE</button>
                 </div>
                 <input type="hidden" id="post-id" value="">
             </div>
@@ -205,23 +193,19 @@
             <div id="posts-container" class="space-y-8">
                 <!-- Blog posts will be loaded here dynamically -->
                 <div class="text-center py-12" id="loading-posts">
-                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-                    <p class="mt-2 text-slate-400">Loading your thoughts...</p>
+                    <div class="inline-block animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-slate-500"></div>
                 </div>
                 <div class="hidden text-center py-12" id="no-posts">
-                    <p class="text-slate-400">No thoughts yet. Click "New Entry" to add one.</p>
+                    <p class="text-slate-500 uppercase tracking-wider text-sm">No entries</p>
                 </div>
             </div>
         </main>
     </div>
 
     <script>
-        // Three.js Stormy Ocean Animation
+        // Three.js Calm Water Animation
         let scene, camera, renderer;
-        let ocean, oceanGeometry, oceanMaterial;
-        let sky, skyMaterial;
-        let lightning = false;
-        let lightningTime = 0;
+        let water, waterGeometry, waterMaterial;
         let clock = new THREE.Clock();
         let mouseX = 0, mouseY = 0;
         let windowHalfX = window.innerWidth / 2;
@@ -230,11 +214,11 @@
         function init() {
             // Scene setup
             scene = new THREE.Scene();
-            scene.fog = new THREE.FogExp2(0x0f172a, 0.01);
+            scene.background = new THREE.Color(0x1a202c);
             
             // Camera setup
-            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(0, 10, 50);
+            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 15, 80);
             camera.lookAt(0, 0, 0);
             
             // Renderer
@@ -243,23 +227,19 @@
                 antialias: true 
             });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setClearColor(0x0f172a, 1);
             renderer.setPixelRatio(window.devicePixelRatio);
             
             // Ambient light
-            const ambientLight = new THREE.AmbientLight(0x334155, 0.2);
+            const ambientLight = new THREE.AmbientLight(0x64748b, 0.4);
             scene.add(ambientLight);
             
             // Moonlight
-            const moonLight = new THREE.DirectionalLight(0x94a3b8, 0.4);
+            const moonLight = new THREE.DirectionalLight(0x94a3b8, 0.2);
             moonLight.position.set(-50, 40, -50);
             scene.add(moonLight);
             
-            // Create stormy sky
-            createStormySky();
-            
-            // Create turbulent ocean
-            createOcean();
+            // Create calm water
+            createWater();
             
             // Event listeners
             document.addEventListener('mousemove', onDocumentMouseMove);
@@ -269,101 +249,55 @@
             animate();
         }
         
-        function createStormySky() {
-            // Create sky
-            const skyGeometry = new THREE.SphereGeometry(400, 32, 32);
+        function createWater() {
+            // Create a large plane for the water
+            waterGeometry = new THREE.PlaneGeometry(600, 600, 40, 40);
             
-            // Create sky gradient
-            const uniforms = {
-                topColor: { value: new THREE.Color(0x0f172a) },      // Very dark blue at top
-                bottomColor: { value: new THREE.Color(0x1e3a8a) },   // Deep navy at horizon
-                offset: { value: 20 },
-                exponent: { value: 0.4 }
-            };
-            
-            skyMaterial = new THREE.ShaderMaterial({
-                uniforms: uniforms,
-                vertexShader: `
-                    varying vec3 vWorldPosition;
-                    void main() {
-                        vec4 worldPosition = modelMatrix * vec4(position, 1.0);
-                        vWorldPosition = worldPosition.xyz;
-                        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-                    }
-                `,
-                fragmentShader: `
-                    uniform vec3 topColor;
-                    uniform vec3 bottomColor;
-                    uniform float offset;
-                    uniform float exponent;
-                    varying vec3 vWorldPosition;
-                    void main() {
-                        float h = normalize(vWorldPosition + offset).y;
-                        gl_FragColor = vec4(mix(bottomColor, topColor, max(pow(h, exponent), 0.0)), 1.0);
-                    }
-                `,
-                side: THREE.BackSide
+            // Water material
+            waterMaterial = new THREE.MeshStandardMaterial({
+                color: 0x1e293b,
+                roughness: 0.2,
+                metalness: 0.1
             });
             
-            sky = new THREE.Mesh(skyGeometry, skyMaterial);
-            scene.add(sky);
+            water = new THREE.Mesh(waterGeometry, waterMaterial);
+            water.rotation.x = -Math.PI / 2;
+            water.position.y = -5;
+            scene.add(water);
             
-            // Add some clouds (simple dark planes at different heights)
-            const cloudMaterial = new THREE.MeshBasicMaterial({
+            // Add subtle reflection plane above water
+            const reflectionGeometry = new THREE.PlaneGeometry(600, 600);
+            const reflectionMaterial = new THREE.MeshBasicMaterial({
                 color: 0x1e293b,
                 transparent: true,
-                opacity: 0.4,
-                side: THREE.DoubleSide
+                opacity: 0.03
             });
             
-            for (let i = 0; i < 20; i++) {
-                const cloudSize = 30 + Math.random() * 100;
-                const cloudGeometry = new THREE.PlaneGeometry(cloudSize, cloudSize);
-                const cloud = new THREE.Mesh(cloudGeometry, cloudMaterial);
-                
-                // Position the cloud randomly
-                cloud.position.set(
-                    (Math.random() - 0.5) * 300,
-                    60 + Math.random() * 40,
-                    (Math.random() - 0.5) * 300
-                );
-                
-                // Rotate the cloud
-                cloud.rotation.x = Math.PI / 2;
-                cloud.rotation.z = Math.random() * Math.PI;
-                
-                scene.add(cloud);
+            const reflection = new THREE.Mesh(reflectionGeometry, reflectionMaterial);
+            reflection.rotation.x = -Math.PI / 2;
+            reflection.position.y = -4.9;
+            scene.add(reflection);
+            
+            // Add a few stars
+            const starsGeometry = new THREE.BufferGeometry();
+            const starsMaterial = new THREE.PointsMaterial({
+                color: 0xffffff,
+                size: 1,
+                transparent: true,
+                opacity: 0.5
+            });
+            
+            const starsVertices = [];
+            for (let i = 0; i < 200; i++) {
+                const x = (Math.random() - 0.5) * 600;
+                const y = Math.random() * 200 + 50;
+                const z = (Math.random() - 0.5) * 600;
+                starsVertices.push(x, y, z);
             }
-        }
-        
-        function createOcean() {
-            // Create a large plane for the ocean
-            oceanGeometry = new THREE.PlaneGeometry(400, 400, 100, 100);
             
-            // Ocean material with vertex displacement
-            oceanMaterial = new THREE.MeshPhongMaterial({
-                color: 0x1e3a8a,
-                specular: 0x111827,
-                shininess: 10
-            });
-            
-            ocean = new THREE.Mesh(oceanGeometry, oceanMaterial);
-            ocean.rotation.x = -Math.PI / 2;
-            ocean.position.y = -5;
-            scene.add(ocean);
-            
-            // Add a distant boat silhouette
-            const boatGeometry = new THREE.BoxGeometry(8, 4, 20);
-            const boatMaterial = new THREE.MeshBasicMaterial({ color: 0x0f172a });
-            const boat = new THREE.Mesh(boatGeometry, boatMaterial);
-            boat.position.set(0, 0, -50);
-            scene.add(boat);
-            
-            // Add mast
-            const mastGeometry = new THREE.CylinderGeometry(0.5, 0.5, 15);
-            const mast = new THREE.Mesh(mastGeometry, boatMaterial);
-            mast.position.set(0, 7.5, -50);
-            scene.add(mast);
+            starsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starsVertices, 3));
+            const stars = new THREE.Points(starsGeometry, starsMaterial);
+            scene.add(stars);
         }
         
         function onWindowResize() {
@@ -377,8 +311,8 @@
         }
         
         function onDocumentMouseMove(event) {
-            mouseX = (event.clientX - windowHalfX) * 0.01;
-            mouseY = (event.clientY - windowHalfY) * 0.01;
+            mouseX = (event.clientX - windowHalfX) * 0.003;
+            mouseY = (event.clientY - windowHalfY) * 0.003;
         }
         
         function animate() {
@@ -386,56 +320,32 @@
             
             const time = clock.getElapsedTime();
             
-            // Animate ocean waves
-            if (oceanGeometry && oceanGeometry.attributes.position) {
-                const positions = oceanGeometry.attributes.position;
+            // Animate gentle water movement
+            if (waterGeometry && waterGeometry.attributes.position) {
+                const positions = waterGeometry.attributes.position;
                 
                 for (let i = 0; i < positions.count; i++) {
                     const x = positions.getX(i);
                     const z = positions.getZ(i);
                     
-                    // Create turbulent waves
-                    const waveHeight1 = Math.sin(time * 0.8 + x * 0.05) * 2;
-                    const waveHeight2 = Math.cos(time * 1.2 + z * 0.04) * 2;
-                    const waveHeight3 = Math.sin(time * 0.7 + x * 0.02 + z * 0.03) * 1.5;
+                    // Create gentle waves
+                    const waveHeight1 = Math.sin(time * 0.2 + x * 0.02) * 0.8;
+                    const waveHeight2 = Math.cos(time * 0.3 + z * 0.02) * 0.6;
                     
-                    // Combine waves for more turbulent effect
-                    const finalHeight = waveHeight1 + waveHeight2 + waveHeight3;
+                    // Combine waves for a calm effect
+                    const finalHeight = waveHeight1 + waveHeight2;
                     
                     positions.setY(i, finalHeight);
                 }
                 
                 positions.needsUpdate = true;
-                oceanGeometry.computeVertexNormals();
+                waterGeometry.computeVertexNormals();
             }
             
-            // Occasional lightning
-            if (Math.random() < 0.005 && !lightning) {
-                lightning = true;
-                lightningTime = time;
-                
-                // Add bright directional light
-                const lightningLight = new THREE.DirectionalLight(0xffffff, 1.5);
-                lightningLight.position.set(Math.random() * 100 - 50, 60, Math.random() * 100 - 50);
-                lightningLight.name = 'lightning';
-                scene.add(lightningLight);
-            }
-            
-            // Turn off lightning after a short time
-            if (lightning && time - lightningTime > 0.2) {
-                lightning = false;
-                
-                // Remove lightning light
-                const lightningLight = scene.getObjectByName('lightning');
-                if (lightningLight) {
-                    scene.remove(lightningLight);
-                }
-            }
-            
-            // Move camera slightly based on mouse
-            camera.position.x += (mouseX - camera.position.x) * 0.01;
-            camera.position.y += (mouseY + 10 - camera.position.y) * 0.01;
-            camera.lookAt(0, 0, -30);
+            // Move camera very slightly based on mouse
+            camera.position.x += (mouseX - camera.position.x) * 0.05;
+            camera.position.y += (-mouseY + 15 - camera.position.y) * 0.05;
+            camera.lookAt(0, 0, 0);
             
             renderer.render(scene, camera);
         }
@@ -723,25 +633,23 @@
                 });
                 
                 article.innerHTML = `
-                    <div class="flex justify-between items-start">
-                        <p class="date text-sm mb-3">${formattedDate}</p>
-                        <div class="flex space-x-2">
-                            <button class="edit-post-btn text-blue-300 hover:text-blue-100">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                    <div class="flex justify-between items-center mb-5">
+                        <h2 class="text-xl tracking-wide text-slate-200">${post.title}</h2>
+                        <div class="flex space-x-3">
+                            <button class="edit-post-btn text-slate-500 hover:text-slate-300">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                                 </svg>
                             </button>
-                            <button class="delete-post-btn text-red-400 hover:text-red-300">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            <button class="delete-post-btn text-slate-500 hover:text-slate-300">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                 </svg>
                             </button>
                         </div>
                     </div>
-                    <h2 class="text-2xl font-bold mb-4 text-blue-100">${post.title}</h2>
-                    <div class="prose prose-invert prose-slate">
-                        <p class="mb-4 text-slate-300">${post.content.replace(/\n/g, '<br>')}</p>
-                    </div>
+                    <div class="mb-4 text-slate-400 leading-relaxed">${post.content.replace(/\n/g, '<br>')}</div>
+                    <p class="date text-xs mt-4">${formattedDate}</p>
                 `;
                 
                 // Add event listeners
