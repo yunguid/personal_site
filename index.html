@@ -5,19 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Luke R. Young</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;500;600&display=swap">
     <style>
         @keyframes float {
             0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-20px); }
+            50% { transform: translateY(-10px); }
         }
 
         /* General font styles */
-        body, p, h1, h2, h3, h4, h5, h6, div {
-            font-family: 'Times New Roman', serif;
+        body, p, div {
+            font-family: 'Inter', sans-serif;
+            font-weight: 300;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Playfair Display', serif;
+            font-weight: 400;
         }
 
         .ascii-art {
-            font-family: 'Courier New', monospace;
+            font-family: 'IBM Plex Mono', monospace;
             white-space: pre;
             line-height: 1;
             font-size: 14px;
@@ -30,7 +37,7 @@
         .section {
             opacity: 0;
             transform: translateY(20px);
-            transition: all 0.5s ease;
+            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
 
         .section.visible {
@@ -39,25 +46,38 @@
         }
 
         .dark-mode {
-            background-color: #1a202c;
-            color: #fff;
+            background-color: #111827;
+            color: #f3f4f6;
         }
 
         .nav-icon {
-            font-family: 'Times New Roman', serif;
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
             cursor: pointer;
-            padding: 10px;
-            transition: all 0.3s ease;
-            font-size: 16px;
+            padding: 12px 16px;
+            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            font-size: 14px;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
         }
 
         .nav-icon:hover {
-            color: #3b82f6;
+            color: #4f46e5;
         }
 
         .nav-icon.active {
-            color: #3b82f6;
-            font-weight: bold;
+            color: #4f46e5;
+            position: relative;
+        }
+
+        .nav-icon.active::after {
+            content: '';
+            position: absolute;
+            bottom: 6px;
+            left: 16px;
+            right: 16px;
+            height: 1px;
+            background: #4f46e5;
         }
 
         #navigation {
@@ -65,15 +85,16 @@
             left: 0;
             top: 50%;
             transform: translateY(-50%);
-            background: rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 0.95);
             padding: 1rem;
-            border-radius: 0 1rem 1rem 0;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            border-radius: 0 0.5rem 0.5rem 0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             z-index: 1000;
+            backdrop-filter: blur(8px);
         }
 
         .dark-mode #navigation {
-            background: rgba(26, 32, 44, 0.9);
+            background: rgba(17, 24, 39, 0.95);
         }
 
         /* Mobile Navigation */
@@ -89,18 +110,24 @@
                 flex-direction: row;
                 justify-content: space-around;
                 align-items: center;
-                border-radius: 1rem 1rem 0 0;
+                border-radius: 0.5rem 0.5rem 0 0;
                 padding: 0.5rem;
             }
 
             .nav-icon {
-                font-size: 14px;
-                padding: 8px;
+                font-size: 12px;
+                padding: 12px 8px;
+                text-align: center;
+            }
+
+            .nav-icon.active::after {
+                left: 8px;
+                right: 8px;
             }
 
             main {
                 padding-left: 0 !important;
-                padding-bottom: 60px;
+                padding-bottom: 64px;
             }
 
             .ascii-art {
@@ -109,7 +136,7 @@
             }
 
             .section {
-                padding: 1rem !important;
+                padding: 2rem 1.5rem !important;
             }
 
             /* Grid adjustments for mobile */
@@ -141,54 +168,236 @@
         }
 
         .book-card {
-            border: 1px solid #e2e8f0;
-            border-radius: 0.5rem;
-            padding: 1rem;
-            transition: all 0.3s ease;
+            border: none;
+            border-radius: 0.25rem;
+            padding: 1.5rem;
+            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             background-color: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            margin-bottom: 1rem;
         }
 
         .book-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transform: translateY(-4px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
         }
 
         .dark-mode .book-card {
-            border-color: #4a5568;
-            background: #2d3748;
+            background: #1f2937;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.05);
+            color: #f3f4f6;
+        }
+
+        .dark-mode .book-card h3 {
+            color: #f3f4f6;
+        }
+
+        .dark-mode .book-card p {
+            color: #d1d5db;
         }
 
         /* Update text styles for content sections */
         .section p {
-            font-family: 'Times New Roman', serif;
-            line-height: 1.6;
+            line-height: 1.8;
+            font-size: 15px;
         }
 
         .section h2 {
-            font-family: 'Times New Roman', serif;
-            font-weight: bold;
+            letter-spacing: -0.025em;
         }
 
         audio {
-            border-radius: 8px;
+            border-radius: 4px;
             margin-top: 4px;
+            height: 32px;
         }
 
         .dark-mode audio {
             filter: invert(1);
         }
+
+        .link {
+            color: #4f46e5;
+            transition: color 0.2s ease;
+            border-bottom: 1px solid transparent;
+            padding-bottom: 1px;
+        }
+
+        .link:hover {
+            color: #6366f1;
+            border-bottom-color: #6366f1;
+        }
+
+        .dark-mode .link {
+            color: #818cf8;
+        }
+
+        .dark-mode .link:hover {
+            color: #a5b4fc;
+            border-bottom-color: #a5b4fc;
+        }
+
+        /* Dark mode toggle */
+        #darkModeToggle {
+            width: 40px;
+            height: 20px;
+            background: #e5e7eb;
+            position: relative;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 0 2px;
+        }
+
+        #darkModeToggle::after {
+            content: '';
+            width: 16px;
+            height: 16px;
+            background: #fff;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        body.dark-mode #darkModeToggle {
+            background: #4f46e5;
+            justify-content: flex-end;
+        }
+
+        body.dark-mode #darkModeToggle::after {
+            background: #f3f4f6;
+        }
+
+        .section-title {
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid #e5e7eb;
+            margin-bottom: 2rem;
+        }
+
+        .dark-mode .section-title {
+            border-bottom-color: #374151;
+        }
+
+        /* Audio player container styles - the rest is handled in audio-player.js */
+        .custom-audio-player {
+            width: 100%;
+            background: #f8f9fa;
+            border-radius: 0.5rem;
+            padding: 0.5rem;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+
+        .dark-mode .custom-audio-player {
+            background: #111827;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+
+        .audio-container {
+            position: relative;
+            border-radius: 0.25rem;
+            overflow: hidden;
+            background: #f0f2f5;
+            transition: all 0.3s ease;
+        }
+
+        .dark-mode .audio-container {
+            background: #1e293b;
+        }
+
+        /* Basic waveform bar style - animations handled in JS */
+        .waveform-bar {
+            width: 3px;
+            height: 100%;
+            margin: 0 2px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 3px;
+            animation: sound 0s ease-in-out infinite alternate;
+        }
+
+        .dark-mode .waveform-bar {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Force the books section to be visible */
+        #books {
+            opacity: 1 !important;
+            transform: translateY(0) !important;
+            visibility: visible !important;
+            display: block !important;
+        }
+
+        /* Ensure book cards are visible */
+        #books .book-card {
+            opacity: 1 !important;
+            visibility: visible !important;
+        }
+        
+        /* Fix for dark mode background in books section */
+        .dark-mode #books {
+            background-color: #111827 !important;
+        }
+
+        /* Mobile navigation at bottom */
+        .bottom-nav {
+            display: flex;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 1px solid #e5e7eb;
+            padding: 0.75rem;
+            z-index: 50;
+        }
+
+        .dark-mode .bottom-nav {
+            background: #111827;
+            border-top-color: #374151;
+        }
+
+        .bottom-nav a {
+            flex: 1;
+            text-align: center;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #4b5563;
+            transition: color 0.2s ease;
+        }
+
+        .dark-mode .bottom-nav a {
+            color: #9ca3af;
+        }
+
+        .bottom-nav a.active {
+            color: #4f46e5;
+        }
+
+        .dark-mode .bottom-nav a.active {
+            color: #818cf8;
+        }
+
+        @media (min-width: 768px) {
+            .bottom-nav {
+                display: none;
+            }
+        }
     </style>
 </head>
-<body class="bg-white text-gray-900 transition-colors duration-300 font-serif">
-    <nav id="navigation" class="flex md:flex-col space-y-0 md:space-y-4 font-serif">
-        <div id="darkModeToggle" class="nav-icon">☀️</div>
+<body class="bg-white text-gray-900 transition-colors duration-300">
+    <nav id="navigation" class="flex md:flex-col space-y-0 md:space-y-4">
+        <div id="darkModeToggle" class="nav-icon mx-auto md:mx-0 mb-2 md:mb-4"></div>
         <div class="nav-icon active" data-section="hero">Home</div>
         <div class="nav-icon" data-section="about">About</div>
         <div class="nav-icon" data-section="resume">Resume</div>
         <div class="nav-icon" data-section="music">Music</div>
         <div class="nav-icon" data-section="books">Books</div>
-        <a href="leetcode/index.html" class="nav-icon">Leetcode</a>
-        <a href="private.html" class="nav-icon">Private</a>
     </nav>
 
     <main class="pl-16 md:pl-16">
@@ -197,34 +406,34 @@
         </section>
 
         <!-- About Section -->
-        <section id="about" class="section max-w-4xl mx-auto p-8">
-            <h2 class="text-3xl font-bold mb-8">About</h2>
-            <div class="grid md:grid-cols-3 gap-8">
-                <div class="relative group">
+        <section id="about" class="section max-w-4xl mx-auto p-12">
+            <h2 class="text-3xl mb-8 section-title">About</h2>
+            <div class="grid md:grid-cols-3 gap-12">
+                <div class="relative overflow-hidden rounded-lg">
                     <img src="assets/img/headshot2.jpeg" alt="Luke R. Young" 
-                         class="rounded-lg shadow-lg transition-transform duration-300 group-hover:scale-105">
+                         class="w-full h-auto shadow-sm transition-transform duration-500 hover:scale-105">
                 </div>
-                <div class="md:col-span-2 space-y-4">
+                <div class="md:col-span-2 space-y-6">
                     <p class="leading-relaxed">
-                        NYC-based Computer Science student at Georgetown University, specializing in AI and creative tech. Recently developed AI-powered financial analytics tools at <a href="https://quikirr.com/" target="_blank" class="text-blue-500 hover:text-blue-600">Quikirr</a> and co-founded <a href="https://secretary.my" target="_blank" class="text-blue-500 hover:text-blue-600">Ava</a>, an AI scheduling assistant that launched as an iMessage app and quickly gained 20+ paying subscribers within three days. Past projects include an audio visualization and video generation tool for Hollywood producers and a <a href="https://yunguid.github.io/fluid-sim-gallery/" target="_blank" class="text-blue-500 hover:text-blue-600">fluid simulation that reacts to audio input</a>. Currently building out Ava while developing a <a href="https://github.com/yunguid/arkon" target="_blank" class="text-blue-500 hover:text-blue-600">personal finance tracking tool</a>. I also just built a tool to greatly speed up the process of logging job applications, <a href="https://github.com/yunguid/sc-job" target="_blank" class="text-blue-500 hover:text-blue-600">check it out</a>. Previous experience includes software solutions at <a href="https://www.jackpinetech.com/" target="_blank" class="text-blue-500 hover:text-blue-600">Jackpine Technologies</a>.
+                        NYC-based Computer Science student at Georgetown University, specializing in AI and creative tech. Recently developed AI-powered financial analytics tools at <a href="https://quikirr.com/" target="_blank" class="link">Quikirr</a> and co-founded <a href="https://secretary.my" target="_blank" class="link">Ava</a>, an AI scheduling assistant that launched as an iMessage app and quickly gained 20+ paying subscribers within three days. Past projects include an audio visualization and video generation tool for Hollywood producers and a <a href="https://yunguid.github.io/fluid-sim-gallery/" target="_blank" class="link">fluid simulation that reacts to audio input</a>. Currently building out Ava while developing a <a href="https://github.com/yunguid/arkon" target="_blank" class="link">personal finance tracking tool</a>. I also just built a tool to greatly speed up the process of logging job applications, <a href="https://github.com/yunguid/sc-job" target="_blank" class="link">check it out</a>. Previous experience includes software solutions at <a href="https://www.jackpinetech.com/" target="_blank" class="link">Jackpine Technologies</a>.
                     </p>
                     <p class="leading-relaxed">
                         Outside of work, I enjoy weightlifting, following the philosophy of 
-                        <a href="https://mountaindogdiet.com/john/john-meadows/#" target="_blank" class="text-blue-500 hover:text-blue-600">John Meadows</a>. 
+                        <a href="https://mountaindogdiet.com/john/john-meadows/#" target="_blank" class="link">John Meadows</a>. 
                         I'm also interested in video games such as CSGO, as well as comedy and music. This past summer, I spent time in the 
                         Bob Marshall Wilderness in Montana fly fishing and horseback riding - you can see some photos 
-                        <a href="montana_gallery.html" class="text-blue-500 hover:text-blue-600">here</a>.
+                        <a href="montana_gallery.html" class="link">here</a>.
                     </p>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-2 gap-8 mt-6 pt-6 border-t border-gray-100 dark:border-gray-800">
                         <div>
-                            <h3 class="font-semibold mb-2">Contact</h3>
-                            <p>📧 lry2@georgetown.edu</p>
-                            <p>📍 New York, USA</p>
+                            <h3 class="text-sm uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-3">Contact</h3>
+                            <p class="mb-1">lry2@georgetown.edu</p>
+                            <p>New York, USA</p>
                         </div>
                         <div>
-                            <h3 class="font-semibold mb-2">Education</h3>
-                            <p>B.S. Computer Science</p>
-                            <p>Georgetown University</p>
+                            <h3 class="text-sm uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-3">Education</h3>
+                            <p class="mb-1">B.S. Computer Science</p>
+                            <p class="mb-1">Georgetown University</p>
                             <p>2021-2025</p>
                         </div>
                     </div>
@@ -233,99 +442,131 @@
         </section>
 
         <!-- Resume Section -->
-        <section id="resume" class="section max-w-4xl mx-auto p-8">
-            <h2 class="text-3xl font-bold mb-8">Resume (full resume <a href="/assets/luke-young-georgetown-resume.pdf" class="text-blue-500 hover:text-blue-600" target="_blank">here</a>)</h2>
-            <div class="space-y-8">
+        <section id="resume" class="section max-w-4xl mx-auto p-12">
+            <h2 class="text-3xl mb-8 section-title">Resume <span class="text-sm font-normal ml-2">(<a href="/assets/luke-young-georgetown-resume.pdf" class="link" target="_blank">full pdf</a>)</span></h2>
+            <div class="space-y-12">
                 <!-- Quikirr -->
-                <div>
-                    <h3 class="text-xl font-semibold">Software Engineer Intern - <a href="https://quikirr.com/" target="_blank" class="text-blue-500 hover:text-blue-600">Quikirr</a></h3>
-                    <p class="text-sm italic mb-2">May 2024 - September 2024</p>
-                    <p class="text-base">Gained hands-on experience at a bootstrapped fintech startup, working directly with founders to develop core financial analytics features.</p>
+                <div class="group">
+                    <h3 class="text-xl mb-1 group-hover:text-indigo-600 transition-colors duration-300">Software Engineer Intern - <a href="https://quikirr.com/" target="_blank" class="link">Quikirr</a></h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">May 2024 - September 2024</p>
+                    <p>Gained hands-on experience at a bootstrapped fintech startup, working directly with founders to develop core financial analytics features.</p>
                 </div>
 
                 <!--Coa -->
-                <div>
-                    <h3 class="text-xl font-semibold">Software Engineer - <a href="https://www.catalystops.com/" target="_blank" class="text-blue-500 hover:text-blue-600">Catalyst Operations & Analytics</a></h3>
-                    <p class="text-sm italic mb-2">Jan 2025 - Present</p>
-                    <p class="text-base">Building AI-powered media processing applications using StyleGAN, Stable Diffusion, and RealESRGAN with Docker and React. Developed a real-time audio search platform with Whisper and Elasticsearch.</p>
+                <div class="group">
+                    <h3 class="text-xl mb-1 group-hover:text-indigo-600 transition-colors duration-300">Software Engineer - <a href="https://www.catalystops.com/" target="_blank" class="link">Catalyst Operations & Analytics</a></h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">Jan 2025 - Present</p>
+                    <p>Building AI-powered media processing applications using StyleGAN, Stable Diffusion, and RealESRGAN with Docker and React. Developed a real-time audio search platform with Whisper and Elasticsearch.</p>
                 </div>
 
                 <!-- Ava -->
-                <div>
-                    <h3 class="text-xl font-semibold">Co-founder & Software Engineer - <a href="https://secretary.my" target="_blank" class="text-blue-500 hover:text-blue-600">Ava</a></h3>
-                    <p class="text-sm italic mb-2">Aug 2024 - Present</p>
-                    <p class="text-base">Helped build, maintain, and test an AI-powered accountability tool that lives natively in iMessage, featuring natural language processing for task management.</p>
+                <div class="group">
+                    <h3 class="text-xl mb-1 group-hover:text-indigo-600 transition-colors duration-300">Co-founder & Software Engineer - <a href="https://secretary.my" target="_blank" class="link">Ava</a></h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">Aug 2024 - Present</p>
+                    <p>Helped build, maintain, and test an AI-powered accountability tool that lives natively in iMessage, featuring natural language processing for task management.</p>
                 </div>
 
                 <!-- m_vis -->
-                <div>
-                    <h3 class="text-xl font-semibold">Co-founder - m_vis</h3>
-                    <p class="text-sm italic mb-2">May 2024 - September 2024</p>
-                    <p class="text-base">Created an AI-powered audio visualization tool that reduced Hollywood production costs by 92.5% through automated video generation.</p>
+                <div class="group">
+                    <h3 class="text-xl mb-1 group-hover:text-indigo-600 transition-colors duration-300">Co-founder - m_vis</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">May 2024 - September 2024</p>
+                    <p>Created an AI-powered audio visualization tool that reduced Hollywood production costs by 92.5% through automated video generation.</p>
                 </div>
 
                 <!-- Jackpine -->
-                <div>
-                    <h3 class="text-xl font-semibold">Software Engineer Intern - Jackpine Technologies</h3>
-                    <p class="text-sm italic mb-2">June 2023 - August 2023</p>
-                    <p class="text-base">Automated QA testing and migrated cloud assets, improving test coverage and accuracy for Windows/Linux environments.</p>
+                <div class="group">
+                    <h3 class="text-xl mb-1 group-hover:text-indigo-600 transition-colors duration-300">Software Engineer Intern - Jackpine Technologies</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">June 2023 - August 2023</p>
+                    <p>Automated QA testing and migrated cloud assets, improving test coverage and accuracy for Windows/Linux environments.</p>
                 </div>
 
-                <!-- Kore -->
+                <!-- Earlier roles -->
                 <div>
-                    <h3 class="text-xl font-semibold">Finance Intern - Kore Wealth Management</h3>
-                    <p class="text-sm italic mb-2">Summer 2018</p>
-                    <p class="text-base">Analyzed investment portfolios and participated in strategic financial management meetings.</p>
-                </div>
-
-                <!-- Nicusa -->
-                <div>
-                    <h3 class="text-xl font-semibold">Financial Intern - Nicusa Capital</h3>
-                    <p class="text-sm italic mb-2">2017, 2018</p>
-                    <p class="text-base">Developed stock valuations for major companies while participating in Columbia University's investing course.</p>
+                    <h3 class="text-base uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-4">Earlier Roles</h3>
+                    <div class="space-y-4 pl-4 border-l-2 border-gray-100 dark:border-gray-800">
+                        <div>
+                            <h4 class="font-medium">Finance Intern - Kore Wealth Management</h4>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Summer 2018</p>
+                        </div>
+                        
+                        <div>
+                            <h4 class="font-medium">Financial Intern - Nicusa Capital</h4>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">2017, 2018</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
 
         <!-- Music Section -->
-        <section id="music" class="section max-w-4xl mx-auto p-8">
-            <h2 class="text-3xl font-bold mb-8">Music</h2>
-            <p class="mb-8">Learning to play the piano has been one of the most rewarding challenges and gifts that I have experienced in my life. Aside from the discipline required to practice, I learned to interpret complex emotions and feelings that these composers infused in their work.</p>
+        <section id="music" class="section max-w-4xl mx-auto p-12">
+            <h2 class="text-3xl mb-8 section-title">Music</h2>
+            <p class="mb-12 text-gray-600 dark:text-gray-300">Learning to play the piano has been one of the most rewarding challenges and gifts that I have experienced in my life. Aside from the discipline required to practice, I learned to interpret complex emotions and feelings that these composers infused in their work.</p>
             
-            <div class="space-y-8">
+            <div class="space-y-12">
                 <div>
-                    <h3 class="text-xl font-semibold mb-4">Piano Recordings</h3>
-                    <ul class="space-y-2">
-                        <li><a href="https://www.youtube.com/watch?v=mEEgSmhmkiA" target="_blank" class="text-blue-500 hover:text-blue-600">R. Schumann - Aufschwung - Northwell Health</a></li>
-                        <li><a href="https://youtu.be/chliWNkOIIs" target="_blank" class="text-blue-500 hover:text-blue-600">C. Debussy - Claire de Lune</a></li>
-                        <li><a href="https://www.youtube.com/watch?v=mKvDlsbnnFM" target="_blank" class="text-blue-500 hover:text-blue-600">F. Chopin - Nocturne No. 2 in E-Flat Major</a></li>
-                        <li><a href="https://www.youtube.com/watch?v=8jmSxc9Xi1E&t=1s" target="_blank" class="text-blue-500 hover:text-blue-600">W. Mozart - Fantaisie D Minor</a></li>
-                        <li><a href="https://www.youtube.com/watch?v=wZmUHQCYqQg&t=42s" target="_blank" class="text-blue-500 hover:text-blue-600">W. Mozart - Fantaisie D Minor - Tuscany</a></li>
-                        <li><a href="https://www.youtube.com/watch?v=8X1BM9ELdzg" target="_blank" class="text-blue-500 hover:text-blue-600">J. Haydn - Trio in G Major - Tuscany</a></li>
-                        <li><a href="https://www.youtube.com/watch?v=D0DGwUpkVF4" target="_blank" class="text-blue-500 hover:text-blue-600">A. Dvorak - Violin Sonatina, Op 100, B. 183</a></li>
-                        <li><a href="https://www.youtube.com/watch?v=Ade9Xnlt4ws" target="_blank" class="text-blue-500 hover:text-blue-600">A. Dvorak - Violin Sonata First Movement</a></li>
-                    </ul>
+                    <h3 class="text-xl mb-6 pb-2 border-b border-gray-100 dark:border-gray-800">Piano Recordings</h3>
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <a href="https://www.youtube.com/watch?v=mEEgSmhmkiA" target="_blank" class="p-3 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200">
+                            <p class="font-medium">R. Schumann - Aufschwung</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Northwell Health</p>
+                        </a>
+                        <a href="https://youtu.be/chliWNkOIIs" target="_blank" class="p-3 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200">
+                            <p class="font-medium">C. Debussy - Claire de Lune</p>
+                        </a>
+                        <a href="https://www.youtube.com/watch?v=mKvDlsbnnFM" target="_blank" class="p-3 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200">
+                            <p class="font-medium">F. Chopin - Nocturne No. 2</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">E-Flat Major</p>
+                        </a>
+                        <a href="https://www.youtube.com/watch?v=8jmSxc9Xi1E&t=1s" target="_blank" class="p-3 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200">
+                            <p class="font-medium">W. Mozart - Fantaisie D Minor</p>
+                        </a>
+                        <a href="https://www.youtube.com/watch?v=wZmUHQCYqQg&t=42s" target="_blank" class="p-3 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200">
+                            <p class="font-medium">W. Mozart - Fantaisie D Minor</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Tuscany</p>
+                        </a>
+                        <a href="https://www.youtube.com/watch?v=8X1BM9ELdzg" target="_blank" class="p-3 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200">
+                            <p class="font-medium">J. Haydn - Trio in G Major</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Tuscany</p>
+                        </a>
+                        <a href="https://www.youtube.com/watch?v=D0DGwUpkVF4" target="_blank" class="p-3 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200">
+                            <p class="font-medium">A. Dvorak - Violin Sonatina</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Op 100, B. 183</p>
+                        </a>
+                        <a href="https://www.youtube.com/watch?v=Ade9Xnlt4ws" target="_blank" class="p-3 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200">
+                            <p class="font-medium">A. Dvorak - Violin Sonata</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">First Movement</p>
+                        </a>
+                    </div>
                 </div>
 
                 <div id="productions">
-                    <h3 class="text-xl font-semibold mb-4">Productions</h3>
-                    <div id="production-list">
-                        <!-- Music metadata will be added here -->
+                    <h3 class="text-xl mb-6 pb-2 border-b border-gray-100 dark:border-gray-800 production-section-header">Productions</h3>
+                    <div id="production-list" class="production-grid">
+                        <!-- Music metadata will be added here dynamically -->
                     </div>
                 </div>
             </div>
         </section>
 
         <!-- Books Section -->
-        <section id="books" class="section max-w-4xl mx-auto p-8">
-            <h2 class="text-3xl font-bold mb-8">Books</h2>
-            <p class="mb-8">Here's a list of books I've read recently or plan to read.</p>
+        <section id="books" class="section visible max-w-4xl mx-auto p-12 rounded-lg shadow-sm">
+            <h2 class="text-3xl mb-8 section-title">Books</h2>
             
             <div id="books-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <!-- Book cards will be dynamically populated here -->
             </div>
         </section>
     </main>
+
+    <!-- Replace the fixed navigation we added before with this cleaner one -->
+    <div class="bottom-nav md:hidden">
+        <a href="#hero" class="active">Home</a>
+        <a href="#about">About</a>
+        <a href="#resume">Resume</a>
+        <a href="#music">Music</a>
+        <a href="#books">Books</a>
+    </div>
 
     <script>
         // Device detection
@@ -438,10 +679,8 @@
 
             // Dark mode toggle
             const darkModeToggle = document.getElementById('darkModeToggle');
-            darkModeToggle.textContent = '🌙';
             darkModeToggle.addEventListener('click', () => {
                 document.body.classList.toggle('dark-mode');
-                darkModeToggle.textContent = document.body.classList.contains('dark-mode') ? '☀️' : '🌙';
             });
 
             // Navigation
@@ -511,34 +750,6 @@
         });
 
         document.addEventListener('DOMContentLoaded', function() {
-            // Music Productions
-            const s3BaseUrl = 'https://lukemusicbucket.s3.us-east-2.amazonaws.com';
-            const musicFiles = [
-                { title: 'sunrise', artist: '', fileName: 'SUNRISE.mp3' },  
-                { title: 'karlsim', artist: '', fileName: 'karlsim.mp3' },
-                { title: 'b1', artist: '', fileName: 'buy one.mp3' },
-                { title: 'rome', artist: '', fileName: 'romestreetz.mp3' },
-                { title: 'ubr', artist: '', fileName: 'ubr_drivers.mp3' },
-                { title: '127', artist: '', fileName: 'baby2.mp3' }
-            ];
-
-            const productionList = document.getElementById('production-list');
-            musicFiles.forEach(item => {
-                const fileUrl = `${s3BaseUrl}/${item.fileName}`;
-                const audioPlayerHtml = `
-                    <div class="mb-6">
-                        <h3 class="text-lg mb-2">${item.title}</h3>
-                        <audio controls class="w-full">
-                            <source src="${fileUrl}" type="audio/mpeg">
-                            Your browser does not support the audio element.
-                        </audio>
-                    </div>
-                `;
-                const div = document.createElement('div');
-                div.innerHTML = audioPlayerHtml;
-                productionList.appendChild(div);
-            });
-
             // Books List
             const books = [
                 { title: "The Fountainhead", author: "Ayn Rand", isRead: true },
@@ -558,17 +769,62 @@
             ];
 
             const booksList = document.getElementById('books-list');
-            books.forEach(book => {
-                const bookElement = document.createElement('div');
-                bookElement.className = 'book-card p-4 border rounded-lg shadow-sm hover:shadow-md transition-shadow';
-                bookElement.innerHTML = `
-                    <h3 class="font-semibold mb-2">${book.title}</h3>
-                    <p class="text-sm">by ${book.author}</p>
-                    <p class="text-sm mt-2">${book.isRead ? '✓ Read' : '◯ To Read'}</p>
-                `;
-                booksList.appendChild(bookElement);
+            if (booksList) {
+                // Clear any existing content
+                booksList.innerHTML = '';
+                
+                books.forEach(book => {
+                    const bookElement = document.createElement('div');
+                    bookElement.className = 'book-card';
+                    bookElement.innerHTML = `
+                        <h3 class="font-medium mb-2">${book.title}</h3>
+                        <p class="text-sm">${book.author}</p>
+                        <div class="mt-4 text-xs uppercase tracking-wide ${book.isRead ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400'}">
+                            ${book.isRead ? 'READ' : 'TO READ'}
+                        </div>
+                    `;
+                    booksList.appendChild(bookElement);
+                });
+            }
+        });
+
+        // Initialize and ensure books section is visible
+        document.addEventListener('DOMContentLoaded', function() {
+            // Force books section to be visible immediately
+            const booksSection = document.getElementById('books');
+            if (booksSection) {
+                booksSection.style.opacity = '1';
+                booksSection.style.transform = 'translateY(0)';
+                booksSection.style.visibility = 'visible';
+                
+                const booksList = document.getElementById('books-list');
+                if (booksList) {
+                    booksList.style.opacity = '1';
+                    booksList.style.visibility = 'visible';
+                }
+            }
+            
+            // Handle bottom navigation clicks
+            document.querySelectorAll('.bottom-nav a').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Update active state
+                    document.querySelectorAll('.bottom-nav a').forEach(a => a.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Scroll to section
+                    const targetId = this.getAttribute('href').substring(1);
+                    document.getElementById(targetId).scrollIntoView({
+                        behavior: 'smooth', 
+                        block: 'start'
+                    });
+                });
             });
         });
     </script>
+    
+    <!-- Add the custom audio player script -->
+    <script src="assets/js/audio-player.js"></script>
 </body>
 </html>
