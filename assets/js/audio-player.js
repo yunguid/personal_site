@@ -10,13 +10,13 @@
 
 document.addEventListener('DOMContentLoaded', function() {
     // Music Productions Configuration
-    const s3BaseUrl = 'https://lukemusicbucket.s3.us-east-2.amazonaws.com';
+    const s3BaseUrl = 'https://263269musicbucket.s3.us-east-2.amazonaws.com';
     const musicFiles = [
-        { title: 'Sunrise', artist: '', fileName: 'SUNRISE.mp3', duration: '1:21' },  
-        { title: 'Karlsim', artist: '', fileName: 'karlsim.mp3', duration: '1:03' },
-        { title: 'Buy One', artist: '', fileName: 'buy one.mp3', duration: '1:20' },
-        { title: 'Romestreetz', artist: '', fileName: 'romestreetz.mp3', duration: '1:06' },
-        { title: 'UBR Drivers', artist: '', fileName: 'ubr_drivers.mp3', duration: '0:58' },
+        { title: '101', artist: '', fileName: 'SUNRISE.mp3', duration: '1:21' },  
+        { title: '103', artist: '', fileName: 'karlsim.mp3', duration: '1:03' },
+        { title: '107', artist: '', fileName: 'buy one.mp3', duration: '1:20' },
+        { title: '109', artist: '', fileName: 'romestreetz.mp3', duration: '1:06' },
+        { title: '113', artist: '', fileName: 'ubr_drivers.mp3', duration: '0:58' },
         { title: '127', artist: '', fileName: 'baby2.mp3', duration: '1:15' }
     ];
 

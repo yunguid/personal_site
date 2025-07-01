@@ -40,7 +40,7 @@ export class JuliaSetGenerator {
         this.maxIterations = 50;
         this.time = 0;
         this.chars = ' .:-=+*#%@';
-        this.centerText = "LUKE YOUNG";
+        this.centerText = "241";
         this.centerTextPos = {
             x: Math.floor((this.width - this.centerText.length) / 2),
             y: Math.floor(this.height / 2)
