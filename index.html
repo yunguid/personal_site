@@ -415,7 +415,7 @@
                 </div>
                 <div class="md:col-span-2 space-y-6">
                     <p class="leading-relaxed">
-                        NYC-based Computer Science student at Georgetown University, specializing in AI and creative technology. Simultaneously built a GPU-accelerated audio transcription platform at <a href="https://www.catalystops.com/" target="_blank" class="link">Catalyst</a>, leveraging Whisper models and real-time file monitoring for scalable speech-to-text services, and developed Allumare, an AI-powered video generation platform transforming audio uploads into dynamic visuals using Google's Gemini 2.0 API and Replicate's latent blending models.
+                        NYC-based Computer Science student at Georgetown University, specializing in AI and creative technology. Simultaneously built a GPU-accelerated audio transcription platform at <a href="https://www.catalystops.com/" target="_blank" class="link">Catalyst</a>, leveraging Whisper models and real-time file monitoring for scalable speech-to-text services, and developed <a href="https://allumare.io" target="_blank" class="link">Allumare</a>, an AI-powered video generation platform transforming audio uploads into dynamic visuals using Gemini models for prompt generation, GCP's Transcoder API for 4K video processing, and Replicate's latent blending models.
                     </p>
                     <p class="leading-relaxed">
                         Previously created AI-powered financial analytics tools at <a href="https://quikirr.com/" target="_blank" class="link">Quikirr</a> and contributed to developing <a href="https://secretary.my" target="_blank" class="link">Ava</a>, an AI scheduling assistant with 10,000+ users. Past projects also include audio visualization and video tools for Hollywood producers and software development experience at <a href="https://www.jackpinetech.com/" target="_blank" class="link">Jackpine Technologies</a>. I enjoy contract work and AI consulting projects, leveraging my experience with creative technology and AI tools to help companies build innovative, high-impact products.
@@ -474,7 +474,7 @@
 
                 <!-- m_vis -->
                 <div class="group">
-                    <h3 class="text-xl mb-1 group-hover:text-indigo-600 transition-colors duration-300">Co-founder - m_vis</h3>
+                    <h3 class="text-xl mb-1 group-hover:text-indigo-600 transition-colors duration-300">Co-founder - <a href="https://allumare.io" target="_blank" class="link">m_vis</a></h3>
                     <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">May 2024 - September 2024</p>
                     <p>Created an AI-powered audio visualization tool that reduced Hollywood production costs by 92.5% through automated video generation.</p>
                 </div>
@@ -507,7 +507,7 @@
         <!-- Music Section -->
         <section id="music" class="section max-w-4xl mx-auto p-12">
             <h2 class="text-3xl mb-8 section-title">Music</h2>
-            <p class="mb-12 text-gray-600 dark:text-gray-300">Learning to play the piano has been one of the most rewarding challenges and gifts that I have experienced in my life. Aside from the discipline required to practice, I learned to interpret complex emotions and feelings that these composers infused in their work.</p>
+            <p class="mb-12">Learning to play the piano has been one of the most rewarding challenges and gifts that I have experienced in my life. Aside from the discipline required to practice, I learned to interpret complex emotions and feelings that these composers infused in their work.</p>
             
             <div class="space-y-12">
                 <div>
@@ -732,25 +732,6 @@
                 asciiContainer.textContent = generator.generateFrame(0, 0);
                 requestAnimationFrame(animate);
             }
-            
-            // Add secret link to the name
-            asciiContainer.addEventListener('click', function(e) {
-                // Check if click is near the center text
-                const rect = asciiContainer.getBoundingClientRect();
-                const clickX = e.clientX - rect.left;
-                const clickY = e.clientY - rect.top;
-                
-                // Calculate the approximate area where the name is displayed
-                const centerX = rect.width / 2;
-                const centerY = rect.height / 2;
-                const textWidth = generator.centerText.length * 10; // Approximate width
-                
-                // Check if click is in the name area
-                if (Math.abs(clickY - centerY) < 20 && 
-                    Math.abs(clickX - centerX) < textWidth / 2) {
-                    window.location.href = 'private.html';
-                }
-            });
 
             animate();
         });
@@ -760,6 +741,7 @@
             const books = [
                 { title: "The Fountainhead", author: "Ayn Rand", isRead: true },
                 { title: "Atlas Shrugged", author: "Ayn Rand", isRead: true },
+                { title: "For the New Intellectual", author: "Ayn Rand", isRead: false },
                 { title: "The Lessons of History", author: "Will and Ariel Durant", isRead: true },
                 { title: "Intelligent Machines", author: "Ray Kurzweil", isRead: false },
                 { title: "Man and His Symbols", author: "Carl Jung", isRead: true },
@@ -772,6 +754,7 @@
                 { title: "Crime and Punishment", author: "Fyodor Dostoevsky", isRead: true },
                 { title: "Cherry Orchard", author: "Anton Chekhov", isRead: true },
                 { title: "Uncle Vanya", author: "Anton Chekhov", isRead: true },
+                { title: "Journey to the Center of the Earth", author: "Jules Verne", isRead: true },
             ];
 
             const booksList = document.getElementById('books-list');
