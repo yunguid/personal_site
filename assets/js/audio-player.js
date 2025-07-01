@@ -42,9 +42,9 @@ document.addEventListener('DOMContentLoaded', function() {
             playerContainer.className = 'custom-audio-player';
             playerContainer.id = `player-${index}`;
             
-            // Generate random bar heights for waveform visualization
-            const waveformBars = Array.from({ length: 20 }, () => 
-                Math.floor(Math.random() * 70) + 10
+            // Generate random bar heights for waveform visualization - Zumthor style
+            const waveformBars = Array.from({ length: 50 }, () => 
+                Math.floor(Math.random() * 60) + 5
             );
             
             const waveformHTML = waveformBars.map(height => 
@@ -179,10 +179,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const height = Math.floor(Math.random() * 70) + 10;
             bar.style.animation = `sound 0.5s ease-in-out infinite alternate ${delay}s`;
             
-            // Use solid black in light mode, solid white in dark mode
+            // Minimal opacity changes for Zumthor aesthetic
             const isDarkMode = document.body.classList.contains('dark-mode');
-            bar.style.background = isDarkMode ? 
-                'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.6)';
+            bar.style.opacity = isDarkMode ? '0.7' : '0.8';
         });
     }
     
@@ -195,10 +194,9 @@ document.addEventListener('DOMContentLoaded', function() {
         bars.forEach(bar => {
             bar.style.animation = 'none';
             
-            // Use transparent black in light mode, transparent white in dark mode
+            // Return to minimal opacity for Zumthor aesthetic
             const isDarkMode = document.body.classList.contains('dark-mode');
-            bar.style.background = isDarkMode ? 
-                'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)';
+            bar.style.opacity = isDarkMode ? '0.1' : '0.15';
         });
     }
     
@@ -234,183 +232,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const isActive = bar.style.animation && bar.style.animation !== 'none';
             
             if (isActive) {
-                bar.style.background = isDarkMode ? 
-                    'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.6)';
+                bar.style.opacity = isDarkMode ? '0.7' : '0.8';
             } else {
-                bar.style.background = isDarkMode ? 
-                    'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)';
+                bar.style.opacity = isDarkMode ? '0.1' : '0.15';
             }
         });
     }
 });
 
-// Define the sound animation for waveform
-document.head.insertAdjacentHTML('beforeend', `
-    <style>
-        @keyframes sound {
-            0% {
-                height: 10%;
-            }
-            100% {
-                height: 80%;
-            }
-        }
-
-        .player-button {
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            color: #1a202c;
-            width: 2rem;
-            height: 2rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-            transition: all 0.2s ease;
-        }
-
-        .dark-mode .player-button {
-            color: #f3f4f6;
-        }
-
-        .player-button:hover {
-            background: rgba(0,0,0,0.05);
-        }
-
-        .dark-mode .player-button:hover {
-            background: rgba(255,255,255,0.1);
-        }
-
-        .progress-container {
-            flex: 1;
-            height: 5px;
-            background: rgba(0,0,0,0.1);
-            border-radius: 5px;
-            overflow: hidden;
-            cursor: pointer;
-            position: relative;
-        }
-
-        .dark-mode .progress-container {
-            background: rgba(255,255,255,0.1);
-        }
-
-        .progress-bar {
-            height: 100%;
-            width: 0%;
-            background: #4f46e5;
-            border-radius: 5px;
-            transition: width 0.1s linear;
-        }
-
-        .dark-mode .progress-bar {
-            background: #818cf8;
-        }
-
-        .volume-container {
-            display: flex;
-            align-items: center;
-            width: 100px;
-        }
-
-        .volume-slider {
-            width: 60px;
-            height: 4px;
-            appearance: none;
-            border-radius: 2px;
-            background: rgba(0,0,0,0.1);
-            outline: none;
-            transition: all 0.2s ease;
-        }
-
-        .dark-mode .volume-slider {
-            background: rgba(255,255,255,0.1);
-        }
-
-        .volume-slider::-webkit-slider-thumb {
-            appearance: none;
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: #4f46e5;
-            cursor: pointer;
-        }
-
-        .dark-mode .volume-slider::-webkit-slider-thumb {
-            background: #818cf8;
-        }
-
-        .volume-slider::-moz-range-thumb {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: #4f46e5;
-            cursor: pointer;
-            border: none;
-        }
-
-        .dark-mode .volume-slider::-moz-range-thumb {
-            background: #818cf8;
-        }
-
-        .audio-controls {
-            display: flex;
-            align-items: center;
-            padding: 0.75rem 1rem;
-            gap: 0.75rem;
-        }
-
-        .waveform-container {
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .track-title {
-            font-weight: 600;
-            font-size: 0.95rem;
-            margin-right: auto;
-            letter-spacing: -0.01em;
-        }
-
-        .track-info .track-duration {
-            font-size: 0.75rem;
-            opacity: 0.75;
-            font-variant-numeric: tabular-nums;
-        }
-
-        .production-section-header {
-            position: relative;
-            margin-bottom: 2rem;
-            padding-bottom: 1rem;
-        }
-
-        .production-section-header::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 3rem;
-            height: 2px;
-            background: #4f46e5;
-        }
-
-        .dark-mode .production-section-header::after {
-            background: #818cf8;
-        }
-
-        .production-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 1.5rem;
-        }
-
-        @media (max-width: 768px) {
-            .production-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
-`); 
+// Styles are now defined in index.html for better organization 

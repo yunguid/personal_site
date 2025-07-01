@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Luke R. Young</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;500;600&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
     <style>
         @keyframes float {
             0%, 100% { transform: translateY(0px); }
@@ -150,10 +150,7 @@
                 height: auto;
             }
 
-            /* Audio player adjustments */
-            audio {
-                width: 100%;
-            }
+            
 
             /* Book cards adjustments */
             .book-card {
@@ -207,15 +204,7 @@
             letter-spacing: -0.025em;
         }
 
-        audio {
-            border-radius: 4px;
-            margin-top: 4px;
-            height: 32px;
-        }
 
-        .dark-mode audio {
-            filter: invert(1);
-        }
 
         .link {
             color: #4f46e5;
@@ -281,47 +270,7 @@
             border-bottom-color: #374151;
         }
 
-        /* Audio player container styles - the rest is handled in audio-player.js */
-        .custom-audio-player {
-            width: 100%;
-            background: #f8f9fa;
-            border-radius: 0.5rem;
-            padding: 0.5rem;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-            transition: all 0.3s ease;
-            overflow: hidden;
-        }
 
-        .dark-mode .custom-audio-player {
-            background: #111827;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-        }
-
-        .audio-container {
-            position: relative;
-            border-radius: 0.25rem;
-            overflow: hidden;
-            background: #f0f2f5;
-            transition: all 0.3s ease;
-        }
-
-        .dark-mode .audio-container {
-            background: #1e293b;
-        }
-
-        /* Basic waveform bar style - animations handled in JS */
-        .waveform-bar {
-            width: 3px;
-            height: 100%;
-            margin: 0 2px;
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 3px;
-            animation: sound 0s ease-in-out infinite alternate;
-        }
-
-        .dark-mode .waveform-bar {
-            background: rgba(255, 255, 255, 0.2);
-        }
 
         /* Force the books section to be visible */
         #books {
@@ -388,6 +337,334 @@
                 display: none;
             }
         }
+
+        /* Audio player styles */
+        audio {
+            border-radius: 4px;
+            margin-top: 4px;
+            height: 32px;
+        }
+
+        .dark-mode audio {
+            filter: invert(1);
+        }
+
+        /* Zumthor-inspired Production Section Styles */
+        .custom-audio-player {
+            background: #fafafa;
+            border: none;
+            border-radius: 0;
+            overflow: hidden;
+            transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+            box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.04);
+            position: relative;
+            margin-bottom: 2px;
+        }
+
+        .custom-audio-player::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: 2px;
+            background: #000;
+            transform: scaleY(0);
+            transform-origin: bottom;
+            transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+            opacity: 0;
+        }
+
+        .custom-audio-player:hover::before {
+            transform: scaleY(1);
+            opacity: 0.1;
+        }
+
+        .dark-mode .custom-audio-player {
+            background: #0a0a0a;
+            box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.04);
+        }
+
+        .dark-mode .custom-audio-player::before {
+            background: #fff;
+        }
+
+        .audio-container {
+            padding: 0;
+            background: transparent;
+        }
+
+        .track-info {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            padding: 1.5rem 1.5rem 1rem;
+            background: transparent;
+        }
+
+        .track-title {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.875rem;
+            font-weight: 400;
+            color: #000;
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+        }
+
+        .dark-mode .track-title {
+            color: #fff;
+            opacity: 0.9;
+        }
+
+        .track-duration {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.75rem;
+            color: #000;
+            opacity: 0.4;
+            font-weight: 300;
+            letter-spacing: 0.02em;
+        }
+
+        .dark-mode .track-duration {
+            color: #fff;
+            opacity: 0.3;
+        }
+
+        .waveform-container {
+            height: 40px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 1px;
+            padding: 0 1.5rem;
+            background: transparent;
+        }
+
+        .waveform-bar {
+            width: 1px;
+            min-height: 2px;
+            background: #000;
+            opacity: 0.15;
+            border-radius: 0;
+            transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        .dark-mode .waveform-bar {
+            background: #fff;
+            opacity: 0.1;
+        }
+
+        .audio-controls {
+            display: flex;
+            align-items: center;
+            padding: 1rem 1.5rem 1.5rem;
+            gap: 1rem;
+            background: transparent;
+            border-top: none;
+        }
+
+        .dark-mode .audio-controls {
+            background: transparent;
+        }
+
+        .player-button {
+            background: transparent;
+            border: 1px solid #000;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0;
+            transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+            opacity: 0.3;
+            cursor: pointer;
+        }
+
+        .dark-mode .player-button {
+            border-color: #fff;
+            opacity: 0.2;
+        }
+
+        .player-button:hover {
+            opacity: 1;
+            background: #000;
+            color: #fff;
+        }
+
+        .dark-mode .player-button:hover {
+            background: #fff;
+            color: #000;
+            opacity: 0.9;
+        }
+
+        .progress-container {
+            flex: 1;
+            height: 1px;
+            background: #000;
+            opacity: 0.1;
+            overflow: hidden;
+            cursor: pointer;
+            position: relative;
+            transition: opacity 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        .progress-container:hover {
+            opacity: 0.2;
+        }
+
+        .dark-mode .progress-container {
+            background: #fff;
+            opacity: 0.08;
+        }
+
+        .dark-mode .progress-container:hover {
+            opacity: 0.15;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: #000;
+            transition: width 0.1s linear;
+            position: relative;
+        }
+
+        .dark-mode .progress-bar {
+            background: #fff;
+        }
+
+        .volume-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            opacity: 0.3;
+            transition: opacity 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        .volume-container:hover {
+            opacity: 1;
+        }
+
+        .dark-mode .volume-container {
+            opacity: 0.2;
+        }
+
+        .dark-mode .volume-container:hover {
+            opacity: 0.9;
+        }
+
+        .volume-slider {
+            width: 60px;
+            height: 1px;
+            appearance: none;
+            background: #000;
+            outline: none;
+            transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+            cursor: pointer;
+        }
+
+        .dark-mode .volume-slider {
+            background: #fff;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            appearance: none;
+            width: 8px;
+            height: 8px;
+            background: #000;
+            cursor: pointer;
+            border: none;
+            transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        .volume-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.5);
+        }
+
+        .dark-mode .volume-slider::-webkit-slider-thumb {
+            background: #fff;
+        }
+
+        .volume-slider::-moz-range-thumb {
+            width: 8px;
+            height: 8px;
+            background: #000;
+            cursor: pointer;
+            border: none;
+            transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        .volume-slider::-moz-range-thumb:hover {
+            transform: scale(1.5);
+        }
+
+        .dark-mode .volume-slider::-moz-range-thumb {
+            background: #fff;
+        }
+
+        .production-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 2px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        @media (max-width: 768px) {
+            .production-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .waveform-container {
+                height: 40px;
+            }
+
+            .track-info {
+                padding: 1.5rem 1.5rem 1rem;
+            }
+
+            .audio-controls {
+                padding: 1rem 1.5rem 1.5rem;
+            }
+        }
+
+        /* Zumthor-inspired waveform animation */
+        @keyframes sound {
+            0% {
+                height: 10%;
+                opacity: 0.3;
+            }
+            50% {
+                height: 90%;
+                opacity: 0.6;
+            }
+            100% {
+                height: 10%;
+                opacity: 0.3;
+            }
+        }
+
+        .waveform-bar[style*="animation"] {
+            background: #000 !important;
+            opacity: 0.8 !important;
+        }
+
+        .dark-mode .waveform-bar[style*="animation"] {
+            background: #fff !important;
+            opacity: 0.7 !important;
+        }
+
+        /* Production section header refinement */
+        #productions h3 {
+            font-family: 'Inter', sans-serif;
+            font-weight: 300;
+            font-size: 1.125rem;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            margin-bottom: 3rem;
+        }
+
     </style>
 </head>
 <body class="bg-white text-gray-900 transition-colors duration-300">
@@ -430,7 +707,7 @@
                     <div class="grid grid-cols-2 gap-8 mt-6 pt-6 border-t border-gray-100 dark:border-gray-800">
                         <div>
                             <h3 class="text-sm uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-3">Contact</h3>
-                            <p class="mb-1">lry2@georgetown.edu</p>
+                            <p class="mb-1">luke [at] yng [dot] sh</p>
                             <p>New York, USA</p>
                         </div>
                         <div>
@@ -622,7 +899,6 @@
                     x: Math.floor((this.width - this.centerText.length) / 2),
                     y: Math.floor(this.height / 2)
                 };
-                this.hasSecretLink = true;
             }
 
             mapToComplex(x, y) {
@@ -811,6 +1087,8 @@
                 });
             });
         });
+
+
     </script>
     
     <!-- Add the custom audio player script -->
