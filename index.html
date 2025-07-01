@@ -665,6 +665,30 @@
             margin-bottom: 3rem;
         }
 
+        /* ------------------------------------------------------------------ */
+        /*  Smooth color-scheme transitions (desktop optimization)            */
+        /* ------------------------------------------------------------------ */
+        /*  Applying GPU-friendly transitions to the most frequently re-painted
+            elements greatly improves perceived fluidity when toggling the   
+            `.dark-mode` class on larger screens without affecting layout.    */
+
+        body, #navigation, .bottom-nav, .book-card, .nav-icon, .section-title,
+        .custom-audio-player, .player-button, .progress-container, .progress-bar,
+        .volume-container, .waveform-bar {
+            transition: background-color 240ms cubic-bezier(0.4, 0, 0.2, 1),
+                        color 240ms cubic-bezier(0.4, 0, 0.2, 1),
+                        border-color 240ms cubic-bezier(0.4, 0, 0.2, 1);
+            will-change: background-color, color, border-color;
+        }
+
+        /* Prevent transition on initial page load to avoid flash */
+        html:not(.js-ready) body,
+        html:not(.js-ready) #navigation,
+        html:not(.js-ready) .bottom-nav,
+        html:not(.js-ready) .book-card {
+            transition: none !important;
+        }
+
     </style>
 </head>
 <body class="bg-white text-gray-900 transition-colors duration-300">
@@ -959,11 +983,29 @@
             // Initialize with mobile-optimized dimensions
             const generator = new JuliaSetGenerator(isMobile ? 40 : 80, isMobile ? 20 : 40);
 
-            // Dark mode toggle
+            // --------------------------------------------------------------
+            // Dark mode toggle (optimized)
+            // --------------------------------------------------------------
             const darkModeToggle = document.getElementById('darkModeToggle');
+
+            // Restore previously selected mode to prevent flash of wrong theme
+            if (localStorage.getItem('mode') === 'dark') {
+                document.body.classList.add('dark-mode');
+            }
+
             darkModeToggle.addEventListener('click', () => {
-                document.body.classList.toggle('dark-mode');
+                /*
+                 * Use requestAnimationFrame so the class toggle occurs at the
+                 * start of a new frame, giving the browser time to batch style
+                 * recalculations and produce a smoother transition.
+                 */
+                window.requestAnimationFrame(() => {
+                    const isDark = document.body.classList.toggle('dark-mode');
+                    localStorage.setItem('mode', isDark ? 'dark' : 'light');
+                });
             });
+            // Mark that JS has executed so initial transitions can start
+            document.documentElement.classList.add('js-ready');
 
             // Navigation
             const navIcons = document.querySelectorAll('.nav-icon[data-section]');

@@ -1,0 +1,381 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+/* CSS Custom Properties for smooth transitions */
+:root {
+    --bg-primary: #ffffff;
+    --bg-secondary: #fafafa;
+    --bg-card: #ffffff;
+    --text-primary: #111827;
+    --text-secondary: #4b5563;
+    --text-muted: #9ca3af;
+    --border-color: #e5e7eb;
+    --link-color: #4f46e5;
+    --link-hover: #6366f1;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.dark-mode {
+    --bg-primary: #111827;
+    --bg-secondary: #0a0a0a;
+    --bg-card: #1f2937;
+    --text-primary: #f3f4f6;
+    --text-secondary: #d1d5db;
+    --text-muted: #9ca3af;
+    --border-color: #374151;
+    --link-color: #818cf8;
+    --link-hover: #a5b4fc;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.2);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+/* Universal smooth transitions */
+* {
+    transition: background-color 0.3s ease, 
+                color 0.3s ease, 
+                border-color 0.3s ease, 
+                box-shadow 0.3s ease,
+                opacity 0.3s ease;
+}
+
+/* Prevent transition on page load */
+.preload * {
+    transition: none !important;
+}
+
+/* Animation Keyframes */
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+}
+
+@keyframes sound {
+    0% {
+        height: 10%;
+        opacity: 0.3;
+    }
+    50% {
+        height: 90%;
+        opacity: 0.6;
+    }
+    100% {
+        height: 10%;
+        opacity: 0.3;
+    }
+}
+
+/* General font styles */
+body {
+    font-family: 'Inter', sans-serif;
+    font-weight: 300;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+p, div {
+    font-family: 'Inter', sans-serif;
+    font-weight: 300;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Playfair Display', serif;
+    font-weight: 400;
+}
+
+/* ASCII Art */
+.ascii-art {
+    font-family: 'IBM Plex Mono', monospace;
+    white-space: pre;
+    line-height: 1;
+    font-size: 14px;
+    color: currentColor;
+    cursor: pointer;
+    user-select: none;
+    padding: 2rem;
+}
+
+/* Section Animations */
+.section {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.section.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Navigation */
+.nav-icon {
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 12px 16px;
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    font-size: 14px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.nav-icon:hover {
+    color: var(--link-color);
+}
+
+.nav-icon.active {
+    color: var(--link-color);
+    position: relative;
+}
+
+.nav-icon.active::after {
+    content: '';
+    position: absolute;
+    bottom: 6px;
+    left: 16px;
+    right: 16px;
+    height: 1px;
+    background: var(--link-color);
+    transition: background-color 0.3s ease;
+}
+
+#navigation {
+    position: fixed;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255, 255, 255, 0.95);
+    padding: 1rem;
+    border-radius: 0 0.5rem 0.5rem 0;
+    box-shadow: var(--shadow-sm);
+    z-index: 1000;
+    backdrop-filter: blur(8px);
+}
+
+.dark-mode #navigation {
+    background: rgba(17, 24, 39, 0.95);
+}
+
+/* Dark mode toggle */
+#darkModeToggle {
+    width: 40px;
+    height: 20px;
+    background: #e5e7eb;
+    position: relative;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 0 2px;
+}
+
+#darkModeToggle::after {
+    content: '';
+    width: 16px;
+    height: 16px;
+    background: #fff;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+body.dark-mode #darkModeToggle {
+    background: var(--link-color);
+    justify-content: flex-end;
+}
+
+body.dark-mode #darkModeToggle::after {
+    background: var(--text-primary);
+}
+
+/* Section Title */
+.section-title {
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 2rem;
+}
+
+/* Links */
+.link {
+    color: var(--link-color);
+    transition: color 0.2s ease;
+    border-bottom: 1px solid transparent;
+    padding-bottom: 1px;
+}
+
+.link:hover {
+    color: var(--link-hover);
+    border-bottom-color: var(--link-hover);
+}
+
+/* Book Cards */
+.book-card {
+    border: none;
+    border-radius: 0.25rem;
+    padding: 1.5rem;
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    background-color: var(--bg-card);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 1rem;
+}
+
+.book-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-md);
+}
+
+.dark-mode .book-card {
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+.book-card h3 {
+    color: var(--text-primary);
+}
+
+.book-card p {
+    color: var(--text-secondary);
+}
+
+/* Force the books section to be visible */
+#books {
+    opacity: 1 !important;
+    transform: translateY(0) !important;
+    visibility: visible !important;
+    display: block !important;
+}
+
+/* Ensure book cards are visible */
+#books .book-card {
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+
+/* Bottom Navigation for Mobile */
+.bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--bg-primary);
+    border-top: 1px solid var(--border-color);
+    padding: 0.75rem;
+    z-index: 50;
+}
+
+.bottom-nav a {
+    flex: 1;
+    text-align: center;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-secondary);
+    transition: color 0.2s ease;
+}
+
+.bottom-nav a.active {
+    color: var(--link-color);
+}
+
+/* Audio player styles */
+audio {
+    border-radius: 4px;
+    margin-top: 4px;
+    height: 32px;
+}
+
+.dark-mode audio {
+    filter: invert(1);
+}
+
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+    #navigation {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        top: auto;
+        transform: none;
+        display: flex;
+        flex-direction: row;
+        justify-content: space-around;
+        align-items: center;
+        border-radius: 0.5rem 0.5rem 0 0;
+        padding: 0.5rem;
+    }
+
+    .nav-icon {
+        font-size: 12px;
+        padding: 12px 8px;
+        text-align: center;
+    }
+
+    .nav-icon.active::after {
+        left: 8px;
+        right: 8px;
+    }
+
+    main {
+        padding-left: 0 !important;
+        padding-bottom: 64px;
+    }
+
+    .ascii-art {
+        font-size: 8px;
+        padding: 1rem;
+    }
+
+    .section {
+        padding: 2rem 1.5rem !important;
+    }
+
+    /* Grid adjustments for mobile */
+    .grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Image adjustments for mobile */
+    img {
+        max-width: 100%;
+        height: auto;
+    }
+
+    /* Book cards adjustments */
+    .book-card {
+        margin: 0.5rem 0;
+    }
+
+    .bottom-nav {
+        display: flex;
+    }
+}
+
+@media (min-width: 768px) {
+    .ascii-art {
+        font-size: 14px;
+    }
+
+    .bottom-nav {
+        display: none;
+    }
+}
+
+/* Update text styles for content sections */
+.section p {
+    line-height: 1.8;
+    font-size: 15px;
+}
+
+.section h2 {
+    letter-spacing: -0.025em;
+}
+
+/* Text color classes using CSS variables */
+.text-gray-500 { color: var(--text-secondary); }
+.dark\:text-gray-400:is(.dark-mode *) { color: var(--text-secondary); }
+.text-gray-100 { color: var(--border-color); }
+.dark\:border-gray-800:is(.dark-mode *) { border-color: var(--border-color); }
+.hover\:bg-gray-50:hover { background-color: rgba(0,0,0,0.02); }
+.dark\:hover\:bg-gray-800:hover:is(.dark-mode *) { background-color: rgba(255,255,255,0.02); } 
