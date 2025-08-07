@@ -4,8 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Luke R. Young</title>
+    <meta name="description" content="Luke R. Young — NYC-based CS student building AI and creative tech products. Work includes GPU-accelerated transcription, AI video generation, and music production.">
+    <link rel="canonical" href="https://yunguid.com/">
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#111827" media="(prefers-color-scheme: dark)">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Luke R. Young">
+    <meta property="og:description" content="NYC-based CS student building AI and creative tech products.">
+    <meta property="og:url" content="https://yunguid.com/">
+    <meta property="og:image" content="https://yunguid.com/assets/img/headshot2.jpeg">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Luke R. Young">
+    <meta name="twitter:description" content="NYC-based CS student building AI and creative tech products.">
+    <meta name="twitter:image" content="https://yunguid.com/assets/img/headshot2.jpeg">
     <style>
         @keyframes float {
             0%, 100% { transform: translateY(0px); }
@@ -35,9 +51,9 @@
         }
 
         .section {
-            opacity: 0;
-            transform: translateY(20px);
-            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            opacity: 0.01;
+            transform: translateY(14px);
+            transition: opacity 300ms ease, transform 300ms ease;
         }
 
         .section.visible {
@@ -111,6 +127,14 @@
                 left: 8px;
                 right: 8px;
             }
+
+            /* Prevent label pile-up when zoomed: wrap items and allow scroll */
+            #navigation {
+                overflow-x: auto;
+                white-space: nowrap;
+                gap: 6px;
+            }
+            .nav-icon { display: inline-block; }
 
             main {
                 padding-left: 0 !important;
@@ -297,6 +321,10 @@
             border-top: 1px solid #e5e7eb;
             padding: calc(0.75rem + env(safe-area-inset-bottom));
             z-index: 50;
+            overflow-x: auto;
+            white-space: nowrap;
+            gap: 0.75rem;
+            -webkit-overflow-scrolling: touch;
         }
 
         .dark-mode .bottom-nav {
@@ -305,14 +333,17 @@
         }
 
         .bottom-nav a {
-            flex: 1;
+            display: inline-block;
+            flex: 0 0 auto;
             text-align: center;
-            font-size: 0.75rem;
-            font-weight: 500;
+            font-size: 0.8rem;
+            font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.05em;
             color: #4b5563;
             transition: color 0.2s ease;
+            padding: 0.25rem 0.5rem;
+            min-width: max-content;
         }
 
         .dark-mode .bottom-nav a {
@@ -627,7 +658,19 @@
             transition: none;
         }
 
-    </style>
+        </style>
+        <style>
+        /* Focus-visible for accessibility */
+        :focus-visible { outline: 2px solid #4f46e5; outline-offset: 2px; }
+        </style>
+    <script>
+      // Register service worker
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(() => {});
+        });
+      }
+    </script>
 </head>
 <body class="bg-white text-gray-900">
     <nav id="navigation" class="flex md:flex-col space-y-0 md:space-y-4">
@@ -649,19 +692,19 @@
             <h2 class="text-3xl mb-8 section-title">About</h2>
             <div class="grid md:grid-cols-3 gap-12">
                 <div class="relative overflow-hidden rounded-lg">
-                    <img src="assets/img/headshot2.jpeg" alt="Luke R. Young" 
+                            <img srcset="assets/img/headshot2.jpeg 1x, assets/img/headshot2.jpeg 2x" sizes="(max-width: 768px) 60vw, 33vw" src="assets/img/headshot2.jpeg" alt="Luke R. Young" loading="lazy" width="800" height="1000"
                          class="about-headshot w-full h-auto shadow-sm transition-transform duration-500 hover:scale-105">
                 </div>
                 <div class="md:col-span-2 space-y-6">
                     <p class="leading-relaxed">
-                        NYC-based Computer Science student at Georgetown University, specializing in AI and creative technology. Simultaneously built a GPU-accelerated audio transcription platform at <a href="https://www.catalystops.com/" target="_blank" class="link">Catalyst</a>, leveraging Whisper models and real-time file monitoring for scalable speech-to-text services, and developed <a href="https://allumare.io" target="_blank" class="link">Allumare</a>, an AI-powered video generation platform transforming audio uploads into dynamic visuals using Gemini models for prompt generation, GCP's Transcoder API for 4K video processing, and Replicate's latent blending models.
+                        NYC-based Computer Science student at Georgetown University, specializing in AI and creative technology. Simultaneously built a GPU-accelerated audio transcription platform at <a href="https://www.catalystops.com/" target="_blank" rel="noopener noreferrer" class="link">Catalyst</a>, leveraging Whisper models and real-time file monitoring for scalable speech-to-text services, and developed <a href="https://allumare.io" target="_blank" rel="noopener noreferrer" class="link">Allumare</a>, an AI-powered video generation platform transforming audio uploads into dynamic visuals using Gemini models for prompt generation, GCP's Transcoder API for 4K video processing, and Replicate's latent blending models.
                     </p>
                     <p class="leading-relaxed">
-                        Previously created AI-powered financial analytics tools at <a href="https://quikirr.com/" target="_blank" class="link">Quikirr</a> and contributed to developing <a href="https://secretary.my" target="_blank" class="link">Ava</a>, an AI scheduling assistant with 10,000+ users. Past projects also include audio visualization and video tools for Hollywood producers and software development experience at <a href="https://www.jackpinetech.com/" target="_blank" class="link">Jackpine Technologies</a>. I enjoy contract work and AI consulting projects, leveraging my experience with creative technology and AI tools to help companies build innovative, high-impact products.
+                        Previously created AI-powered financial analytics tools at <a href="https://quikirr.com/" target="_blank" rel="noopener noreferrer" class="link">Quikirr</a> and contributed to developing <a href="https://secretary.my" target="_blank" rel="noopener noreferrer" class="link">Ava</a>, an AI scheduling assistant with 10,000+ users. Past projects also include audio visualization and video tools for Hollywood producers and software development experience at <a href="https://www.jackpinetech.com/" target="_blank" rel="noopener noreferrer" class="link">Jackpine Technologies</a>. I enjoy contract work and AI consulting projects, leveraging my experience with creative technology and AI tools to help companies build innovative, high-impact products.
                     </p>
                     <p class="leading-relaxed">
                         Outside of work, I enjoy weightlifting, following the philosophy of 
-                        <a href="https://mountaindogdiet.com/john/john-meadows/#" target="_blank" class="link">John Meadows</a>. 
+                        <a href="https://mountaindogdiet.com/john/john-meadows/#" target="_blank" rel="noopener noreferrer" class="link">John Meadows</a>. 
                         I'm also interested in video games such as CSGO, as well as comedy and music. This past summer, I spent time in the 
                         Bob Marshall Wilderness in Montana fly fishing and horseback riding - you can see some photos 
                         <a href="montana_gallery.html" class="link">here</a>.
@@ -685,20 +728,20 @@
 
         <!-- Resume Section -->
         <section id="resume" class="section max-w-4xl mx-auto p-12">
-            <h2 class="text-3xl mb-8 section-title">Resume <span class="text-sm font-normal ml-2">(<a href="/assets/luke-young-resume-georgetown.pdf" class="link" target="_blank">full pdf</a>)</span></h2>
+            <h2 class="text-3xl mb-8 section-title">Resume <span class="text-sm font-normal ml-2">(<a href="/assets/luke-young-resume-georgetown.pdf" class="link" target="_blank" rel="noopener noreferrer">full pdf</a>)</span></h2>
             <div class="space-y-12">
 
                 
                 <!--Coa -->
                 <div class="group">
-                    <h3 class="text-xl mb-1 group-hover:text-indigo-600 transition-colors duration-300">AI Software Engineer - <a href="https://www.catalystops.com/" target="_blank" class="link">Catalyst Operations & Analytics</a></h3>
+                    <h3 class="text-xl mb-1 group-hover:text-indigo-600 transition-colors duration-300">AI Software Engineer - <a href="https://www.catalystops.com/" target="_blank" rel="noopener noreferrer" class="link">Catalyst Operations & Analytics</a></h3>
                     <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">Jan 2025 - Present</p>
                     <p>Developing large-scale AI products addressing critical needs for government and defense-related clients. Projects include GPU-accelerated audio transcription, real-time search platforms with Whisper and Elasticsearch, and advanced media processing tools leveraging StyleGAN, Stable Diffusion, and RealESRGAN.</p>
                 </div>
 
                 <!-- Quikirr -->
                 <div class="group">
-                    <h3 class="text-xl mb-1 group-hover:text-indigo-600 transition-colors duration-300">Software Engineer Intern - <a href="https://quikirr.com/" target="_blank" class="link">Quikirr</a></h3>
+                    <h3 class="text-xl mb-1 group-hover:text-indigo-600 transition-colors duration-300">Software Engineer Intern - <a href="https://quikirr.com/" target="_blank" rel="noopener noreferrer" class="link">Quikirr</a></h3>
                     <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">May 2024 - September 2024</p>
                     <p>Gained hands-on experience at a bootstrapped fintech startup, working directly with founders to develop core financial analytics features.</p>
                 </div>
@@ -708,7 +751,7 @@
 
                 <!-- m_vis -->
                 <div class="group">
-                    <h3 class="text-xl mb-1 group-hover:text-indigo-600 transition-colors duration-300">Co-founder - <a href="https://allumare.io" target="_blank" class="link">m_vis</a></h3>
+                    <h3 class="text-xl mb-1 group-hover:text-indigo-600 transition-colors duration-300">Co-founder - <a href="https://allumare.io" target="_blank" rel="noopener noreferrer" class="link">m_vis</a></h3>
                     <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">May 2024 - September 2024</p>
                     <p>Created an AI-powered audio visualization tool that reduced Hollywood production costs by 92.5% through automated video generation.</p>
                 </div>
@@ -747,33 +790,33 @@
                 <div>
                     <h3 class="text-xl mb-6 pb-2 border-b border-gray-100 dark:border-gray-800">Piano Recordings</h3>
                     <div class="grid md:grid-cols-2 gap-4">
-                        <a href="https://www.youtube.com/watch?v=mEEgSmhmkiA" target="_blank" class="p-3 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200">
+                        <a href="https://www.youtube.com/watch?v=mEEgSmhmkiA" target="_blank" rel="noopener noreferrer" class="p-3 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200" aria-label="R. Schumann - Aufschwung (opens in new tab)">
                             <p class="font-medium">R. Schumann - Aufschwung</p>
                             <p class="text-sm text-gray-500 dark:text-gray-400">Northwell Health</p>
                         </a>
-                        <a href="https://youtu.be/chliWNkOIIs" target="_blank" class="p-3 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200">
+                        <a href="https://youtu.be/chliWNkOIIs" target="_blank" rel="noopener noreferrer" class="p-3 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200" aria-label="C. Debussy - Claire de Lune (opens in new tab)">
                             <p class="font-medium">C. Debussy - Claire de Lune</p>
                         </a>
-                        <a href="https://www.youtube.com/watch?v=mKvDlsbnnFM" target="_blank" class="p-3 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200">
+                        <a href="https://www.youtube.com/watch?v=mKvDlsbnnFM" target="_blank" rel="noopener noreferrer" class="p-3 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200" aria-label="F. Chopin - Nocturne No. 2 (opens in new tab)">
                             <p class="font-medium">F. Chopin - Nocturne No. 2</p>
                             <p class="text-sm text-gray-500 dark:text-gray-400">E-Flat Major</p>
                         </a>
-                        <a href="https://www.youtube.com/watch?v=8jmSxc9Xi1E&t=1s" target="_blank" class="p-3 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200">
+                        <a href="https://www.youtube.com/watch?v=8jmSxc9Xi1E&t=1s" target="_blank" rel="noopener noreferrer" class="p-3 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200" aria-label="W. Mozart - Fantaisie D Minor (opens in new tab)">
                             <p class="font-medium">W. Mozart - Fantaisie D Minor</p>
                         </a>
-                        <a href="https://www.youtube.com/watch?v=wZmUHQCYqQg&t=42s" target="_blank" class="p-3 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200">
+                        <a href="https://www.youtube.com/watch?v=wZmUHQCYqQg&t=42s" target="_blank" rel="noopener noreferrer" class="p-3 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200" aria-label="W. Mozart - Fantaisie D Minor (Tuscany) (opens in new tab)">
                             <p class="font-medium">W. Mozart - Fantaisie D Minor</p>
                             <p class="text-sm text-gray-500 dark:text-gray-400">Tuscany</p>
                         </a>
-                        <a href="https://www.youtube.com/watch?v=8X1BM9ELdzg" target="_blank" class="p-3 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200">
+                        <a href="https://www.youtube.com/watch?v=8X1BM9ELdzg" target="_blank" rel="noopener noreferrer" class="p-3 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200" aria-label="J. Haydn - Trio in G Major (Tuscany) (opens in new tab)">
                             <p class="font-medium">J. Haydn - Trio in G Major</p>
                             <p class="text-sm text-gray-500 dark:text-gray-400">Tuscany</p>
                         </a>
-                        <a href="https://www.youtube.com/watch?v=D0DGwUpkVF4" target="_blank" class="p-3 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200">
+                        <a href="https://www.youtube.com/watch?v=D0DGwUpkVF4" target="_blank" rel="noopener noreferrer" class="p-3 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200" aria-label="A. Dvorak - Violin Sonatina (opens in new tab)">
                             <p class="font-medium">A. Dvorak - Violin Sonatina</p>
                             <p class="text-sm text-gray-500 dark:text-gray-400">Op 100, B. 183</p>
                         </a>
-                        <a href="https://www.youtube.com/watch?v=Ade9Xnlt4ws" target="_blank" class="p-3 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200">
+                        <a href="https://www.youtube.com/watch?v=Ade9Xnlt4ws" target="_blank" rel="noopener noreferrer" class="p-3 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200" aria-label="A. Dvorak - Violin Sonata (opens in new tab)">
                             <p class="font-medium">A. Dvorak - Violin Sonata</p>
                             <p class="text-sm text-gray-500 dark:text-gray-400">First Movement</p>
                         </a>
@@ -949,6 +992,11 @@
 
             // Navigation
             const navIcons = document.querySelectorAll('.nav-icon[data-section]');
+            const skipLink = document.createElement('a');
+            skipLink.href = '#about';
+            skipLink.textContent = 'Skip to content';
+            skipLink.className = 'sr-only focus:not-sr-only absolute left-2 top-2 bg-white dark:bg-gray-900 text-sm px-3 py-1 rounded';
+            document.body.prepend(skipLink);
             navIcons.forEach(icon => {
                 icon.addEventListener('click', () => {
                     navIcons.forEach(i => i.classList.remove('active'));
@@ -978,20 +1026,39 @@
                     }
                 });
             }, { 
-                threshold: isMobile ? 0.1 : 0.3,
-                rootMargin: isMobile ? '0px 0px -50px 0px' : '0px'
+                threshold: 0,
+                rootMargin: isMobile ? '0px 0px -10% 0px' : '0px 0px -15% 0px'
             });
 
-            document.querySelectorAll('.section').forEach(section => {
-                observer.observe(section);
-            });
+            document.querySelectorAll('.section').forEach(section => observer.observe(section));
 
-            function animate() {
-                asciiContainer.textContent = generator.generateFrame(0, 0);
-                requestAnimationFrame(animate);
+            // Safety fallback: ensure no section remains hidden due to IO edge cases/zoom
+            setTimeout(() => {
+                document.querySelectorAll('.section').forEach(s => s.classList.add('visible'));
+            }, 1200);
+
+            // Respect reduced motion and pause when tab hidden; throttle on mobile
+            const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            let rafId = null;
+            let last = 0;
+            const minFrameInterval = isMobile ? 100 : 16; // ~10fps on mobile, 60fps desktop
+            function animate(ts) {
+                if (prefersReduced) return;
+                if (document.hidden) { rafId = requestAnimationFrame(animate); return; }
+                if (!last || (ts - last) >= minFrameInterval) {
+                    asciiContainer.textContent = generator.generateFrame(0, 0);
+                    last = ts;
+                }
+                rafId = requestAnimationFrame(animate);
             }
-
-            animate();
+            rafId = requestAnimationFrame(animate);
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden && rafId) {
+                    cancelAnimationFrame(rafId);
+                } else if (!prefersReduced) {
+                    rafId = requestAnimationFrame(animate);
+                }
+            });
         });
 
         document.addEventListener('DOMContentLoaded', function() {
@@ -1031,7 +1098,9 @@
                 }
 
                 const pageSize = 6;
-                let page = 1;
+                // URL-aware pagination
+                const urlParams = new URLSearchParams(location.search);
+                let page = Math.max(1, parseInt(urlParams.get('page') || '1', 10));
                 const totalPages = Math.max(1, Math.ceil(shuffled.length / pageSize));
 
                 const renderPage = () => {
@@ -1053,6 +1122,10 @@
                     booksPrev.disabled = page === 1;
                     booksNext.disabled = page === totalPages;
                     booksCount.textContent = `${shuffled.length} books`;
+                    // Update URL without reload
+                    const newUrl = new URL(location.href);
+                    newUrl.searchParams.set('page', String(page));
+                    history.replaceState({}, '', newUrl);
                 };
 
                 booksPrev.addEventListener('click', () => { if (page > 1) { page--; renderPage(); }});

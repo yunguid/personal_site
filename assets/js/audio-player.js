@@ -141,6 +141,25 @@ document.addEventListener('DOMContentLoaded', function() {
                     stopWaveformAnimation(index);
                 }
             });
+
+            // Media Session integration
+            if ('mediaSession' in navigator) {
+                try {
+                    navigator.mediaSession.metadata = new MediaMetadata({
+                        title: document.querySelector(`#player-${index} .track-title`)?.textContent || `Track ${index+1}`,
+                        artist: 'Luke Young',
+                    });
+                    navigator.mediaSession.setActionHandler('play', () => audio.play());
+                    navigator.mediaSession.setActionHandler('pause', () => audio.pause());
+                    navigator.mediaSession.setActionHandler('seekbackward', (details) => {
+                        audio.currentTime = Math.max(0, audio.currentTime - (details.seekOffset || 10));
+                    });
+                    navigator.mediaSession.setActionHandler('seekforward', (details) => {
+                        const duration = Number.isFinite(audio.duration) ? audio.duration : Infinity;
+                        audio.currentTime = Math.min(duration, audio.currentTime + (details.seekOffset || 10));
+                    });
+                } catch (_) {}
+            }
             
             // Update progress bar as audio plays (guard NaN duration)
             audio.addEventListener('timeupdate', () => {
