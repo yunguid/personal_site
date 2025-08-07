@@ -137,6 +137,14 @@
                 height: auto;
             }
 
+            /* Scale down headshot only on mobile */
+            #about .about-headshot {
+                width: 60%;
+                max-width: 220px;
+                display: block;
+                margin: 0 auto;
+            }
+
             
 
             /* Book cards adjustments */
@@ -642,7 +650,7 @@
             <div class="grid md:grid-cols-3 gap-12">
                 <div class="relative overflow-hidden rounded-lg">
                     <img src="assets/img/headshot2.jpeg" alt="Luke R. Young" 
-                         class="w-full h-auto shadow-sm transition-transform duration-500 hover:scale-105">
+                         class="about-headshot w-full h-auto shadow-sm transition-transform duration-500 hover:scale-105">
                 </div>
                 <div class="md:col-span-2 space-y-6">
                     <p class="leading-relaxed">
