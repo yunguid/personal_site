@@ -313,13 +313,17 @@
         /* Mobile navigation at bottom */
         .bottom-nav {
             display: flex;
-            position: fixed;
+            position: sticky;
             bottom: 0;
             left: 0;
             right: 0;
+            width: 100%;
+            max-width: 100vw;
+            box-sizing: border-box;
             background: white;
             border-top: 1px solid #e5e7eb;
-            padding: calc(0.75rem + env(safe-area-inset-bottom));
+            padding: 0.5rem;
+            padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));
             z-index: 50;
             overflow-x: auto;
             white-space: nowrap;
@@ -362,6 +366,12 @@
             .bottom-nav {
                 display: none;
             }
+        }
+
+        /* Ensure body doesn't create layout spill with sticky bottom bar */
+        html, body {
+            max-width: 100%;
+            overflow-x: hidden;
         }
 
         /* Audio player styles */
