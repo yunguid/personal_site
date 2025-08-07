@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Luke R. Young</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -99,20 +99,7 @@
 
         /* Mobile Navigation */
         @media (max-width: 768px) {
-            #navigation {
-                position: fixed;
-                bottom: 0;
-                left: 0;
-                right: 0;
-                top: auto;
-                transform: none;
-                display: flex;
-                flex-direction: row;
-                justify-content: space-around;
-                align-items: center;
-                border-radius: 0.5rem 0.5rem 0 0;
-                padding: 0.5rem;
-            }
+            #navigation { display: none; }
 
             .nav-icon {
                 font-size: 12px;
@@ -127,7 +114,7 @@
 
             main {
                 padding-left: 0 !important;
-                padding-bottom: 64px;
+                padding-bottom: calc(64px + env(safe-area-inset-bottom));
             }
 
             .ascii-art {
@@ -300,7 +287,7 @@
             right: 0;
             background: white;
             border-top: 1px solid #e5e7eb;
-            padding: 0.75rem;
+            padding: calc(0.75rem + env(safe-area-inset-bottom));
             z-index: 50;
         }
 
@@ -349,44 +336,20 @@
             filter: invert(1);
         }
 
-        /* Zumthor-inspired Production Section Styles */
+        /* Production Section Styles - minimal, in-line with site */
         .custom-audio-player {
-            background: #fafafa;
+            background: transparent;
             border: none;
             border-radius: 0;
             overflow: hidden;
-            transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
-            box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.04);
             position: relative;
-            margin-bottom: 2px;
-        }
-
-        .custom-audio-player::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            bottom: 0;
-            width: 2px;
-            background: #000;
-            transform: scaleY(0);
-            transform-origin: bottom;
-            transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
-            opacity: 0;
-        }
-
-        .custom-audio-player:hover::before {
-            transform: scaleY(1);
-            opacity: 0.1;
+            margin: 0;
+            padding: 1rem 0;
+            border-top: 1px solid rgba(0, 0, 0, 0.06);
         }
 
         .dark-mode .custom-audio-player {
-            background: #0a0a0a;
-            box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.04);
-        }
-
-        .dark-mode .custom-audio-player::before {
-            background: #fff;
+            border-top-color: rgba(255, 255, 255, 0.08);
         }
 
         .audio-container {
@@ -469,33 +432,25 @@
 
         .player-button {
             background: transparent;
-            border: 1px solid #000;
+            border: 1px solid rgba(0, 0, 0, 0.2);
             width: 32px;
             height: 32px;
             display: flex;
             align-items: center;
             justify-content: center;
             border-radius: 0;
-            transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
-            opacity: 0.3;
+            transition: opacity 0.2s ease;
+            opacity: 0.35;
             cursor: pointer;
         }
 
         .dark-mode .player-button {
-            border-color: #fff;
-            opacity: 0.2;
+            border-color: rgba(255, 255, 255, 0.2);
+            opacity: 0.25;
         }
 
         .player-button:hover {
             opacity: 1;
-            background: #000;
-            color: #fff;
-        }
-
-        .dark-mode .player-button:hover {
-            background: #fff;
-            color: #000;
-            opacity: 0.9;
         }
 
         .progress-container {
@@ -606,7 +561,7 @@
         .production-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 2px;
+            gap: 0;
             max-width: 1000px;
             margin: 0 auto;
         }
@@ -657,33 +612,16 @@
 
 
 
-        /* ------------------------------------------------------------------ */
-        /*  Smooth color-scheme transitions (desktop optimization)            */
-        /* ------------------------------------------------------------------ */
-        /*  Applying GPU-friendly transitions to the most frequently re-painted
-            elements greatly improves perceived fluidity when toggling the   
-            `.dark-mode` class on larger screens without affecting layout.    */
-
+        /* Instant theme switching */
         body, #navigation, .bottom-nav, .book-card, .nav-icon, .section-title,
         .custom-audio-player, .player-button, .progress-container, .progress-bar,
         .volume-container, .waveform-bar {
-            transition: background-color 240ms cubic-bezier(0.4, 0, 0.2, 1),
-                        color 240ms cubic-bezier(0.4, 0, 0.2, 1),
-                        border-color 240ms cubic-bezier(0.4, 0, 0.2, 1);
-            will-change: background-color, color, border-color;
-        }
-
-        /* Prevent transition on initial page load to avoid flash */
-        html:not(.js-ready) body,
-        html:not(.js-ready) #navigation,
-        html:not(.js-ready) .bottom-nav,
-        html:not(.js-ready) .book-card {
-            transition: none !important;
+            transition: none;
         }
 
     </style>
 </head>
-<body class="bg-white text-gray-900 transition-colors duration-300">
+<body class="bg-white text-gray-900">
     <nav id="navigation" class="flex md:flex-col space-y-0 md:space-y-4">
         <div id="darkModeToggle" class="nav-icon mx-auto md:mx-0 mb-2 md:mb-4"></div>
         <div class="nav-icon active" data-section="hero">Home</div>
@@ -758,12 +696,7 @@
                 </div>
 
 
-                <!-- Ava -->
-                <div class="group">
-                    <h3 class="text-xl mb-1 group-hover:text-indigo-600 transition-colors duration-300">AI Software Engineer - <a href="https://secretary.my" target="_blank" class="link">Ava</a></h3>
-                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">Aug 2024 - Present</p>
-                    <p>Helped build, maintain, and test an AI-powered accountability tool that lives natively in iMessage, featuring natural language processing for task management.</p>
-                </div>
+                
 
                 <!-- m_vis -->
                 <div class="group">
@@ -851,10 +784,17 @@
         <!-- Books Section -->
         <section id="books" class="section visible max-w-4xl mx-auto p-12 rounded-lg shadow-sm">
             <h2 class="text-3xl mb-8 section-title">Books</h2>
-            
-            <div id="books-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <!-- Book cards will be dynamically populated here -->
+
+            <div class="flex items-center justify-between mb-4">
+                <div id="books-count" class="text-sm text-gray-500 dark:text-gray-400"></div>
+                <div class="flex items-center gap-2">
+                    <button id="books-prev" class="px-3 py-1 text-sm border border-gray-200 dark:border-gray-700 rounded disabled:opacity-40">Prev</button>
+                    <span id="books-page" class="text-sm"></span>
+                    <button id="books-next" class="px-3 py-1 text-sm border border-gray-200 dark:border-gray-700 rounded disabled:opacity-40">Next</button>
+                </div>
             </div>
+
+            <div id="books-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
         </section>
     </main>
 
@@ -1047,7 +987,7 @@
         });
 
         document.addEventListener('DOMContentLoaded', function() {
-            // Books List
+            // Books List (shuffled + paginated)
             const books = [
                 { title: "The Fountainhead", author: "Ayn Rand", isRead: true },
                 { title: "Atlas Shrugged", author: "Ayn Rand", isRead: true },
@@ -1065,25 +1005,52 @@
                 { title: "Cherry Orchard", author: "Anton Chekhov", isRead: true },
                 { title: "Uncle Vanya", author: "Anton Chekhov", isRead: true },
                 { title: "Journey to the Center of the Earth", author: "Jules Verne", isRead: true },
+                { title: "Consider Phlebas", author: "Iain M. Banks", isRead: false },
             ];
 
             const booksList = document.getElementById('books-list');
-            if (booksList) {
-                // Clear any existing content
-                booksList.innerHTML = '';
-                
-                books.forEach(book => {
-                    const bookElement = document.createElement('div');
-                    bookElement.className = 'book-card';
-                    bookElement.innerHTML = `
-                        <h3 class="font-medium mb-2">${book.title}</h3>
-                        <p class="text-sm">${book.author}</p>
-                        <div class="mt-4 text-xs uppercase tracking-wide ${book.isRead ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400'}">
-                            ${book.isRead ? 'READ' : 'TO READ'}
-                        </div>
-                    `;
-                    booksList.appendChild(bookElement);
-                });
+            const booksPrev = document.getElementById('books-prev');
+            const booksNext = document.getElementById('books-next');
+            const booksPage = document.getElementById('books-page');
+            const booksCount = document.getElementById('books-count');
+
+            if (booksList && booksPrev && booksNext && booksPage && booksCount) {
+                // Shuffle with Fisher-Yates to avoid clumping
+                const shuffled = [...books];
+                for (let i = shuffled.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+                }
+
+                const pageSize = 6;
+                let page = 1;
+                const totalPages = Math.max(1, Math.ceil(shuffled.length / pageSize));
+
+                const renderPage = () => {
+                    booksList.innerHTML = '';
+                    const start = (page - 1) * pageSize;
+                    const end = Math.min(start + pageSize, shuffled.length);
+                    for (let i = start; i < end; i++) {
+                        const book = shuffled[i];
+                        const card = document.createElement('div');
+                        card.className = 'book-card';
+                        card.innerHTML = `
+                            <h3 class="font-medium mb-2">${book.title}</h3>
+                            <p class="text-sm">${book.author}</p>
+                            <div class="mt-4 text-xs uppercase tracking-wide ${book.isRead ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400'}">${book.isRead ? 'READ' : 'TO READ'}</div>
+                        `;
+                        booksList.appendChild(card);
+                    }
+                    booksPage.textContent = `${page} / ${totalPages}`;
+                    booksPrev.disabled = page === 1;
+                    booksNext.disabled = page === totalPages;
+                    booksCount.textContent = `${shuffled.length} books`;
+                };
+
+                booksPrev.addEventListener('click', () => { if (page > 1) { page--; renderPage(); }});
+                booksNext.addEventListener('click', () => { if (page < totalPages) { page++; renderPage(); }});
+
+                renderPage();
             }
         });
 

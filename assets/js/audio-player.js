@@ -142,21 +142,26 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
             
-            // Update progress bar as audio plays
+            // Update progress bar as audio plays (guard NaN duration)
             audio.addEventListener('timeupdate', () => {
-                const progress = (audio.currentTime / audio.duration) * 100;
+                const duration = Number.isFinite(audio.duration) ? audio.duration : 0;
+                const progress = duration > 0 ? (audio.currentTime / duration) * 100 : 0;
                 progressBar.style.width = `${progress}%`;
             });
             
             // Allow seeking
             progressContainer.addEventListener('click', (e) => {
                 const clickPos = e.offsetX / progressContainer.offsetWidth;
-                audio.currentTime = clickPos * audio.duration;
+                const duration = Number.isFinite(audio.duration) ? audio.duration : 0;
+                if (duration > 0) {
+                    audio.currentTime = clickPos * duration;
+                }
             });
             
             // Volume control
             volumeSlider.addEventListener('input', () => {
-                audio.volume = volumeSlider.value;
+                const vol = parseFloat(volumeSlider.value);
+                audio.volume = Number.isFinite(vol) ? Math.max(0, Math.min(1, vol)) : 0.7;
             });
             
             // Reset when audio ends
