@@ -862,6 +862,11 @@
 
             <div id="books-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
         </section>
+
+        <section id="spin-diamond">
+            <h2>Spinning Diamond</h2>
+            <canvas id="spin-diamond-canvas" width="960" height="720"></canvas>
+        </section>
     </main>
 
     <!-- Replace the fixed navigation we added before with this cleaner one -->
@@ -1190,6 +1195,21 @@
         });
 
 
+    </script>
+
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            const canvas = document.getElementById('spin-diamond-canvas');
+            const moduleConfig = {
+                canvas,
+                locateFile: (path) => `assets/raylib/spin-diamond/${path}`
+            };
+            window.SpinDiamondModule = moduleConfig;
+            window.Module = moduleConfig;
+            const script = document.createElement('script');
+            script.src = 'assets/raylib/spin-diamond/spin-diamond.js';
+            document.body.appendChild(script);
+        });
     </script>
     
     <!-- Add the custom audio player script -->
