@@ -1208,3 +1208,10 @@ section {
 #footer .credits {
   font-size: 13px;
 }
+
+#spin-diamond canvas {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}

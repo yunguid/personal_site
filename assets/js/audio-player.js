@@ -6,6 +6,7 @@
  * - Audio waveform visualization
  * - Dark mode compatibility
  * - Mobile-responsive design
+ * - Pagination support
  */
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -20,6 +21,10 @@ document.addEventListener('DOMContentLoaded', function() {
         { title: '127', artist: '', fileName: 'baby2.mp3', duration: '1:15' }
     ];
 
+    // Pagination State
+    const itemsPerPage = 2;
+    let currentPage = 1;
+
     // Initialize the Audio Players
     initializeAudioPlayers();
 
@@ -28,77 +33,119 @@ document.addEventListener('DOMContentLoaded', function() {
      */
     function initializeAudioPlayers() {
         const productionList = document.getElementById('production-list');
+        const prevBtn = document.getElementById('prod-prev-btn');
+        const nextBtn = document.getElementById('prod-next-btn');
+        const pageInfo = document.getElementById('prod-page-info');
+
         if (!productionList) return;
         
-        // Clear any existing content
-        productionList.innerHTML = '';
-        
-        // Create player for each track
-        musicFiles.forEach((item, index) => {
-            const fileUrl = `${s3BaseUrl}/${item.fileName}`;
+        function renderPage() {
+            // Clear any existing content
+            productionList.innerHTML = '';
             
-            // Create player container
-            const playerContainer = document.createElement('div');
-            playerContainer.className = 'custom-audio-player';
-            playerContainer.id = `player-${index}`;
-            
-            // Generate random bar heights for waveform visualization - Zumthor style
-            const waveformBars = Array.from({ length: 50 }, () => 
-                Math.floor(Math.random() * 60) + 5
-            );
-            
-            const waveformHTML = waveformBars.map(height => 
-                `<div class="waveform-bar" style="height: ${height}%"></div>`
-            ).join('');
-            
-            playerContainer.innerHTML = `
-                <div class="audio-container">
-                    <div class="track-info">
-                        <span class="track-title">${item.title}</span>
-                        <span class="track-duration">${item.duration}</span>
-                    </div>
-                    <div class="waveform-container" id="waveform-${index}">
-                        ${waveformHTML}
-                    </div>
-                    <div class="audio-controls">
-                        <button class="player-button play-pause-btn" data-player="${index}">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                            </svg>
-                        </button>
-                        <div class="progress-container" id="progress-container-${index}">
-                            <div class="progress-bar" id="progress-bar-${index}"></div>
+            const totalPages = Math.ceil(musicFiles.length / itemsPerPage);
+            const start = (currentPage - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+            const pageItems = musicFiles.slice(start, end);
+
+            // Create player for each track
+            pageItems.forEach((item, i) => {
+                // Calculate actual index in the full array
+                const index = start + i;
+                const fileUrl = `${s3BaseUrl}/${item.fileName}`;
+                
+                // Create player container
+                const playerContainer = document.createElement('div');
+                playerContainer.className = 'custom-audio-player';
+                playerContainer.id = `player-${index}`;
+                
+                // Generate random bar heights for waveform visualization - Zumthor style
+                const waveformBars = Array.from({ length: 50 }, () => 
+                    Math.floor(Math.random() * 60) + 5
+                );
+                
+                const waveformHTML = waveformBars.map(height => 
+                    `<div class="waveform-bar" style="height: ${height}%"></div>`
+                ).join('');
+                
+                playerContainer.innerHTML = `
+                    <div class="audio-container">
+                        <div class="track-info">
+                            <span class="track-title">${item.title}</span>
+                            <span class="track-duration">${item.duration}</span>
                         </div>
-                        <div class="volume-container">
-                            <button class="player-button volume-btn" data-player="${index}">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-                                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                        <div class="waveform-container" id="waveform-${index}">
+                            ${waveformHTML}
+                        </div>
+                        <div class="audio-controls">
+                            <button class="player-button play-pause-btn" data-player="${index}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
                                 </svg>
                             </button>
-                            <input type="range" class="volume-slider" id="volume-${index}" min="0" max="1" step="0.1" value="0.7">
+                            <div class="progress-container" id="progress-container-${index}">
+                                <div class="progress-bar" id="progress-bar-${index}"></div>
+                            </div>
+                            <div class="volume-container">
+                                <button class="player-button volume-btn" data-player="${index}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                        <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                                    </svg>
+                                </button>
+                                <input type="range" class="volume-slider" id="volume-${index}" min="0" max="1" step="0.1" value="0.7">
+                            </div>
                         </div>
+                        <audio id="audio-${index}" preload="metadata">
+                            <source src="${fileUrl}" type="audio/mpeg">
+                            Your browser does not support the audio element.
+                        </audio>
                     </div>
-                    <audio id="audio-${index}" preload="metadata">
-                        <source src="${fileUrl}" type="audio/mpeg">
-                        Your browser does not support the audio element.
-                    </audio>
-                </div>
-            `;
+                `;
+                
+                productionList.appendChild(playerContainer);
+            });
             
-            productionList.appendChild(playerContainer);
-        });
-        
-        // Setup player functionality
-        setupAudioPlayers();
+            // Update Controls
+            if (pageInfo) pageInfo.textContent = `${currentPage} / ${totalPages}`;
+            if (prevBtn) prevBtn.disabled = currentPage === 1;
+            if (nextBtn) nextBtn.disabled = currentPage === totalPages;
+
+            // Setup player functionality for new elements
+            setupAudioPlayers(pageItems, start);
+        }
+
+        // Event Listeners for Pagination
+        if (prevBtn && nextBtn) {
+            prevBtn.addEventListener('click', () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    renderPage();
+                }
+            });
+
+            nextBtn.addEventListener('click', () => {
+                const totalPages = Math.ceil(musicFiles.length / itemsPerPage);
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    renderPage();
+                }
+            });
+        }
+
+        // Initial Render
+        renderPage();
     }
 
     /**
      * Adds event listeners and functionality to audio players
+     * @param {Array} items - The items on the current page
+     * @param {number} startIndex - The starting index for the current page
      */
-    function setupAudioPlayers() {
-        musicFiles.forEach((_, index) => {
+    function setupAudioPlayers(items, startIndex) {
+        items.forEach((_, i) => {
+            const index = startIndex + i;
             const audio = document.getElementById(`audio-${index}`);
             if (!audio) return;
 
@@ -107,7 +154,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const progressContainer = document.getElementById(`progress-container-${index}`);
             const volumeSlider = document.getElementById(`volume-${index}`);
             const waveformContainer = document.getElementById(`waveform-${index}`);
-            const waveformBars = waveformContainer?.querySelectorAll('.waveform-bar');
             
             if (!playPauseBtn || !progressBar || !progressContainer || !volumeSlider || !waveformContainer) return;
             
@@ -117,7 +163,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Play/Pause functionality
             playPauseBtn.addEventListener('click', () => {
                 if (audio.paused) {
-                    // Pause all other players first
+                    // Pause all other players first (including those not on current page if possible, though DOM elements won't exist)
                     document.querySelectorAll('audio').forEach(a => {
                         if (a.id !== `audio-${index}` && !a.paused) {
                             a.pause();
@@ -264,4 +310,4 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Styles are now defined in index.html for better organization 
+// Styles are now defined in index.html for better organization
