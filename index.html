@@ -2,408 +2,274 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Luke R. Young</title>
-    <meta name="description" content="Luke R. Young — NYC-based CS student building AI and creative tech products. Work includes GPU-accelerated transcription, AI video generation, and music production.">
-    <link rel="canonical" href="https://yunguid.com/">
-    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
-    <meta name="theme-color" content="#111827" media="(prefers-color-scheme: dark)">
-    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Luke Young</title>
+    <meta name="description" content="Luke R. Young — NYC-based CS student building AI and creative tech products.">
+    
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
-    <meta property="og:type" content="website">
-    <meta property="og:title" content="Luke R. Young">
-    <meta property="og:description" content="NYC-based CS student building AI and creative tech products.">
-    <meta property="og:url" content="https://yunguid.com/">
-    <meta property="og:image" content="https://yunguid.com/assets/img/headshot2.jpeg">
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Luke R. Young">
-    <meta name="twitter:description" content="NYC-based CS student building AI and creative tech products.">
-    <meta name="twitter:image" content="https://yunguid.com/assets/img/headshot2.jpeg">
+
     <style>
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-        }
-
-        /* General font styles */
-        body, p, div {
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            background-color: transparent;
+            color: #FFFFF0; /* Ivory */
             font-family: 'Inter', sans-serif;
-            font-weight: 300;
+            overflow-x: hidden;
         }
 
-        h1, h2, h3, h4, h5, h6 {
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 0;
+        }
+
+        /* Typography & Layout */
+        h1, h2, h3 {
             font-family: 'Playfair Display', serif;
             font-weight: 400;
         }
 
-        .ascii-art {
-            font-family: 'IBM Plex Mono', monospace;
-            white-space: pre;
-            line-height: 1;
-            font-size: 14px;
-            color: currentColor;
-            cursor: pointer;
-            user-select: none;
+        .ivory-text {
+            color: #FFFFF0;
+        }
+
+        .link {
+            color: #a5b4fc; /* Light indigo */
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+            transition: all 0.2s ease;
+        }
+        .link:hover {
+            color: #c7d2fe;
+            border-bottom-color: #c7d2fe;
+        }
+
+        /* Scroll Layout */
+        .spacer {
+            height: 100vh;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding-bottom: 2rem;
+            pointer-events: none;
+        }
+
+        .scroll-arrow {
+            opacity: 0.6;
+            animation: bounce 2s infinite;
+            color: #FFFFF0;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
+            40% {transform: translateY(-10px);}
+            60% {transform: translateY(-5px);}
+        }
+
+        .content-container {
+            min-height: 100vh;
             padding: 2rem;
+            display: flex;
+            justify-content: center;
+            padding-bottom: 8rem;
+            position: relative;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .black-card {
+            background: transparent;
+            backdrop-filter: none;
+            border: none;
+            border-radius: 0;
+            padding: 0;
+            max-width: 900px;
+            width: 100%;
+            box-shadow: none;
+            opacity: 1;
+            transform: none;
+            pointer-events: auto;
+        }
+
+        @keyframes slideUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .section {
-            opacity: 0.01;
-            transform: translateY(14px);
-            transition: opacity 300ms ease, transform 300ms ease;
-        }
-
-        .section.visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        .dark-mode {
-            background-color: #111827;
-            color: #f3f4f6;
-        }
-
-        .nav-icon {
-            font-family: 'Inter', sans-serif;
-            font-weight: 500;
-            cursor: pointer;
-            padding: 12px 16px;
-            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-            font-size: 14px;
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
-        }
-
-        .nav-icon:hover {
-            color: #4f46e5;
-        }
-
-        .nav-icon.active {
-            color: #4f46e5;
-            position: relative;
-        }
-
-        .nav-icon.active::after {
-            content: '';
-            position: absolute;
-            bottom: 6px;
-            left: 16px;
-            right: 16px;
-            height: 1px;
-            background: #4f46e5;
-        }
-
-        #navigation {
-            position: fixed;
-            left: 0;
-            top: 50%;
-            transform: translateY(-50%);
-            background: rgba(255, 255, 255, 0.95);
-            padding: 1rem;
-            border-radius: 0 0.5rem 0.5rem 0;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            z-index: 1000;
-            backdrop-filter: blur(8px);
-        }
-
-        .dark-mode #navigation {
-            background: rgba(17, 24, 39, 0.95);
-        }
-
-        /* Mobile Navigation */
-        @media (max-width: 768px) {
-            #navigation { display: none; }
-
-            .nav-icon {
-                font-size: 12px;
-                padding: 12px 8px;
-                text-align: center;
-            }
-
-            .nav-icon.active::after {
-                left: 8px;
-                right: 8px;
-            }
-
-            /* Prevent label pile-up when zoomed: wrap items and allow scroll */
-            #navigation {
-                overflow-x: auto;
-                white-space: nowrap;
-                gap: 6px;
-            }
-            .nav-icon { display: inline-block; }
-
-            main {
-                padding-left: 0 !important;
-                padding-bottom: calc(64px + env(safe-area-inset-bottom));
-            }
-
-            .ascii-art {
-                font-size: 8px;
-                padding: 1rem;
-            }
-
-            .section {
-                padding: 2rem 1.5rem !important;
-            }
-
-            /* Grid adjustments for mobile */
-            .grid {
-                grid-template-columns: 1fr !important;
-            }
-
-            /* Image adjustments for mobile */
-            img {
-                max-width: 100%;
-                height: auto;
-            }
-
-            /* Scale down headshot only on mobile */
-            #about .about-headshot {
-                width: 60%;
-                max-width: 220px;
-                display: block;
-                margin: 0 auto;
-            }
-
-            
-
-            /* Book cards adjustments */
-            .book-card {
-                margin: 0.5rem 0;
-            }
-        }
-
-        @media (min-width: 768px) {
-            .ascii-art {
-                font-size: 14px;
-            }
-        }
-
-        .book-card {
-            border: none;
-            border-radius: 0.25rem;
-            padding: 1.5rem;
-            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-            background-color: white;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-            margin-bottom: 1rem;
-        }
-
-        .book-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        }
-
-        .dark-mode .book-card {
-            background: #1f2937;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-            border: 1px solid rgba(255,255,255,0.05);
-            color: #f3f4f6;
-        }
-
-        .dark-mode .book-card h3 {
-            color: #f3f4f6;
-        }
-
-        .dark-mode .book-card p {
-            color: #d1d5db;
-        }
-
-        /* Update text styles for content sections */
-        .section p {
-            line-height: 1.8;
-            font-size: 15px;
-        }
-
-        .section h2 {
-            letter-spacing: -0.025em;
-        }
-
-
-
-        .link {
-            color: #4f46e5;
-            transition: color 0.2s ease;
-            border-bottom: 1px solid transparent;
-            padding-bottom: 1px;
-        }
-
-        .link:hover {
-            color: #6366f1;
-            border-bottom-color: #6366f1;
-        }
-
-        .dark-mode .link {
-            color: #818cf8;
-        }
-
-        .dark-mode .link:hover {
-            color: #a5b4fc;
-            border-bottom-color: #a5b4fc;
-        }
-
-        /* Dark mode toggle */
-        #darkModeToggle {
-            width: 40px;
-            height: 20px;
-            background: #e5e7eb;
-            position: relative;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: flex-start;
-            padding: 0 2px;
-        }
-
-        #darkModeToggle::after {
-            content: '';
-            width: 16px;
-            height: 16px;
-            background: #fff;
-            border-radius: 50%;
-            transition: all 0.3s ease;
-        }
-
-        body.dark-mode #darkModeToggle {
-            background: #4f46e5;
-            justify-content: flex-end;
-        }
-
-        body.dark-mode #darkModeToggle::after {
-            background: #f3f4f6;
+            margin-bottom: 4rem;
         }
 
         .section-title {
-            padding-bottom: 0.75rem;
-            border-bottom: 1px solid #e5e7eb;
+            font-size: 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 240, 0.3);
+            padding-bottom: 0.5rem;
             margin-bottom: 2rem;
+            letter-spacing: 0.05em;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
         }
 
-        .dark-mode .section-title {
-            border-bottom-color: #374151;
+        /* Resume Items */
+        .resume-item {
+            margin-bottom: 2rem;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+        }
+        .resume-role {
+            font-size: 1.1rem;
+            margin-bottom: 0.25rem;
+        }
+        .resume-date {
+            font-size: 0.85rem;
+            opacity: 0.6;
+            margin-bottom: 0.75rem;
+            font-family: 'IBM Plex Mono', monospace;
+        }
+        .resume-desc {
+            font-size: 0.95rem;
+            line-height: 1.6;
+            opacity: 0.9;
         }
 
-
-
-        /* Force the books section to be visible */
-        #books {
-            opacity: 1 !important;
-            transform: translateY(0) !important;
-            visibility: visible !important;
-            display: block !important;
+        /* Book Grid */
+        .book-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1.5rem;
         }
-
-        /* Ensure book cards are visible */
-        #books .book-card {
-            opacity: 1 !important;
-            visibility: visible !important;
+        .book-card {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 1.25rem;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: transform 0.2s ease;
+            backdrop-filter: blur(4px);
         }
-        
-        /* Fix for dark mode background in books section */
-        .dark-mode #books {
-            background-color: #111827 !important;
+        .book-card:hover {
+            transform: translateY(-2px);
+            background: rgba(0, 0, 0, 0.6);
+            border-color: rgba(255, 255, 255, 0.2);
         }
-
-        /* Mobile navigation at bottom */
-        .bottom-nav {
-            display: flex;
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            width: 100%;
-            max-width: 100vw;
-            box-sizing: border-box;
-            background: white;
-            border-top: 1px solid #e5e7eb;
-            padding: 0.5rem;
-            padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));
-            z-index: 50;
-            overflow-x: auto;
-            white-space: nowrap;
-            gap: 0.75rem;
-            -webkit-overflow-scrolling: touch;
-            transform: translateZ(0);
-            will-change: transform;
-            backface-visibility: hidden;
-            contain: layout style;
+        .book-title {
+            font-weight: 500;
+            margin-bottom: 0.25rem;
         }
-
-        .dark-mode .bottom-nav {
-            background: #111827;
-            border-top-color: #374151;
+        .book-author {
+            font-size: 0.85rem;
+            opacity: 0.6;
         }
-
-        .bottom-nav a {
-            display: inline-block;
-            flex: 0 0 auto;
-            text-align: center;
-            font-size: 0.8rem;
-            font-weight: 600;
+        .book-status {
+            font-size: 0.7rem;
             text-transform: uppercase;
             letter-spacing: 0.05em;
-            color: #4b5563;
-            transition: color 0.2s ease;
-            padding: 0.25rem 0.5rem;
-            min-width: max-content;
+            margin-top: 0.75rem;
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .status-read { color: #a5b4fc; background: rgba(165, 180, 252, 0.1); }
+        .status-toread { color: #9ca3af; }
+
+        /* Music Grid */
+        .music-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1rem;
+        }
+        .music-item {
+            display: block;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 6px;
+            text-decoration: none;
+            color: inherit;
+            transition: background 0.2s ease;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .music-item:hover {
+            background: rgba(0, 0, 0, 0.6);
+            border-color: rgba(255, 255, 255, 0.2);
         }
 
-        .dark-mode .bottom-nav a {
-            color: #9ca3af;
+        /* Pagination */
+        .pagination-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1.5rem;
+            margin-top: 2rem;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.85rem;
+            opacity: 0.8;
+        }
+        .nav-btn {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #FFFFF0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .nav-btn:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+        .nav-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            border-color: rgba(255, 255, 255, 0.1);
         }
 
-        .bottom-nav a.active {
-            color: #4f46e5;
-        }
-
-        .dark-mode .bottom-nav a.active {
-            color: #818cf8;
-        }
-
-        @media (min-width: 768px) {
-            .bottom-nav {
-                display: none;
+        @media (max-width: 768px) {
+            .black-card {
+                padding: 1.5rem;
+            }
+            .spacer {
+                height: 60vh;
             }
         }
 
-        /* Ensure body doesn't create layout spill with sticky bottom bar */
-        html, body {
-            max-width: 100%;
-            overflow-x: hidden;
-            overscroll-behavior-y: contain;
+        /* Audio Player Styles */
+        .production-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1rem;
+            margin-top: 2rem;
         }
 
-        /* Audio player styles */
-        audio {
-            border-radius: 4px;
-            margin-top: 4px;
-            height: 32px;
-        }
-
-        .dark-mode audio {
-            filter: invert(1);
-        }
-
-        /* Production Section Styles - minimal, in-line with site */
         .custom-audio-player {
-            background: transparent;
-            border: none;
-            border-radius: 0;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
             overflow: hidden;
             position: relative;
             margin: 0;
-            padding: 1rem 0;
-            border-top: 1px solid rgba(0, 0, 0, 0.06);
+            padding: 0;
+            transition: background 0.2s ease, border-color 0.2s ease;
         }
 
-        .dark-mode .custom-audio-player {
-            border-top-color: rgba(255, 255, 255, 0.08);
+        .custom-audio-player:hover {
+            background: rgba(0, 0, 0, 0.6);
+            border-color: rgba(255, 255, 255, 0.2);
         }
 
         .audio-container {
@@ -415,781 +281,771 @@
             display: flex;
             align-items: baseline;
             justify-content: space-between;
-            padding: 1.5rem 1.5rem 1rem;
+            padding: 1rem 1.25rem 0.5rem;
             background: transparent;
         }
 
         .track-title {
             font-family: 'Inter', sans-serif;
-            font-size: 0.875rem;
-            font-weight: 300;
-            color: #000;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #FFFFF0;
             letter-spacing: 0.02em;
-            text-transform: uppercase;
-        }
-
-        .dark-mode .track-title {
-            color: #fff;
-            opacity: 0.9;
         }
 
         .track-duration {
-            font-family: 'Inter', sans-serif;
+            font-family: 'IBM Plex Mono', monospace;
             font-size: 0.75rem;
-            color: #000;
-            opacity: 0.4;
-            font-weight: 300;
-            letter-spacing: 0.02em;
-        }
-
-        .dark-mode .track-duration {
-            color: #fff;
-            opacity: 0.3;
+            color: #FFFFF0;
+            opacity: 0.6;
         }
 
         .waveform-container {
-            height: 40px;
+            height: 32px;
             display: flex;
             align-items: flex-end;
             justify-content: center;
             gap: 1px;
-            padding: 0 1.5rem;
+            padding: 0 1.25rem;
             background: transparent;
+            margin: 0.5rem 0;
+            opacity: 0.8;
         }
 
         .waveform-bar {
-            width: 1px;
+            width: 2px;
             min-height: 2px;
-            background: #000;
-            opacity: 0.15;
-            border-radius: 0;
-            transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
-        }
-
-        .dark-mode .waveform-bar {
-            background: #fff;
-            opacity: 0.1;
+            background: #FFFFF0;
+            opacity: 0.2;
+            border-radius: 1px;
+            transition: all 0.2s ease;
         }
 
         .audio-controls {
             display: flex;
             align-items: center;
-            padding: 1rem 1.5rem 1.5rem;
+            padding: 0.5rem 1.25rem 1rem;
             gap: 1rem;
-            background: transparent;
-            border-top: none;
-        }
-
-        .dark-mode .audio-controls {
             background: transparent;
         }
 
         .player-button {
             background: transparent;
-            border: 1px solid rgba(0, 0, 0, 0.2);
-            width: 32px;
-            height: 32px;
+            border: none;
+            width: 28px;
+            height: 28px;
             display: flex;
             align-items: center;
             justify-content: center;
             border-radius: 0;
-            transition: opacity 0.2s ease;
-            opacity: 0.35;
+            transition: all 0.2s ease;
+            opacity: 0.8;
             cursor: pointer;
-        }
-
-        .dark-mode .player-button {
-            border-color: rgba(255, 255, 255, 0.2);
-            opacity: 0.25;
+            color: #FFFFF0;
+            padding: 0;
         }
 
         .player-button:hover {
             opacity: 1;
+            background: transparent;
+            border-color: transparent;
         }
 
         .progress-container {
             flex: 1;
-            height: 1px;
-            background: #000;
-            opacity: 0.1;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.1);
             overflow: hidden;
             cursor: pointer;
             position: relative;
-            transition: opacity 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+            border-radius: 1px;
+            transition: height 0.2s ease;
         }
 
         .progress-container:hover {
-            opacity: 0.2;
-        }
-
-        .dark-mode .progress-container {
-            background: #fff;
-            opacity: 0.08;
-        }
-
-        .dark-mode .progress-container:hover {
-            opacity: 0.15;
+            height: 4px;
         }
 
         .progress-bar {
             height: 100%;
             width: 0%;
-            background: #000;
+            background: #a5b4fc;
             transition: width 0.1s linear;
             position: relative;
-        }
-
-        .dark-mode .progress-bar {
-            background: #fff;
         }
 
         .volume-container {
             display: flex;
             align-items: center;
-            gap: 1rem;
-            opacity: 0.3;
-            transition: opacity 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+            gap: 0.5rem;
+            opacity: 0.6;
+            transition: opacity 0.2s ease;
         }
 
         .volume-container:hover {
             opacity: 1;
         }
 
-        .dark-mode .volume-container {
-            opacity: 0.2;
-        }
-
-        .dark-mode .volume-container:hover {
-            opacity: 0.9;
-        }
-
         .volume-slider {
-            width: 60px;
-            height: 1px;
+            width: 50px;
+            height: 2px;
             appearance: none;
-            background: #000;
+            background: rgba(255, 255, 255, 0.2);
             outline: none;
-            transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
             cursor: pointer;
-        }
-
-        .dark-mode .volume-slider {
-            background: #fff;
+            border-radius: 1px;
         }
 
         .volume-slider::-webkit-slider-thumb {
             appearance: none;
             width: 8px;
             height: 8px;
-            background: #000;
+            background: #FFFFF0;
             cursor: pointer;
-            border: none;
-            transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+            border-radius: 50%;
+            transition: transform 0.2s ease;
         }
 
         .volume-slider::-webkit-slider-thumb:hover {
             transform: scale(1.5);
         }
 
-        .dark-mode .volume-slider::-webkit-slider-thumb {
-            background: #fff;
-        }
-
-        .volume-slider::-moz-range-thumb {
-            width: 8px;
-            height: 8px;
-            background: #000;
-            cursor: pointer;
-            border: none;
-            transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
-        }
-
-        .volume-slider::-moz-range-thumb:hover {
-            transform: scale(1.5);
-        }
-
-        .dark-mode .volume-slider::-moz-range-thumb {
-            background: #fff;
-        }
-
-        .production-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 0;
-            max-width: 1000px;
-            margin: 0 auto;
-        }
-
-        @media (max-width: 768px) {
-            .production-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .waveform-container {
-                height: 40px;
-            }
-
-            .track-info {
-                padding: 1.5rem 1.5rem 1rem;
-            }
-
-            .audio-controls {
-                padding: 1rem 1.5rem 1.5rem;
-            }
-        }
-
-        /* Zumthor-inspired waveform animation */
+        /* Animation for waveform */
         @keyframes sound {
-            0% {
-                height: 10%;
-                opacity: 0.3;
-            }
-            50% {
-                height: 90%;
-                opacity: 0.6;
-            }
-            100% {
-                height: 10%;
-                opacity: 0.3;
-            }
+            0% { height: 10%; opacity: 0.3; }
+            50% { height: 90%; opacity: 0.8; }
+            100% { height: 10%; opacity: 0.3; }
         }
-
-        .waveform-bar[style*="animation"] {
-            background: #000 !important;
-            opacity: 0.8 !important;
-        }
-
-        .dark-mode .waveform-bar[style*="animation"] {
-            background: #fff !important;
-            opacity: 0.7 !important;
-        }
-
-
-
-        /* Instant theme switching */
-        body, #navigation, .bottom-nav, .book-card, .nav-icon, .section-title,
-        .custom-audio-player, .player-button, .progress-container, .progress-bar,
-        .volume-container, .waveform-bar {
-            transition: none;
-        }
-
-        </style>
-        <style>
-        /* Focus-visible for accessibility */
-        :focus-visible { outline: 2px solid #4f46e5; outline-offset: 2px; }
-        </style>
-    <script>
-      // Register service worker
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').catch(() => {});
-        });
-      }
-    </script>
+    </style>
 </head>
-<body class="bg-white text-gray-900">
-    <nav id="navigation" class="flex md:flex-col space-y-0 md:space-y-4">
-        <div id="darkModeToggle" class="nav-icon mx-auto md:mx-0 mb-2 md:mb-4"></div>
-        <div class="nav-icon active" data-section="hero">Home</div>
-        <div class="nav-icon" data-section="about">About</div>
-        <div class="nav-icon" data-section="resume">Resume</div>
-        <div class="nav-icon" data-section="music">Music</div>
-        <div class="nav-icon" data-section="books">Books</div>
-    </nav>
+<body>
+    <canvas id="glcanvas"></canvas>
 
-    <main class="pl-16 md:pl-16">
-        <section id="hero" class="section min-h-screen flex items-center justify-center">
-            <pre id="asciiArt" class="ascii-art"></pre>
-        </section>
+    <div class="spacer">
+        <div class="scroll-arrow">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M7 13l5 5 5-5M7 6l5 5 5-5"/>
+            </svg>
+        </div>
+    </div>
 
-        <!-- About Section -->
-        <section id="about" class="section max-w-4xl mx-auto p-12">
-            <h2 class="text-3xl mb-8 section-title">About</h2>
-            <div class="grid md:grid-cols-3 gap-12">
-                <div class="relative overflow-hidden rounded-lg">
-                            <img srcset="assets/img/headshot2.jpeg 1x, assets/img/headshot2.jpeg 2x" sizes="(max-width: 768px) 60vw, 33vw" src="assets/img/headshot2.jpeg" alt="Luke R. Young" loading="lazy" width="800" height="1000"
-                         class="about-headshot w-full h-auto shadow-sm transition-transform duration-500 hover:scale-105">
-                </div>
-                <div class="md:col-span-2 space-y-6">
-                    <p class="leading-relaxed">
-                        NYC-based Computer Science student at Georgetown University, specializing in AI and creative technology. Simultaneously built a GPU-accelerated audio transcription platform at <a href="https://www.catalystops.com/" target="_blank" rel="noopener noreferrer" class="link">Catalyst</a>, leveraging Whisper models and real-time file monitoring for scalable speech-to-text services, and developed <a href="https://allumare.io" target="_blank" rel="noopener noreferrer" class="link">Allumare</a>, an AI-powered video generation platform transforming audio uploads into dynamic visuals using Gemini models for prompt generation, GCP's Transcoder API for 4K video processing, and Replicate's latent blending models.
-                    </p>
-                    <p class="leading-relaxed">
-                        Previously created AI-powered financial analytics tools at <a href="https://quikirr.com/" target="_blank" rel="noopener noreferrer" class="link">Quikirr</a>. Past projects also include audio visualization and video tools for Hollywood producers and software development experience at <a href="https://www.jackpinetech.com/" target="_blank" rel="noopener noreferrer" class="link">Jackpine Technologies</a>. I enjoy contract work and AI consulting projects, leveraging my experience with creative technology and AI tools to help companies build innovative, high-impact products.
-                    </p>
-                    <p class="leading-relaxed">
-                        Outside of work, I enjoy weightlifting, following the philosophy of 
-                        <a href="https://mountaindogdiet.com/john/john-meadows/#" target="_blank" rel="noopener noreferrer" class="link">John Meadows</a>. 
-                        I'm also interested in video games such as CSGO, as well as comedy and music. This past summer, I spent time in the 
-                        Bob Marshall Wilderness in Montana fly fishing and horseback riding - you can see some photos 
-                        <a href="montana_gallery.html" class="link">here</a>.
-                    </p>
-                    <div class="grid grid-cols-2 gap-8 mt-6 pt-6 border-t border-gray-100 dark:border-gray-800">
-                        <div>
-                            <h3 class="text-sm uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-3">Contact</h3>
-                            <p class="mb-1">luke [at] yng [dot] sh</p>
-                            <p>New York, USA</p>
-                        </div>
-                        <div>
-                            <h3 class="text-sm uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-3">Education</h3>
-                            <p class="mb-1">B.S. Computer Science</p>
-                            <p class="mb-1">Georgetown University</p>
-                            <p>2021-2025</p>
-                        </div>
-                    </div>
+    <div class="content-container">
+        <div class="black-card">
+            <!-- Header -->
+            <div class="mb-12 text-center">
+                <h1 class="text-4xl md:text-5xl mb-4">Luke R. Young</h1>
+                <p class="text-lg opacity-80 max-w-2xl mx-auto font-light">
+                    NYC-based Computer Science student at Georgetown University. <br>
+                    Building AI and creative tech products.
+                </p>
+                <div class="mt-6 flex justify-center gap-6 text-sm uppercase tracking-widest opacity-60">
+                    <a href="mailto:luke@yng.sh" class="hover:text-white transition-colors">Email</a>
+                    <a href="https://github.com/yunguid" target="_blank" class="hover:text-white transition-colors">GitHub</a>
+                    <a href="https://twitter.com/lukeryoung" target="_blank" class="hover:text-white transition-colors">Twitter</a>
                 </div>
             </div>
-        </section>
 
-        <!-- Resume Section -->
-        <section id="resume" class="section max-w-4xl mx-auto p-12">
-            <h2 class="text-3xl mb-8 section-title">Resume <span class="text-sm font-normal ml-2">(<a href="/assets/luke-young-resume-georgetown.pdf" class="link" target="_blank" rel="noopener noreferrer">full pdf</a>)</span></h2>
-            <div class="space-y-12">
-
+            <!-- Work Section -->
+            <div class="section">
+                <h2 class="section-title">Work</h2>
                 
-                <!--Coa -->
-                <div class="group">
-                    <h3 class="text-xl mb-1 group-hover:text-indigo-600 transition-colors duration-300">AI Software Engineer - <a href="https://www.catalystops.com/" target="_blank" rel="noopener noreferrer" class="link">Catalyst Operations & Analytics</a></h3>
-                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">Jan 2025 - Present</p>
-                    <p>Developing large-scale AI products addressing critical needs for government and defense-related clients. Projects include GPU-accelerated audio transcription, real-time search platforms with Whisper and Elasticsearch, and advanced media processing tools leveraging StyleGAN, Stable Diffusion, and RealESRGAN.</p>
+                <div class="resume-item">
+                    <h3 class="resume-role">AI Software Engineer - <a href="https://www.catalystops.com/" target="_blank" class="link">Catalyst Operations & Analytics</a></h3>
+                    <div class="resume-date">Jan 2025 - Present</div>
+                    <p class="resume-desc">Developing large-scale AI products addressing critical needs for government and defense-related clients. Projects include air-gapped bulk processing systems for multi-language audio and documents, real-time live transcription and translation engines, and advanced media processing tools building off of and improving from open source technologies.</p>
                 </div>
 
-                <!-- Quikirr -->
-                <div class="group">
-                    <h3 class="text-xl mb-1 group-hover:text-indigo-600 transition-colors duration-300">Software Engineer Intern - <a href="https://quikirr.com/" target="_blank" rel="noopener noreferrer" class="link">Quikirr</a></h3>
-                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">May 2024 - September 2024</p>
-                    <p>Gained hands-on experience at a bootstrapped fintech startup, working directly with founders to develop core financial analytics features.</p>
+                <div class="resume-item">
+                    <h3 class="resume-role">Software Engineer Intern - <a href="https://quikirr.com/" target="_blank" class="link">Quikirr</a></h3>
+                    <div class="resume-date">May 2024 - Sep 2024</div>
+                    <p class="resume-desc">Joined as the first engineer to build the next frontier of due diligence tools for Private Equity and Investment Banking. Developed a SaaS platform and Excel add-in that automates revenue data structuring, retention analysis, and benchmarking.</p>
                 </div>
 
-
-                
-
-                <!-- m_vis -->
-                <div class="group">
-                    <h3 class="text-xl mb-1 group-hover:text-indigo-600 transition-colors duration-300">Co-founder - <a href="https://allumare.io" target="_blank" rel="noopener noreferrer" class="link">m_vis</a></h3>
-                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">May 2024 - September 2024</p>
-                    <p>Created an AI-powered audio visualization tool that reduced Hollywood production costs by 92.5% through automated video generation.</p>
+                <div class="resume-item">
+                    <h3 class="resume-role">Lead Developer (Contract) - <a href="https://allumare.io" target="_blank" class="link">m_vis</a></h3>
+                    <div class="resume-date">May 2024 - Sep 2024</div>
+                    <p class="resume-desc">Solely architected and built an AI-powered audio visualization platform. Delivered a full-stack solution that automates video generation from audio inputs, reducing production costs by 92.5%.</p>
                 </div>
 
-                <!-- Jackpine -->
-                <div class="group">
-                    <h3 class="text-xl mb-1 group-hover:text-indigo-600 transition-colors duration-300">Software Engineer Intern - Jackpine Technologies</h3>
-                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">June 2023 - August 2023</p>
-                    <p>Automated QA testing and migrated cloud assets, improving test coverage and accuracy for Windows/Linux environments.</p>
-                </div>
-
-                <!-- Earlier roles -->
-                <div>
-                    <h3 class="text-base uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-4">Earlier Roles</h3>
-                    <div class="space-y-4 pl-4 border-l-2 border-gray-100 dark:border-gray-800">
-                        <div>
-                            <h4 class="font-medium">Finance Intern - Kore Wealth Management</h4>
-                            <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Summer 2018</p>
-                        </div>
-                        
-                        <div>
-                            <h4 class="font-medium">Financial Intern - Nicusa Capital</h4>
-                            <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">2017, 2018</p>
-                        </div>
-                    </div>
+                <div class="resume-item">
+                    <h3 class="resume-role">Software Engineer Intern - Jackpine Technologies</h3>
+                    <div class="resume-date">June 2023 - Aug 2023</div>
+                    <p class="resume-desc">Automated QA testing and migrated cloud assets, improving test coverage and accuracy for Windows/Linux environments.</p>
                 </div>
             </div>
-        </section>
 
-        <!-- Music Section -->
-        <section id="music" class="section max-w-4xl mx-auto p-12">
-            <h2 class="text-3xl mb-8 section-title">Music</h2>
-            <p class="mb-12">Learning to play the piano has been one of the most rewarding challenges and gifts that I have experienced in my life. Aside from the discipline required to practice, I learned to interpret complex emotions and feelings that these composers infused in their work.</p>
-            
-            <div class="space-y-12">
-                <div>
-                    <h3 class="text-xl mb-6 pb-2 border-b border-gray-100 dark:border-gray-800">Piano Recordings</h3>
-                    <div class="grid md:grid-cols-2 gap-4">
-                        <a href="https://www.youtube.com/watch?v=mEEgSmhmkiA" target="_blank" rel="noopener noreferrer" class="p-3 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200" aria-label="R. Schumann - Aufschwung (opens in new tab)">
-                            <p class="font-medium">R. Schumann - Aufschwung</p>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">Northwell Health</p>
-                        </a>
-                        <a href="https://youtu.be/chliWNkOIIs" target="_blank" rel="noopener noreferrer" class="p-3 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200" aria-label="C. Debussy - Claire de Lune (opens in new tab)">
-                            <p class="font-medium">C. Debussy - Claire de Lune</p>
-                        </a>
-                        <a href="https://www.youtube.com/watch?v=mKvDlsbnnFM" target="_blank" rel="noopener noreferrer" class="p-3 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200" aria-label="F. Chopin - Nocturne No. 2 (opens in new tab)">
-                            <p class="font-medium">F. Chopin - Nocturne No. 2</p>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">E-Flat Major</p>
-                        </a>
-                        <a href="https://www.youtube.com/watch?v=8jmSxc9Xi1E&t=1s" target="_blank" rel="noopener noreferrer" class="p-3 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200" aria-label="W. Mozart - Fantaisie D Minor (opens in new tab)">
-                            <p class="font-medium">W. Mozart - Fantaisie D Minor</p>
-                        </a>
-                        <a href="https://www.youtube.com/watch?v=wZmUHQCYqQg&t=42s" target="_blank" rel="noopener noreferrer" class="p-3 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200" aria-label="W. Mozart - Fantaisie D Minor (Tuscany) (opens in new tab)">
-                            <p class="font-medium">W. Mozart - Fantaisie D Minor</p>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">Tuscany</p>
-                        </a>
-                        <a href="https://www.youtube.com/watch?v=8X1BM9ELdzg" target="_blank" rel="noopener noreferrer" class="p-3 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200" aria-label="J. Haydn - Trio in G Major (Tuscany) (opens in new tab)">
-                            <p class="font-medium">J. Haydn - Trio in G Major</p>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">Tuscany</p>
-                        </a>
-                        <a href="https://www.youtube.com/watch?v=D0DGwUpkVF4" target="_blank" rel="noopener noreferrer" class="p-3 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200" aria-label="A. Dvorak - Violin Sonatina (opens in new tab)">
-                            <p class="font-medium">A. Dvorak - Violin Sonatina</p>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">Op 100, B. 183</p>
-                        </a>
-                        <a href="https://www.youtube.com/watch?v=Ade9Xnlt4ws" target="_blank" rel="noopener noreferrer" class="p-3 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200" aria-label="A. Dvorak - Violin Sonata (opens in new tab)">
-                            <p class="font-medium">A. Dvorak - Violin Sonata</p>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">First Movement</p>
-                        </a>
-                    </div>
+            <!-- Music Section -->
+            <div class="section">
+                <h2 class="section-title">Music</h2>
+                <p class="mb-6 opacity-80 font-light">Selected piano recordings.</p>
+                <div class="music-grid" id="piano-grid">
+                    <!-- Populated by JS -->
+                </div>
+                <div class="pagination-controls">
+                    <button id="piano-prev-btn" class="nav-btn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                    </button>
+                    <span id="piano-page-info"></span>
+                    <button id="piano-next-btn" class="nav-btn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+                    </button>
                 </div>
 
-                <div id="productions">
-                    <h3 class="text-3xl mb-8 section-title">Productions</h3>
+                <div class="mt-12">
+                    <h3 class="text-xl mb-6 font-light opacity-80">Productions</h3>
                     <div id="production-list" class="production-grid">
                         <!-- Music metadata will be added here dynamically -->
                     </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Books Section -->
-        <section id="books" class="section visible max-w-4xl mx-auto p-12 rounded-lg shadow-sm">
-            <h2 class="text-3xl mb-8 section-title">Books</h2>
-
-            <div class="flex items-center justify-between mb-4">
-                <div id="books-count" class="text-sm text-gray-500 dark:text-gray-400"></div>
-                <div class="flex items-center gap-2">
-                    <button id="books-prev" class="px-3 py-1 text-sm border border-gray-200 dark:border-gray-700 rounded disabled:opacity-40">Prev</button>
-                    <span id="books-page" class="text-sm"></span>
-                    <button id="books-next" class="px-3 py-1 text-sm border border-gray-200 dark:border-gray-700 rounded disabled:opacity-40">Next</button>
+                    <div class="pagination-controls">
+                        <button id="prod-prev-btn" class="nav-btn">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                        </button>
+                        <span id="prod-page-info"></span>
+                        <button id="prod-next-btn" class="nav-btn">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            <div id="books-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-        </section>
-    </main>
+            <!-- Books Section -->
+            <div class="section">
+                <h2 class="section-title">Books</h2>
+                <div id="books-grid" class="book-grid">
+                    <!-- Populated by JS -->
+                </div>
+                <div class="pagination-controls">
+                    <button id="prev-btn" class="nav-btn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                    </button>
+                    <span id="page-info"></span>
+                    <button id="next-btn" class="nav-btn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+                    </button>
+                </div>
+            </div>
 
-    <!-- Replace the fixed navigation we added before with this cleaner one -->
-        <div class="bottom-nav md:hidden" role="tablist" aria-label="Primary navigation">
-        <a href="#hero" class="active" role="tab" aria-selected="true">Home</a>
-        <a href="#about" role="tab" aria-selected="false">About</a>
-        <a href="#resume" role="tab" aria-selected="false">Resume</a>
-        <a href="#music" role="tab" aria-selected="false">Music</a>
-        <a href="#books" role="tab" aria-selected="false">Books</a>
+            <div class="text-center text-sm opacity-40 mt-12 font-mono">
+                &copy; 2025 Luke R. Young
+            </div>
+        </div>
     </div>
 
-    <script>
-        // Device detection
-        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-        
-        // Complex number helper class
-        class Complex {
-            constructor(real, imag) {
-                this.real = real;
-                this.imag = imag;
-            }
-
-            multiply(other) {
-                return new Complex(
-                    this.real * other.real - this.imag * other.imag,
-                    this.real * other.imag + this.imag * other.real
-                );
-            }
-
-            add(other) {
-                return new Complex(
-                    this.real + other.real,
-                    this.imag + other.imag
-                );
-            }
-
-            magnitudeSquared() {
-                return this.real * this.real + this.imag * this.imag;
-            }
+    <!-- SHADERS -->
+    
+    <!-- Vertex Shader -->
+    <script type="x-shader/x-vertex" id="vertex-shader">#version 300 es
+        layout(location = 0) in vec2 aPosition;
+        out vec2 vUv;
+        void main() {
+            vUv = aPosition * 0.5 + 0.5;
+            gl_Position = vec4(aPosition, 0.0, 1.0);
         }
+    </script>
 
-        class JuliaSetGenerator {
-            constructor(width, height) {
-                // Adjust dimensions for mobile
-                if (isMobile) {
-                    this.width = Math.floor(width * 0.6);
-                    this.height = Math.floor(height * 0.6);
-                } else {
-                    this.width = width;
-                    this.height = height;
-                }
-                this.maxIterations = 50;
-                this.time = 0;
-                this.chars = ' .:-=+*#%@';
-                this.centerText = "LUKE YOUNG";
-                this.centerTextPos = {
-                    x: Math.floor((this.width - this.centerText.length) / 2),
-                    y: Math.floor(this.height / 2)
-                };
-            }
-
-            mapToComplex(x, y) {
-                const real = 3 * (x - this.width / 2) / this.width;
-                const imag = 3 * (y - this.height / 2) / this.height;
-                return new Complex(real, imag);
-            }
-
-            getJuliaParameters(t) {
-                const scale = 0.7;
-                return new Complex(
-                    scale * Math.cos(t * 0.1),
-                    scale * Math.sin(t * 0.1)
-                );
-            }
-
-            generateFrame(mouseX = 0, mouseY = 0) {
-                this.time += 0.03;
-                const parameter = this.getJuliaParameters(this.time);
-                let frame = '';
-
-                for (let y = 0; y < this.height; y++) {
-                    for (let x = 0; x < this.width; x++) {
-                        if (y === this.centerTextPos.y && 
-                            x >= this.centerTextPos.x && 
-                            x < this.centerTextPos.x + this.centerText.length) {
-                            const charIndex = Math.floor((x - this.centerTextPos.x) / 1);
-                            frame += this.centerText[charIndex];
-                            continue;
-                        }
-
-                        let c = this.mapToComplex(x + mouseX * 10, y + mouseY * 10);
-                        const iteration = this.calculatePoint(c, parameter);
-                        const charIndex = Math.floor((iteration / this.maxIterations) * (this.chars.length - 1));
-                        frame += this.chars[charIndex];
-                    }
-                    frame += '\n';
-                }
-                return frame;
-            }
-
-            calculatePoint(c, parameter) {
-                let z = c;
-                let iteration = 0;
-
-                while (iteration < this.maxIterations && z.magnitudeSquared() < 4) {
-                    z = z.multiply(z).add(parameter);
-                    iteration++;
-                }
-
-                return iteration;
-            }
+    <!-- Advection Shader -->
+    <script type="x-shader/x-fragment" id="advection-shader">#version 300 es
+        precision highp float;
+        in vec2 vUv;
+        uniform sampler2D uVelocity;
+        uniform sampler2D uSource;
+        uniform vec2 uTexelSize;
+        uniform float dt;
+        uniform float uDissipation;
+        out vec4 FragColor;
+        void main() {
+            vec2 coord = vUv - dt * texture(uVelocity, vUv).xy * uTexelSize;
+            FragColor = texture(uSource, coord) * uDissipation;
         }
+    </script>
 
-        // Initialize and animate
-        document.addEventListener('DOMContentLoaded', () => {
-            const asciiContainer = document.getElementById('asciiArt');
-            // Initialize with mobile-optimized dimensions
-            const generator = new JuliaSetGenerator(isMobile ? 40 : 80, isMobile ? 20 : 40);
-
-            // --------------------------------------------------------------
-            // Dark mode toggle (optimized)
-            // --------------------------------------------------------------
-            const darkModeToggle = document.getElementById('darkModeToggle');
-
-            // Restore previously selected mode to prevent flash of wrong theme
-            if (localStorage.getItem('mode') === 'dark') {
-                document.body.classList.add('dark-mode');
-            }
-
-            darkModeToggle.addEventListener('click', () => {
-                /*
-                 * Use requestAnimationFrame so the class toggle occurs at the
-                 * start of a new frame, giving the browser time to batch style
-                 * recalculations and produce a smoother transition.
-                 */
-                window.requestAnimationFrame(() => {
-                    const isDark = document.body.classList.toggle('dark-mode');
-                    localStorage.setItem('mode', isDark ? 'dark' : 'light');
-                });
-            });
-            // Mark that JS has executed so initial transitions can start
-            document.documentElement.classList.add('js-ready');
-
-            // Navigation
-            const navIcons = document.querySelectorAll('.nav-icon[data-section]');
-            const skipLink = document.createElement('a');
-            skipLink.href = '#about';
-            skipLink.textContent = 'Skip to content';
-            skipLink.className = 'sr-only focus:not-sr-only absolute left-2 top-2 bg-white dark:bg-gray-900 text-sm px-3 py-1 rounded';
-            document.body.prepend(skipLink);
-            navIcons.forEach(icon => {
-                icon.addEventListener('click', () => {
-                    navIcons.forEach(i => i.classList.remove('active'));
-                    icon.classList.add('active');
-                    const sectionId = icon.getAttribute('data-section');
-                    document.getElementById(sectionId).scrollIntoView({ 
-                        behavior: 'smooth',
-                        block: isMobile ? 'start' : 'center'
-                    });
-                });
-            });
-
-            // Section visibility with mobile optimization
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        entry.target.classList.add('visible');
-                        // Update navigation on scroll
-                        const sectionId = entry.target.id;
-                        navIcons.forEach(icon => {
-                            if (icon.getAttribute('data-section') === sectionId) {
-                                icon.classList.add('active');
-                            } else {
-                                icon.classList.remove('active');
-                            }
-                        });
-                    }
-                });
-            }, { 
-                threshold: 0,
-                rootMargin: isMobile ? '0px 0px -10% 0px' : '0px 0px -15% 0px'
-            });
-
-            document.querySelectorAll('.section').forEach(section => observer.observe(section));
-
-            // Safety fallback: ensure no section remains hidden due to IO edge cases/zoom
-            setTimeout(() => {
-                document.querySelectorAll('.section').forEach(s => s.classList.add('visible'));
-            }, 1200);
-
-            // Respect reduced motion and pause when tab hidden; throttle on mobile
-            const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-            let rafId = null;
-            let last = 0;
-            const minFrameInterval = isMobile ? 100 : 16; // ~10fps on mobile, 60fps desktop
-            function animate(ts) {
-                if (prefersReduced) return;
-                if (document.hidden) { rafId = requestAnimationFrame(animate); return; }
-                if (!last || (ts - last) >= minFrameInterval) {
-                    asciiContainer.textContent = generator.generateFrame(0, 0);
-                    last = ts;
-                }
-                rafId = requestAnimationFrame(animate);
-            }
-            rafId = requestAnimationFrame(animate);
-            document.addEventListener('visibilitychange', () => {
-                if (document.hidden && rafId) {
-                    cancelAnimationFrame(rafId);
-                } else if (!prefersReduced) {
-                    rafId = requestAnimationFrame(animate);
-                }
-            });
-        });
-
-        document.addEventListener('DOMContentLoaded', function() {
-            // Books List (shuffled + paginated)
-            const books = [
-                { title: "The Fountainhead", author: "Ayn Rand", isRead: true },
-                { title: "Atlas Shrugged", author: "Ayn Rand", isRead: true },
-                { title: "For the New Intellectual", author: "Ayn Rand", isRead: false },
-                { title: "The Lessons of History", author: "Will and Ariel Durant", isRead: true },
-                { title: "Intelligent Machines", author: "Ray Kurzweil", isRead: false },
-                { title: "Man and His Symbols", author: "Carl Jung", isRead: true },
-                { title: "Benjamin Franklin", author: "Carl Van Doren", isRead: false },
-                { title: "The Difference between God and Larry Ellison", author: "Mike Wilson", isRead: false },
-                { title: "Napoleon", author: "Vincent Cronin", isRead: true },
-                { title: "Metals and How To Weld Them", author: "T. B. Jefferson & Gorham Woods", isRead: false },
-                { title: "Astro Boy, Vol. 1", author: "Osamu Tezuka", isRead: false },
-                { title: "Focus: The ASML way", author: "Marc Hijink", isRead: false },
-                { title: "Crime and Punishment", author: "Fyodor Dostoevsky", isRead: true },
-                { title: "Cherry Orchard", author: "Anton Chekhov", isRead: true },
-                { title: "Uncle Vanya", author: "Anton Chekhov", isRead: true },
-                { title: "Journey to the Center of the Earth", author: "Jules Verne", isRead: true },
-                { title: "Consider Phlebas", author: "Iain M. Banks", isRead: false },
-            ];
-
-            const booksList = document.getElementById('books-list');
-            const booksPrev = document.getElementById('books-prev');
-            const booksNext = document.getElementById('books-next');
-            const booksPage = document.getElementById('books-page');
-            const booksCount = document.getElementById('books-count');
-
-            if (booksList && booksPrev && booksNext && booksPage && booksCount) {
-                // Shuffle with Fisher-Yates to avoid clumping
-                const shuffled = [...books];
-                for (let i = shuffled.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-                }
-
-                const pageSize = 6;
-                // URL-aware pagination
-                const urlParams = new URLSearchParams(location.search);
-                let page = Math.max(1, parseInt(urlParams.get('page') || '1', 10));
-                const totalPages = Math.max(1, Math.ceil(shuffled.length / pageSize));
-
-                const renderPage = () => {
-                    booksList.innerHTML = '';
-                    const start = (page - 1) * pageSize;
-                    const end = Math.min(start + pageSize, shuffled.length);
-                    for (let i = start; i < end; i++) {
-                        const book = shuffled[i];
-                        const card = document.createElement('div');
-                        card.className = 'book-card';
-                        card.innerHTML = `
-                            <h3 class="font-medium mb-2">${book.title}</h3>
-                            <p class="text-sm">${book.author}</p>
-                            <div class="mt-4 text-xs uppercase tracking-wide ${book.isRead ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400'}">${book.isRead ? 'READ' : 'TO READ'}</div>
-                        `;
-                        booksList.appendChild(card);
-                    }
-                    booksPage.textContent = `${page} / ${totalPages}`;
-                    booksPrev.disabled = page === 1;
-                    booksNext.disabled = page === totalPages;
-                    booksCount.textContent = `${shuffled.length} books`;
-                    // Update URL without reload
-                    const newUrl = new URL(location.href);
-                    newUrl.searchParams.set('page', String(page));
-                    history.replaceState({}, '', newUrl);
-                };
-
-                booksPrev.addEventListener('click', () => { if (page > 1) { page--; renderPage(); }});
-                booksNext.addEventListener('click', () => { if (page < totalPages) { page++; renderPage(); }});
-
-                renderPage();
-            }
-        });
-
-        // Initialize and ensure books section is visible
-        document.addEventListener('DOMContentLoaded', function() {
-            // Force books section to be visible immediately
-            const booksSection = document.getElementById('books');
-            if (booksSection) {
-                booksSection.style.opacity = '1';
-                booksSection.style.transform = 'translateY(0)';
-                booksSection.style.visibility = 'visible';
-                
-                const booksList = document.getElementById('books-list');
-                if (booksList) {
-                    booksList.style.opacity = '1';
-                    booksList.style.visibility = 'visible';
-                }
-            }
+    <!-- Divergence Shader -->
+    <script type="x-shader/x-fragment" id="divergence-shader">#version 300 es
+        precision highp float;
+        in vec2 vUv;
+        uniform sampler2D uVelocity;
+        uniform vec2 uTexelSize;
+        out vec4 FragColor;
+        void main() {
+            float L = texture(uVelocity, vUv - vec2(uTexelSize.x, 0.0)).x;
+            float R = texture(uVelocity, vUv + vec2(uTexelSize.x, 0.0)).x;
+            float T = texture(uVelocity, vUv + vec2(0.0, uTexelSize.y)).y;
+            float B = texture(uVelocity, vUv - vec2(0.0, uTexelSize.y)).y;
             
-            // Handle bottom navigation clicks
-            document.querySelectorAll('.bottom-nav a').forEach(link => {
-                link.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    
-                    // Update active state
-                    document.querySelectorAll('.bottom-nav a').forEach(a => {
-                        a.classList.remove('active');
-                        a.setAttribute('aria-selected', 'false');
-                    });
-                    this.classList.add('active');
-                    this.setAttribute('aria-selected', 'true');
-                    
-                    // Scroll to section
-                    const targetId = this.getAttribute('href').substring(1);
-                    document.getElementById(targetId).scrollIntoView({
-                        behavior: 'smooth', 
-                        block: 'start'
-                    });
-                });
+            float div = 0.5 * (R - L + T - B);
+            FragColor = vec4(div, 0.0, 0.0, 1.0);
+        }
+    </script>
+
+    <!-- Pressure / Jacobi Shader -->
+    <script type="x-shader/x-fragment" id="jacobi-shader">#version 300 es
+        precision highp float;
+        in vec2 vUv;
+        uniform sampler2D uPressure;
+        uniform sampler2D uDivergence;
+        uniform vec2 uTexelSize;
+        out vec4 FragColor;
+        void main() {
+            float L = texture(uPressure, vUv - vec2(uTexelSize.x, 0.0)).x;
+            float R = texture(uPressure, vUv + vec2(uTexelSize.x, 0.0)).x;
+            float T = texture(uPressure, vUv + vec2(0.0, uTexelSize.y)).x;
+            float B = texture(uPressure, vUv - vec2(0.0, uTexelSize.y)).x;
+            float C = texture(uDivergence, vUv).x;
+            
+            float p = (L + R + T + B - C) * 0.25;
+            FragColor = vec4(p, 0.0, 0.0, 1.0);
+        }
+    </script>
+
+    <!-- Gradient Subtract Shader -->
+    <script type="x-shader/x-fragment" id="gradient-subtract-shader">#version 300 es
+        precision highp float;
+        in vec2 vUv;
+        uniform sampler2D uPressure;
+        uniform sampler2D uVelocity;
+        uniform vec2 uTexelSize;
+        out vec4 FragColor;
+        void main() {
+            float L = texture(uPressure, vUv - vec2(uTexelSize.x, 0.0)).x;
+            float R = texture(uPressure, vUv + vec2(uTexelSize.x, 0.0)).x;
+            float T = texture(uPressure, vUv + vec2(0.0, uTexelSize.y)).x;
+            float B = texture(uPressure, vUv - vec2(0.0, uTexelSize.y)).x;
+            vec2 velocity = texture(uVelocity, vUv).xy;
+            velocity.xy -= vec2(R - L, T - B) * 0.5;
+            FragColor = vec4(velocity, 0.0, 1.0);
+        }
+    </script>
+
+    <!-- Splat (Injection) Shader -->
+    <script type="x-shader/x-fragment" id="splat-shader">#version 300 es
+        precision highp float;
+        in vec2 vUv;
+        uniform sampler2D uTarget;
+        uniform float uAspectRatio;
+        uniform vec2 uPoint;
+        uniform vec3 uColor;
+        uniform float uRadius;
+        out vec4 FragColor;
+        void main() {
+            vec2 p = vUv - uPoint.xy;
+            p.x *= uAspectRatio;
+            vec3 splat = exp(-dot(p, p) / uRadius) * uColor;
+            vec3 base = texture(uTarget, vUv).xyz;
+            FragColor = vec4(base + splat, 1.0);
+        }
+    </script>
+
+    <!-- Display Shader -->
+    <script type="x-shader/x-fragment" id="display-shader">#version 300 es
+        precision highp float;
+        in vec2 vUv;
+        uniform sampler2D uTexture;
+        out vec4 FragColor;
+        vec3 palette(float t) {
+            // Deep space blue palette
+            vec3 a = vec3(0.0, 0.0, 0.05);
+            vec3 b = vec3(0.2, 0.5, 1.0);
+            // Non-linear mapping for "glowing" effect
+            return mix(a, b, smoothstep(0.0, 1.0, t * 1.5)); 
+        }
+        void main() {
+            float density = texture(uTexture, vUv).x;
+            vec3 color = palette(density);
+            FragColor = vec4(color, 1.0);
+        }
+    </script>
+
+    <!-- SIMULATION LOGIC -->
+    <script>
+        const CONFIG = {
+            TEXTURE_DOWNSAMPLE: 2, 
+            DENSITY_DISSIPATION: 0.99,
+            VELOCITY_DISSIPATION: 0.99,
+            PRESSURE_ITERATIONS: 20,
+            CURL: 30,
+            SPLAT_RADIUS: 0.0008,
+            SPLAT_FORCE: 9000.0
+        };
+
+        const canvas = document.getElementById('glcanvas');
+        const gl = canvas.getContext('webgl2');
+
+        if (!gl) {
+            console.error("WebGL 2.0 not available");
+            document.body.innerHTML = '<div style="color:white; text-align:center; padding-top:20px;">WebGL 2.0 is required</div>';
+            throw new Error("WebGL 2.0 not supported");
+        }
+
+        const extColor = gl.getExtension('EXT_color_buffer_float');
+        const extLinear = gl.getExtension('OES_texture_float_linear');
+
+        class Program {
+            constructor(vertexSource, fragmentSource) {
+                this.program = this.createProgram(vertexSource.trim(), fragmentSource.trim());
+                if (this.program) {
+                    this.uniforms = this.getUniforms(this.program);
+                }
+            }
+            createProgram(vSource, fSource) {
+                const vs = this.compileShader(gl.VERTEX_SHADER, vSource);
+                const fs = this.compileShader(gl.FRAGMENT_SHADER, fSource);
+                if (!vs || !fs) return null;
+                const program = gl.createProgram();
+                gl.attachShader(program, vs);
+                gl.attachShader(program, fs);
+                gl.linkProgram(program);
+                if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+                    console.error("Program Link Error:", gl.getProgramInfoLog(program));
+                    return null;
+                }
+                return program;
+            }
+            compileShader(type, source) {
+                const shader = gl.createShader(type);
+                gl.shaderSource(shader, source);
+                gl.compileShader(shader);
+                if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+                    console.error("Shader Compile Error:", gl.getShaderInfoLog(shader));
+                    gl.deleteShader(shader);
+                    return null;
+                }
+                return shader;
+            }
+            getUniforms(program) {
+                let uniforms = {};
+                let count = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS);
+                for (let i = 0; i < count; i++) {
+                    let name = gl.getActiveUniform(program, i).name;
+                    uniforms[name] = gl.getUniformLocation(program, name);
+                }
+                return uniforms;
+            }
+            bind() {
+                if(this.program) gl.useProgram(this.program);
+            }
+        }
+
+        const blit = (() => {
+            const vertexBuffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, -1, 1, 1, 1, 1, -1]), gl.STATIC_DRAW);
+            gl.bindBuffer(gl.ARRAY_BUFFER, null);
+            const elementBuffer = gl.createBuffer();
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, elementBuffer);
+            gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array([0, 1, 2, 0, 2, 3]), gl.STATIC_DRAW);
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+            return (destination) => {
+                gl.bindFramebuffer(gl.FRAMEBUFFER, destination ? destination.fbo : null);
+                gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+                gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, elementBuffer);
+                gl.enableVertexAttribArray(0);
+                gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+                gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
+            };
+        })();
+
+        function createTexture(width, height) {
+            const texture = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_2D, texture);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, width, height, 0, gl.RGBA, gl.HALF_FLOAT, null);
+            const filter = extLinear ? gl.LINEAR : gl.NEAREST;
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filter);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filter);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            return texture;
+        }
+
+        function createFBO(width, height) {
+            const texture = createTexture(width, height);
+            const fbo = gl.createFramebuffer();
+            gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+            return { 
+                fbo, texture, width, height, 
+                attach: (id) => {
+                    gl.activeTexture(gl.TEXTURE0 + id);
+                    gl.bindTexture(gl.TEXTURE_2D, texture);
+                } 
+            };
+        }
+
+        function createDoubleFBO(width, height) {
+            let fbo1 = createFBO(width, height);
+            let fbo2 = createFBO(width, height);
+            return {
+                width, height, read: fbo1, write: fbo2,
+                swap: function() { let temp = this.read; this.read = this.write; this.write = temp; }
+            };
+        }
+
+        let velocity, density, divergence, pressure;
+        let programs = {};
+        let simWidth, simHeight;
+
+        const getSource = (id) => document.getElementById(id).textContent;
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            simWidth = Math.floor(canvas.width >> CONFIG.TEXTURE_DOWNSAMPLE);
+            simHeight = Math.floor(canvas.height >> CONFIG.TEXTURE_DOWNSAMPLE);
+            velocity = createDoubleFBO(simWidth, simHeight);
+            density = createDoubleFBO(simWidth, simHeight);
+            divergence = createFBO(simWidth, simHeight);
+            pressure = createDoubleFBO(simWidth, simHeight);
+        }
+
+        function init() {
+            try {
+                programs.advection = new Program(getSource('vertex-shader'), getSource('advection-shader'));
+                programs.divergence = new Program(getSource('vertex-shader'), getSource('divergence-shader'));
+                programs.jacobi = new Program(getSource('vertex-shader'), getSource('jacobi-shader'));
+                programs.gradientSubtract = new Program(getSource('vertex-shader'), getSource('gradient-subtract-shader'));
+                programs.splat = new Program(getSource('vertex-shader'), getSource('splat-shader'));
+                programs.display = new Program(getSource('vertex-shader'), getSource('display-shader'));
+                resize();
+                requestAnimationFrame(update);
+            } catch (e) {
+                console.error("Initialization failed:", e);
+            }
+        }
+
+        let lastTime = performance.now();
+        function update(t) {
+            const dt = Math.min((t - lastTime) / 1000, 0.016);
+            lastTime = t;
+            gl.viewport(0, 0, simWidth, simHeight);
+            const time = t * 0.001;
+            
+            splat(0.5 + Math.sin(time) * 0.2, 0.5 + Math.cos(time * 0.8) * 0.2, Math.cos(time * 2.5) * CONFIG.SPLAT_FORCE, Math.sin(time * 2.5) * CONFIG.SPLAT_FORCE, [0.1, 0.2, 0.8], dt);
+            splat(0.5 + Math.cos(time * 1.4) * 0.25, 0.5 + Math.sin(time * 1.2) * 0.25, Math.sin(time * 3.0) * CONFIG.SPLAT_FORCE * 0.8, Math.cos(time * 3.0) * CONFIG.SPLAT_FORCE * 0.8, [0.05, 0.4, 0.9], dt);
+
+            programs.advection.bind();
+            gl.uniform1f(programs.advection.uniforms.dt, dt);
+            gl.uniform2f(programs.advection.uniforms.uTexelSize, 1.0 / simWidth, 1.0 / simHeight);
+            gl.uniform1f(programs.advection.uniforms.uDissipation, CONFIG.VELOCITY_DISSIPATION);
+            gl.uniform1i(programs.advection.uniforms.uVelocity, 0);
+            gl.uniform1i(programs.advection.uniforms.uSource, 0);
+            velocity.read.attach(0);
+            blit(velocity.write);
+            velocity.swap();
+
+            gl.uniform1f(programs.advection.uniforms.uDissipation, CONFIG.DENSITY_DISSIPATION);
+            gl.uniform1i(programs.advection.uniforms.uVelocity, 0);
+            gl.uniform1i(programs.advection.uniforms.uSource, 1);
+            velocity.read.attach(0);
+            density.read.attach(1);
+            blit(density.write);
+            density.swap();
+
+            programs.divergence.bind();
+            gl.uniform2f(programs.divergence.uniforms.uTexelSize, 1.0 / simWidth, 1.0 / simHeight);
+            gl.uniform1i(programs.divergence.uniforms.uVelocity, 0);
+            velocity.read.attach(0);
+            blit(divergence);
+
+            programs.jacobi.bind();
+            gl.uniform2f(programs.jacobi.uniforms.uTexelSize, 1.0 / simWidth, 1.0 / simHeight);
+            gl.uniform1i(programs.jacobi.uniforms.uDivergence, 0);
+            gl.uniform1i(programs.jacobi.uniforms.uPressure, 1);
+            divergence.attach(0);
+            for (let i = 0; i < CONFIG.PRESSURE_ITERATIONS; i++) {
+                pressure.read.attach(1);
+                blit(pressure.write);
+                pressure.swap();
+            }
+
+            programs.gradientSubtract.bind();
+            gl.uniform2f(programs.gradientSubtract.uniforms.uTexelSize, 1.0 / simWidth, 1.0 / simHeight);
+            gl.uniform1i(programs.gradientSubtract.uniforms.uPressure, 0);
+            gl.uniform1i(programs.gradientSubtract.uniforms.uVelocity, 1);
+            pressure.read.attach(0);
+            velocity.read.attach(1);
+            blit(velocity.write);
+            velocity.swap();
+
+            gl.viewport(0, 0, canvas.width, canvas.height);
+            programs.display.bind();
+            gl.uniform1i(programs.display.uniforms.uTexture, 0);
+            density.read.attach(0);
+            blit(null);
+            requestAnimationFrame(update);
+        }
+
+        function splat(x, y, dx, dy, color, dt) {
+            programs.splat.bind();
+            gl.uniform1i(programs.splat.uniforms.uTarget, 0);
+            gl.uniform1f(programs.splat.uniforms.uAspectRatio, simWidth / simHeight);
+            gl.uniform2f(programs.splat.uniforms.uPoint, x, y);
+            gl.uniform3f(programs.splat.uniforms.uColor, dx * dt, dy * dt, 0.0);
+            gl.uniform1f(programs.splat.uniforms.uRadius, CONFIG.SPLAT_RADIUS);
+            velocity.read.attach(0);
+            blit(velocity.write);
+            velocity.swap();
+            gl.uniform3f(programs.splat.uniforms.uColor, color[0], color[1], color[2]);
+            gl.uniform1i(programs.splat.uniforms.uTarget, 0);
+            density.read.attach(0);
+            blit(density.write);
+            density.swap();
+        }
+
+        window.addEventListener('resize', resize);
+        window.onload = init;
+
+        // Force scroll to top on load/refresh
+        if (history.scrollRestoration) {
+            history.scrollRestoration = 'manual';
+        }
+        window.scrollTo(0, 0);
+
+        // Piano Data
+        const pianoTracks = [
+            { title: "R. Schumann - Aufschwung", subtitle: "Northwell Health", url: "https://www.youtube.com/watch?v=mEEgSmhmkiA" },
+            { title: "C. Debussy - Claire de Lune", subtitle: "", url: "https://youtu.be/chliWNkOIIs" },
+            { title: "F. Chopin - Nocturne No. 2", subtitle: "E-Flat Major", url: "https://www.youtube.com/watch?v=mKvDlsbnnFM" },
+            { title: "W. Mozart - Fantaisie D Minor", subtitle: "", url: "https://www.youtube.com/watch?v=8jmSxc9Xi1E&t=1s" },
+            { title: "A. Dvorak - Violin Sonatina", subtitle: "Op 100, B. 183", url: "https://www.youtube.com/watch?v=D0DGwUpkVF4" }
+        ];
+
+        // Render Piano with Pagination
+        const pianoGrid = document.getElementById('piano-grid');
+        const pianoPrevBtn = document.getElementById('piano-prev-btn');
+        const pianoNextBtn = document.getElementById('piano-next-btn');
+        const pianoPageInfo = document.getElementById('piano-page-info');
+        
+        const pianoItemsPerPage = 2;
+        let currentPianoPage = 1;
+
+        function renderPiano() {
+            if (!pianoGrid) return;
+            
+            pianoGrid.innerHTML = '';
+            const totalPages = Math.ceil(pianoTracks.length / pianoItemsPerPage);
+            const start = (currentPianoPage - 1) * pianoItemsPerPage;
+            const end = start + pianoItemsPerPage;
+            const pageTracks = pianoTracks.slice(start, end);
+            
+            pageTracks.forEach(track => {
+                const item = document.createElement('a');
+                item.href = track.url;
+                item.target = "_blank";
+                item.className = 'music-item';
+                item.innerHTML = `
+                    <div class="font-medium">${track.title}</div>
+                    ${track.subtitle ? `<div class="text-sm opacity-60 mt-1">${track.subtitle}</div>` : ''}
+                `;
+                pianoGrid.appendChild(item);
             });
-        });
 
+            // Update Controls
+            pianoPageInfo.textContent = `${currentPianoPage} / ${totalPages}`;
+            pianoPrevBtn.disabled = currentPianoPage === 1;
+            pianoNextBtn.disabled = currentPianoPage === totalPages;
+        }
 
+        if (pianoPrevBtn && pianoNextBtn) {
+            pianoPrevBtn.addEventListener('click', () => {
+                if (currentPianoPage > 1) {
+                    currentPianoPage--;
+                    renderPiano();
+                }
+            });
+
+            pianoNextBtn.addEventListener('click', () => {
+                const totalPages = Math.ceil(pianoTracks.length / pianoItemsPerPage);
+                if (currentPianoPage < totalPages) {
+                    currentPianoPage++;
+                    renderPiano();
+                }
+            });
+        }
+
+        renderPiano();
+
+        // Books Data
+        const books = [
+            { title: "The Fountainhead", author: "Ayn Rand", isRead: true },
+            { title: "Atlas Shrugged", author: "Ayn Rand", isRead: true },
+            { title: "For the New Intellectual", author: "Ayn Rand", isRead: false },
+            { title: "The Lessons of History", author: "Will and Ariel Durant", isRead: true },
+            { title: "Intelligent Machines", author: "Ray Kurzweil", isRead: false },
+            { title: "Man and His Symbols", author: "Carl Jung", isRead: true },
+            { title: "Benjamin Franklin", author: "Carl Van Doren", isRead: false },
+            { title: "The Difference between God and Larry Ellison", author: "Mike Wilson", isRead: false },
+            { title: "Napoleon", author: "Vincent Cronin", isRead: true },
+            { title: "Metals and How To Weld Them", author: "T. B. Jefferson & Gorham Woods", isRead: false },
+            { title: "Astro Boy, Vol. 1", author: "Osamu Tezuka", isRead: false },
+            { title: "Focus: The ASML way", author: "Marc Hijink", isRead: false },
+            { title: "Crime and Punishment", author: "Fyodor Dostoevsky", isRead: true },
+            { title: "Cherry Orchard", author: "Anton Chekhov", isRead: true },
+            { title: "Uncle Vanya", author: "Anton Chekhov", isRead: true },
+            { title: "Journey to the Center of the Earth", author: "Jules Verne", isRead: true },
+            { title: "Consider Phlebas", author: "Iain M. Banks", isRead: true },
+            { title: "The Player of Games", author: "Iain M. Banks", isRead: true },
+        ];
+
+        // Render Books with Pagination
+        const booksGrid = document.getElementById('books-grid');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const pageInfo = document.getElementById('page-info');
+        
+        const itemsPerPage = 3;
+        let currentPage = 1;
+
+        function renderBooks() {
+            if (!booksGrid) return;
+            
+            booksGrid.innerHTML = '';
+            const totalPages = Math.ceil(books.length / itemsPerPage);
+            const start = (currentPage - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+            const pageBooks = books.slice(start, end);
+            
+            pageBooks.forEach(book => {
+                const card = document.createElement('div');
+                card.className = 'book-card';
+                card.innerHTML = `
+                    <div class="book-title">${book.title}</div>
+                    <div class="book-author">${book.author}</div>
+                    <div class="book-status ${book.isRead ? 'status-read' : 'status-toread'}">
+                        ${book.isRead ? 'Read' : 'To Read'}
+                    </div>
+                `;
+                booksGrid.appendChild(card);
+            });
+
+            // Update Controls
+            pageInfo.textContent = `${currentPage} / ${totalPages}`;
+            prevBtn.disabled = currentPage === 1;
+            nextBtn.disabled = currentPage === totalPages;
+        }
+
+        // Shuffle books on load
+        for (let i = books.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [books[i], books[j]] = [books[j], books[i]];
+        }
+
+        if (prevBtn && nextBtn) {
+            prevBtn.addEventListener('click', () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    renderBooks();
+                }
+            });
+
+            nextBtn.addEventListener('click', () => {
+                const totalPages = Math.ceil(books.length / itemsPerPage);
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    renderBooks();
+                }
+            });
+        }
+
+        renderBooks();
     </script>
     
     <!-- Add the custom audio player script -->
