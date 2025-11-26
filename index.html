@@ -25,6 +25,15 @@
             color: #FFFFF0; /* Ivory */
             font-family: 'Inter', sans-serif;
             overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-text-size-adjust: 100%;
+        }
+        
+        /* iOS safe area support */
+        @supports (padding: env(safe-area-inset-bottom)) {
+            .content-container {
+                padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+            }
         }
 
         canvas {
@@ -199,13 +208,17 @@
             border-radius: 6px;
             text-decoration: none;
             color: inherit;
-            transition: background 0.2s ease;
+            transition: background 0.2s ease, transform 0.15s ease;
             backdrop-filter: blur(4px);
             border: 1px solid rgba(255, 255, 255, 0.05);
         }
         .music-item:hover {
             background: rgba(0, 0, 0, 0.6);
             border-color: rgba(255, 255, 255, 0.2);
+        }
+        .music-item:active {
+            transform: scale(0.98);
+            background: rgba(0, 0, 0, 0.7);
         }
 
         /* Pagination */
@@ -231,10 +244,15 @@
             border-radius: 50%;
             cursor: pointer;
             transition: all 0.2s;
+            touch-action: manipulation;
         }
         .nav-btn:hover:not(:disabled) {
             background: rgba(255, 255, 255, 0.1);
             border-color: rgba(255, 255, 255, 0.4);
+        }
+        .nav-btn:active:not(:disabled) {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(0.95);
         }
         .nav-btn:disabled {
             opacity: 0.3;
@@ -243,11 +261,86 @@
         }
 
         @media (max-width: 768px) {
+            .content-container {
+                padding: 1rem;
+                padding-bottom: 4rem;
+            }
             .black-card {
-                padding: 1.5rem;
+                padding: 0;
             }
             .spacer {
-                height: 60vh;
+                height: 50vh;
+            }
+            .section {
+                margin-bottom: 2.5rem;
+            }
+            .section-title {
+                font-size: 1.25rem;
+                margin-bottom: 1.5rem;
+            }
+            .book-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            .music-grid {
+                grid-template-columns: 1fr;
+            }
+            .production-grid {
+                grid-template-columns: 1fr;
+            }
+            .resume-item {
+                margin-bottom: 1.5rem;
+            }
+            .resume-role {
+                font-size: 1rem;
+                line-height: 1.4;
+            }
+            .resume-desc {
+                font-size: 0.9rem;
+            }
+            .nav-btn {
+                width: 44px;
+                height: 44px;
+            }
+            .pagination-controls {
+                gap: 1rem;
+            }
+            .volume-container {
+                display: none;
+            }
+            .audio-controls {
+                padding: 0.75rem 1rem 1rem;
+            }
+            .player-button {
+                width: 36px;
+                height: 36px;
+            }
+            .track-info {
+                padding: 0.75rem 1rem 0.5rem;
+            }
+            .waveform-container {
+                padding: 0 1rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .content-container {
+                padding: 0.75rem;
+            }
+            .book-card {
+                padding: 1rem;
+            }
+            .music-item {
+                padding: 0.875rem;
+            }
+            .resume-role {
+                font-size: 0.95rem;
+            }
+            .resume-date {
+                font-size: 0.8rem;
+            }
+            .resume-desc {
+                font-size: 0.85rem;
             }
         }
 
@@ -347,12 +440,18 @@
             cursor: pointer;
             color: #FFFFF0;
             padding: 0;
+            touch-action: manipulation;
         }
 
         .player-button:hover {
             opacity: 1;
             background: transparent;
             border-color: transparent;
+        }
+        
+        .player-button:active {
+            opacity: 1;
+            transform: scale(0.9);
         }
 
         .progress-container {
@@ -436,11 +535,11 @@
     <div class="content-container">
         <div class="black-card">
             <!-- Header -->
-            <div class="mb-12 text-center">
-                <h1 class="text-4xl md:text-5xl mb-4">Luke Young</h1>
-                <div class="mt-6 flex justify-center gap-6 text-sm uppercase tracking-widest opacity-60">
-                    <a href="mailto:luke@yng.sh" class="hover:text-white transition-colors">Email</a>
-                    <a href="https://github.com/yunguid" target="_blank" class="hover:text-white transition-colors">GitHub</a>
+            <div class="mb-8 md:mb-12 text-center px-2">
+                <h1 class="text-3xl sm:text-4xl md:text-5xl mb-4">Luke Young</h1>
+                <div class="mt-4 md:mt-6 flex flex-row justify-center gap-6 text-sm uppercase tracking-widest opacity-60">
+                    <a href="mailto:luke@yng.sh" class="hover:text-white transition-colors py-2">Email</a>
+                    <a href="https://github.com/yunguid" target="_blank" class="hover:text-white transition-colors py-2">GitHub</a>
                 </div>
             </div>
 
