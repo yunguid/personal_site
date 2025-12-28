@@ -989,147 +989,177 @@
             }
         };
 
-        // Analytics data store (simulated - would connect to real API)
+        // =====================================================
+        // Analytics API Client - UPDATE THIS URL AFTER DEPLOYMENT
+        // =====================================================
+        const API_BASE = 'https://your-vercel-app.vercel.app/api';
+
+        const AnalyticsAPI = {
+            async fetchStats(period = 'week') {
+                try {
+                    const response = await fetch(`${API_BASE}/stats?period=${period}`);
+                    if (!response.ok) throw new Error('Stats fetch failed');
+                    return await response.json();
+                } catch (error) {
+                    console.error('Stats API error:', error);
+                    return null;
+                }
+            },
+
+            async fetchRealtime() {
+                try {
+                    const response = await fetch(`${API_BASE}/realtime`);
+                    if (!response.ok) throw new Error('Realtime fetch failed');
+                    return await response.json();
+                } catch (error) {
+                    console.error('Realtime API error:', error);
+                    return { activeUsers: 0, breakdown: {} };
+                }
+            },
+
+            async fetchGeo(period = 'week') {
+                try {
+                    const response = await fetch(`${API_BASE}/geo?period=${period}`);
+                    if (!response.ok) throw new Error('Geo fetch failed');
+                    return await response.json();
+                } catch (error) {
+                    console.error('Geo API error:', error);
+                    return { countries: [], locations: [] };
+                }
+            }
+        };
+
+        // Analytics data store - uses real API
         const AnalyticsData = {
             currentPeriod: 'week',
+            cachedStats: null,
+            cachedGeo: null,
+            isLoading: false,
 
-            // Simulated data - replace with actual API calls
-            getData: function(period) {
-                const data = {
-                    day: {
-                        views: 3421,
-                        visitors: 1247,
-                        countries: 23,
-                        duration: '2:58',
-                        bounceRate: 45.2,
-                        viewsChange: '+8.2%',
-                        visitorsChange: '+5.1%'
-                    },
-                    week: {
-                        views: 24892,
-                        visitors: 8421,
-                        countries: 47,
-                        duration: '3:42',
-                        bounceRate: 42.3,
-                        viewsChange: '+12.5%',
-                        visitorsChange: '+8.3%'
-                    },
-                    month: {
-                        views: 98543,
-                        visitors: 32156,
-                        countries: 68,
-                        duration: '4:15',
-                        bounceRate: 38.7,
-                        viewsChange: '+18.9%',
-                        visitorsChange: '+15.2%'
-                    },
-                    year: {
-                        views: 1245678,
-                        visitors: 423891,
-                        countries: 124,
-                        duration: '3:55',
-                        bounceRate: 41.1,
-                        viewsChange: '+45.3%',
-                        visitorsChange: '+38.7%'
-                    }
+            // Fetch fresh data from API
+            async refreshData() {
+                this.isLoading = true;
+                try {
+                    const [stats, geo] = await Promise.all([
+                        AnalyticsAPI.fetchStats(this.currentPeriod),
+                        AnalyticsAPI.fetchGeo(this.currentPeriod)
+                    ]);
+                    this.cachedStats = stats;
+                    this.cachedGeo = geo;
+                } catch (error) {
+                    console.error('Failed to refresh data:', error);
+                }
+                this.isLoading = false;
+                return { stats: this.cachedStats, geo: this.cachedGeo };
+            },
+
+            // Format milliseconds to MM:SS
+            formatDuration(ms) {
+                if (!ms) return '0:00';
+                const seconds = Math.floor(ms / 1000);
+                const minutes = Math.floor(seconds / 60);
+                const remainingSeconds = seconds % 60;
+                return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+            },
+
+            getData(period) {
+                if (!this.cachedStats) {
+                    return { views: 0, visitors: 0, countries: 0, duration: '0:00', bounceRate: 0, viewsChange: '+0%', visitorsChange: '+0%' };
+                }
+                return {
+                    views: this.cachedStats.totalPageviews || 0,
+                    visitors: this.cachedStats.uniqueVisitors || 0,
+                    countries: this.cachedStats.topCountries?.length || 0,
+                    duration: this.formatDuration(this.cachedStats.avgSessionDuration),
+                    bounceRate: parseFloat(this.cachedStats.bounceRate) || 0,
+                    viewsChange: '+0%',
+                    visitorsChange: '+0%'
                 };
-                return data[period] || data.week;
             },
 
-            getCountryData: function() {
-                return [
-                    { name: 'United States', flag: '🇺🇸', views: 8421, percentage: 33.8 },
-                    { name: 'United Kingdom', flag: '🇬🇧', views: 3156, percentage: 12.7 },
-                    { name: 'Germany', flag: '🇩🇪', views: 2847, percentage: 11.4 },
-                    { name: 'Canada', flag: '🇨🇦', views: 2234, percentage: 9.0 },
-                    { name: 'France', flag: '🇫🇷', views: 1876, percentage: 7.5 },
-                    { name: 'Australia', flag: '🇦🇺', views: 1543, percentage: 6.2 },
-                    { name: 'Japan', flag: '🇯🇵', views: 1234, percentage: 5.0 },
-                    { name: 'India', flag: '🇮🇳', views: 987, percentage: 4.0 }
-                ];
+            getCountryData() {
+                if (!this.cachedGeo || !this.cachedGeo.countries) return [];
+                return this.cachedGeo.countries.map(c => ({
+                    name: c.name,
+                    flag: c.flag,
+                    views: c.count,
+                    percentage: parseFloat(c.percentage)
+                }));
             },
 
-            getLocationData: function() {
-                return [
-                    { lat: 40.7128, lng: -74.0060, city: 'New York', count: 2341 },
-                    { lat: 51.5074, lng: -0.1278, city: 'London', count: 1856 },
-                    { lat: 48.8566, lng: 2.3522, city: 'Paris', count: 1234 },
-                    { lat: 35.6762, lng: 139.6503, city: 'Tokyo', count: 987 },
-                    { lat: 52.5200, lng: 13.4050, city: 'Berlin', count: 876 },
-                    { lat: 37.7749, lng: -122.4194, city: 'San Francisco', count: 765 },
-                    { lat: -33.8688, lng: 151.2093, city: 'Sydney', count: 654 },
-                    { lat: 43.6532, lng: -79.3832, city: 'Toronto', count: 543 },
-                    { lat: 19.0760, lng: 72.8777, city: 'Mumbai', count: 432 },
-                    { lat: 55.7558, lng: 37.6173, city: 'Moscow', count: 321 },
-                    { lat: -23.5505, lng: -46.6333, city: 'São Paulo', count: 298 },
-                    { lat: 31.2304, lng: 121.4737, city: 'Shanghai', count: 276 },
-                    { lat: 1.3521, lng: 103.8198, city: 'Singapore', count: 254 },
-                    { lat: 41.9028, lng: 12.4964, city: 'Rome', count: 232 },
-                    { lat: 59.3293, lng: 18.0686, city: 'Stockholm', count: 198 }
-                ];
+            getLocationData() {
+                if (!this.cachedGeo || !this.cachedGeo.locations) return [];
+                return this.cachedGeo.locations.map(l => ({
+                    lat: l.lat,
+                    lng: l.lng,
+                    city: l.city,
+                    count: l.count
+                }));
             },
 
-            getTrafficData: function(period) {
-                const labels = period === 'day' ?
-                    ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'] :
-                    period === 'week' ?
-                    ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] :
-                    period === 'month' ?
-                    ['Week 1', 'Week 2', 'Week 3', 'Week 4'] :
-                    ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-                const multiplier = period === 'day' ? 1 : period === 'week' ? 3 : period === 'month' ? 10 : 30;
+            getTrafficData(period) {
+                if (!this.cachedStats || !this.cachedStats.timeSeries) {
+                    return { labels: [], views: [], visitors: [] };
+                }
+                const sorted = Object.entries(this.cachedStats.timeSeries)
+                    .sort((a, b) => a[0].localeCompare(b[0]));
 
                 return {
-                    labels,
-                    views: labels.map(() => Math.floor(Math.random() * 1000 * multiplier + 500 * multiplier)),
-                    visitors: labels.map(() => Math.floor(Math.random() * 400 * multiplier + 200 * multiplier))
+                    labels: sorted.map(([date]) => {
+                        const d = new Date(date);
+                        if (period === 'day') return d.toLocaleTimeString('en-US', { hour: '2-digit' });
+                        if (period === 'week') return d.toLocaleDateString('en-US', { weekday: 'short' });
+                        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    }),
+                    views: sorted.map(([, data]) => data.views),
+                    visitors: sorted.map(([, data]) => data.visitors)
                 };
             },
 
-            getDeviceData: function() {
+            getDeviceData() {
+                if (!this.cachedStats || !this.cachedStats.deviceBreakdown) {
+                    return [
+                        { label: 'Desktop', value: 0, color: '#667eea' },
+                        { label: 'Mobile', value: 0, color: '#f093fb' },
+                        { label: 'Tablet', value: 0, color: '#4facfe' }
+                    ];
+                }
+                const breakdown = this.cachedStats.deviceBreakdown;
+                const total = Object.values(breakdown).reduce((a, b) => a + b, 0) || 1;
                 return [
-                    { label: 'Desktop', value: 58, color: '#667eea' },
-                    { label: 'Mobile', value: 32, color: '#f093fb' },
-                    { label: 'Tablet', value: 10, color: '#4facfe' }
+                    { label: 'Desktop', value: Math.round((breakdown.desktop || 0) / total * 100), color: '#667eea' },
+                    { label: 'Mobile', value: Math.round((breakdown.mobile || 0) / total * 100), color: '#f093fb' },
+                    { label: 'Tablet', value: Math.round((breakdown.tablet || 0) / total * 100), color: '#4facfe' }
                 ];
             },
 
-            getTopPages: function() {
-                return [
-                    { path: '/', views: 8432 },
-                    { path: '/about', views: 3421 },
-                    { path: '/resume', views: 2876 },
-                    { path: '/music', views: 2134 },
-                    { path: '/books', views: 1876 },
-                    { path: '/montana_gallery.html', views: 1543 },
-                    { path: '/leetcode', views: 987 }
-                ];
+            getTopPages() {
+                if (!this.cachedStats || !this.cachedStats.topPages) return [];
+                return Object.entries(this.cachedStats.topPages)
+                    .map(([path, views]) => ({ path, views }))
+                    .slice(0, 10);
             },
 
-            getSourcesData: function() {
+            getSourcesData() {
+                if (!this.cachedStats || !this.cachedStats.sourceBreakdown) {
+                    return { labels: [], data: [] };
+                }
+                const entries = Object.entries(this.cachedStats.sourceBreakdown)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 6);
+                const total = entries.reduce((a, [, v]) => a + v, 0) || 1;
                 return {
-                    labels: ['Direct', 'Google', 'LinkedIn', 'GitHub', 'Twitter', 'Other'],
-                    data: [35, 28, 15, 12, 6, 4]
+                    labels: entries.map(([source]) => source),
+                    data: entries.map(([, count]) => Math.round(count / total * 100))
                 };
             },
 
-            getHeatmapData: function() {
+            getHeatmapData() {
+                // For now, return empty heatmap - could be enhanced with hourly breakdown
                 const data = [];
                 for (let day = 0; day < 7; day++) {
                     for (let hour = 0; hour < 24; hour++) {
-                        // Simulate higher activity during business hours
-                        let intensity = Math.random();
-                        if (hour >= 9 && hour <= 17 && day < 5) {
-                            intensity = 0.5 + Math.random() * 0.5;
-                        } else if (hour >= 0 && hour <= 6) {
-                            intensity = Math.random() * 0.3;
-                        }
-                        data.push({
-                            day,
-                            hour,
-                            value: intensity
-                        });
+                        data.push({ day, hour, value: 0 });
                     }
                 }
                 return data;
@@ -1524,7 +1554,7 @@
             const buttons = document.querySelectorAll('.time-filter button');
 
             buttons.forEach(button => {
-                button.addEventListener('click', () => {
+                button.addEventListener('click', async () => {
                     const period = button.dataset.period;
 
                     if (!Validator.isValidPeriod(period)) {
@@ -1540,8 +1570,18 @@
                     button.setAttribute('aria-pressed', 'true');
 
                     AnalyticsData.currentPeriod = period;
+
+                    // Fetch fresh data for new period
+                    await AnalyticsData.refreshData();
+
                     updateStats();
                     updateCharts();
+                    updateTopCountries();
+                    updateTopPages();
+                    updateMapMarkers();
+                    if (showHeatMap) {
+                        updateHeatLayer();
+                    }
                 });
             });
         }
@@ -1584,8 +1624,8 @@
                 refreshBtn.disabled = true;
                 refreshBtn.classList.add('loading');
 
-                // Simulate data refresh
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                // Fetch fresh data from API
+                await AnalyticsData.refreshData();
 
                 updateStats();
                 updateCharts();
@@ -1602,29 +1642,45 @@
             });
         }
 
-        // Simulate real-time active users
-        function simulateActiveUsers() {
+        // Poll real-time active users from API
+        function startRealtimePolling() {
             const activeUsersEl = document.getElementById('activeUsers');
 
-            setInterval(() => {
-                const current = parseInt(activeUsersEl.textContent);
-                const change = Math.floor(Math.random() * 5) - 2;
-                const newValue = Math.max(1, current + change);
-                activeUsersEl.textContent = newValue;
-            }, 5000);
+            async function updateActiveUsers() {
+                const data = await AnalyticsAPI.fetchRealtime();
+                if (data && typeof data.activeUsers === 'number') {
+                    activeUsersEl.textContent = data.activeUsers;
+                }
+            }
+
+            // Initial fetch
+            updateActiveUsers();
+
+            // Poll every 30 seconds
+            setInterval(updateActiveUsers, 30000);
         }
 
         // Initialize everything on DOM load
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Show loading state
+            document.getElementById('totalViews').textContent = '...';
+            document.getElementById('uniqueVisitors').textContent = '...';
+            document.getElementById('activeUsers').textContent = '...';
+
+            // Fetch real data from API
+            await AnalyticsData.refreshData();
+
+            // Initialize UI with fetched data
             initMap();
             initCharts();
+            updateStats();
             updateTopCountries();
             updateTopPages();
             initHeatmap();
             initTimeFilters();
             initDatePickers();
             initRefreshButton();
-            simulateActiveUsers();
+            startRealtimePolling();
         });
     </script>
     <!-- Test suite (uncomment to enable tests in development) -->
