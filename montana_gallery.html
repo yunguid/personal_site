@@ -1,192 +1,235 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="utf-8">
-  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Montana - Luke Young</title>
+    <link rel="canonical" href="https://yunguid.com/montana_gallery.html">
+    <meta name="theme-color" content="#111827">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=Playfair+Display:wght@400;500&display=swap" rel="stylesheet">
+    <meta property="og:title" content="Montana Gallery - Luke Young">
+    <meta property="og:url" content="https://yunguid.com/montana_gallery.html">
+    <style>
+        :root {
+            --color-ivory: #FFFFF0;
+            --color-indigo-light: #a5b4fc;
+            --font-sans: 'Inter', sans-serif;
+            --font-serif: 'Playfair Display', serif;
+        }
 
-  <title>Montana Gallery - Luke R. Young</title>
-  <meta content="" name="description">
-  <meta content="" name="keywords">
+        * { box-sizing: border-box; }
 
-  <!-- Favicons -->
-  <link href="assets/img/favicon.png" rel="icon">
-  <link href="assets/img/apple-touch-icon.png" rel="apple-touch-icon">
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            background-color: #000;
+            color: var(--color-ivory);
+            font-family: var(--font-sans);
+            overflow-x: hidden;
+        }
 
-  <!-- Google Fonts -->
-  <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,600i,700,700i|
-  Raleway:300,300i,400,400i,500,500i,600,600i,700,700i|
-  Poppins:300,300i,400,400i,500,500i,600,600i,700,700i" rel="stylesheet">
+        .content-container {
+            position: relative;
+            z-index: 1;
+            min-height: 100vh;
+            padding: 2rem;
+            padding-top: 4rem;
+        }
 
-  <!-- Vendor CSS Files -->
-  <link href="assets/vendor/aos/aos.css" rel="stylesheet">
-  <link href="assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
-  <link href="assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
-  <link href="assets/vendor/boxicons/css/boxicons.min.css" rel="stylesheet">
-  <link href="assets/vendor/glightbox/css/glightbox.min.css" rel="stylesheet">
-  <link href="assets/vendor/swiper/swiper-bundle.min.css" rel="stylesheet">
+        .back-link {
+            display: inline-block;
+            color: var(--color-ivory);
+            text-decoration: none;
+            opacity: 0.6;
+            font-size: 0.9rem;
+            margin-bottom: 2rem;
+            transition: opacity 0.2s;
+        }
 
-  <!-- Template Main CSS File -->
-  <link href="assets/css/style.css" rel="stylesheet">
+        .back-link:hover {
+            opacity: 1;
+        }
 
-  <style>
-    .gallery {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-      grid-gap: 20px;
-      padding: 20px;
-    }
+        .page-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
 
-    .gallery a {
-      display: block;
-      width: 100%;
-      height: 250px;
-      overflow: hidden;
-      border-radius: 5px;
-      position: relative;
-      transition: transform 0.3s ease-in-out;
-    }
+        .page-header h1 {
+            font-family: var(--font-serif);
+            font-size: 2.5rem;
+            font-weight: 400;
+            margin: 0 0 0.5rem 0;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
 
-    .gallery a img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      transition: transform 0.3s ease-in-out;
-    }
+        .page-header p {
+            opacity: 0.7;
+            margin: 0;
+            font-size: 1rem;
+        }
 
-    .gallery a:hover img {
-      transform: scale(1.05);
-    }
-  </style>
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .gallery-item {
+            aspect-ratio: 4/3;
+            overflow: hidden;
+            border-radius: 6px;
+            cursor: pointer;
+            background: rgba(0,0,0,0.3);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .gallery-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s;
+        }
+
+        .gallery-item:hover img {
+            transform: scale(1.05);
+        }
+
+        /* Lightbox */
+        #lightbox {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            border: none;
+            padding: 0;
+            max-width: 100%;
+            max-height: 100%;
+            z-index: 1000;
+        }
+
+        #lightbox::backdrop {
+            background: rgba(0,0,0,0.95);
+        }
+
+        #lightbox[open] {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #lightbox img {
+            max-width: 90vw;
+            max-height: 90vh;
+            object-fit: contain;
+        }
+
+        .lightbox-btn {
+            position: absolute;
+            background: transparent;
+            border: none;
+            color: var(--color-ivory);
+            font-size: 2rem;
+            cursor: pointer;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+            padding: 1rem;
+        }
+
+        .lightbox-btn:hover {
+            opacity: 1;
+        }
+
+        .lightbox-close {
+            top: 1rem;
+            right: 1rem;
+            font-size: 2.5rem;
+        }
+
+        .lightbox-prev {
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .lightbox-next {
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .footer {
+            text-align: center;
+            padding: 3rem 0;
+            opacity: 0.4;
+            font-size: 0.875rem;
+        }
+
+        @media (max-width: 768px) {
+            .content-container {
+                padding: 1rem;
+                padding-top: 2rem;
+            }
+
+            .page-header h1 {
+                font-size: 2rem;
+            }
+
+            .gallery {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+                gap: 0.5rem;
+            }
+
+            .lightbox-btn {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+  <script type="module" crossorigin src="/js/montana-BmMEDE7g.js"></script>
+  <link rel="modulepreload" crossorigin href="/js/modulepreload-polyfill-B5Qt9EMX.js">
 </head>
-
 <body>
+    <div class="content-container">
+        <a href="/" class="back-link">← Back to Home</a>
 
-  <!-- ======= Mobile nav toggle button ======= -->
-  <i class="bi bi-list mobile-nav-toggle d-lg-none"></i>
-
-  <!-- ======= Header ======= -->
-  <header id="header" class="d-flex flex-column justify-content-center">
-    <nav id="navbar" class="navbar nav-menu">
-      <ul>
-        <li><a href="index.html" class="nav-link scrollto"><i class="bx bx-home"></i> <span>Home</span></a></li>
-      </ul>
-    </nav>
-  </header><!-- End Header -->
-
-  <main id="main">
-
-    <!-- ======= Montana Gallery Section ======= -->
-    <section id="montana-gallery" class="montana-gallery">
-      <div class="container" data-aos="fade-up">
-
-        <div class="section-title">
-          <h2>Montana Gallery</h2>
-          <p>Photos from my time in the Bob Marshall Wilderness, Montana</p>
-        </div>
+        <header class="page-header">
+            <h1>Montana</h1>
+            <p>Photos from the Bob Marshall Wilderness</p>
+        </header>
 
         <div class="gallery" id="gallery">
-          <!-- Images will be dynamically added here -->
+            <!-- Images loaded via JS -->
         </div>
 
-      </div>
-    </section><!-- End Montana Gallery Section -->
-
-  </main><!-- End #main -->
-
-  <!-- ======= Footer ======= -->
-  <footer id="footer">
-    <div class="container">
-      <h3>Luke R. Young</h3>
-      <div class="social-links">
-        <a href="https://github.com/yunguid" class="github"><i class="bx bxl-github"></i></a>
-        <a href="https://www.linkedin.com/in/lukeryoung/" class="linkedin"><i class="bx bxl-linkedin"></i></a>
-      </div>
-      <div class="copyright">
-        &copy; Copyright <strong><span>Luke R. Young</span></strong>. All Rights Reserved
-      </div>
+        <footer class="footer">
+            &copy; 2025 Luke Young
+        </footer>
     </div>
-  </footer><!-- End Footer -->
 
-  <div id="preloader"></div>
-  <a href="#" class="back-to-top d-flex align-items-center justify-content-center">
-    <i class="bi bi-arrow-up-short"></i>
-  </a>
+    <dialog id="lightbox">
+        <img id="lightbox-img" src="" alt="">
+        <button class="lightbox-btn lightbox-close" aria-label="Close">×</button>
+        <button class="lightbox-btn lightbox-prev" aria-label="Previous">‹</button>
+        <button class="lightbox-btn lightbox-next" aria-label="Next">›</button>
+    </dialog>
+
 
-  <!-- Vendor JS Files -->
-  <script src="assets/vendor/purecounter/purecounter_vanilla.js"></script>
-  <script src="assets/vendor/aos/aos.js"></script>
-  <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-  <script src="assets/vendor/glightbox/js/glightbox.min.js"></script>
-  <script src="assets/vendor/isotope-layout/isotope.pkgd.min.js"></script>
-  <script src="assets/vendor/swiper/swiper-bundle.min.js"></script>
-  <script src="assets/vendor/typed.js/typed.umd.js"></script>
-  <script src="assets/vendor/waypoints/noframework.waypoints.js"></script>
-  <script src="assets/vendor/php-email-form/validate.js"></script>
-
-  <!-- Template Main JS File -->
-  <script src="assets/js/main.js"></script>
-
-  <!-- Updated Gallery Script -->
-  <script>
-    document.addEventListener('DOMContentLoaded', function () {
-      const gallery = document.getElementById('gallery');
-      const bucketUrl = 'https://lukeyoung-montana-gallery.s3.amazonaws.com/';
-      const imageNames = [
-        'FullSizeRender (1).jpg',
-        'FullSizeRender (2).jpg',
-        'FullSizeRender.jpg',
-        'IMG_0812.jpg',
-        'IMG_1848.jpg',
-        'IMG_1905.jpg',
-        'IMG_2033.jpg',
-        'IMG_2051.jpg',
-        'IMG_4325.jpg',
-        'IMG_5392.jpg',
-        'IMG_5399.jpg',
-        'IMG_5401.jpg',
-        'IMG_5404.jpg',
-        'IMG_5417.jpg',
-        'IMG_5424.jpg',
-        'IMG_5425.jpg',
-        'IMG_5426.jpg',
-        'IMG_5429.jpg'
-      ];
-
-      imageNames.forEach(imageName => {
-        // Create anchor element for GLightbox
-        const link = document.createElement('a');
-        link.href = bucketUrl + encodeURIComponent(imageName);
-        link.className = 'glightbox';
-        link.setAttribute('data-gallery', 'montana-gallery');
-        link.setAttribute('data-title', `Montana Photo: ${imageName.replace('.jpg', '').replace(/_/g, ' ')}`);
-
-        // Create image element
-        const img = document.createElement('img');
-        img.src = bucketUrl + imageName;
-        img.alt = `Montana Photo: ${imageName.replace('.jpg', '').replace(/_/g, ' ')}`;
-        img.loading = 'lazy';
-
-        // Append image to link, then link to gallery
-        link.appendChild(img);
-        gallery.appendChild(link);
-      });
-
-      // Initialize GLightbox
-      const lightbox = GLightbox({
-        selector: '.glightbox',
-        loop: true,
-        zoomable: true,
-        draggable: false,
-        touchNavigation: true
-      });
-    });
-  </script>
-
-  <!-- GoatCounter Analytics -->
-  <script data-goatcounter="https://yunguid.goatcounter.com/count"
-          async src="//gc.zgo.at/count.js"></script>
-
+    <!-- GoatCounter Analytics -->
+    <script data-goatcounter="https://yunguid.goatcounter.com/count"
+            async src="//gc.zgo.at/count.js"></script>
 </body>
-
 </html>
