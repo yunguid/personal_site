@@ -1,0 +1,168 @@
+/* Audio Player */
+.custom-audio-player {
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: var(--border-radius-md);
+  overflow: hidden;
+  position: relative;
+  margin: 0;
+  padding: 0;
+  transition: background var(--transition-normal), border-color var(--transition-normal);
+}
+
+.custom-audio-player:hover {
+  background: rgba(0, 0, 0, 0.6);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.audio-container {
+  padding: 0;
+  background: transparent;
+}
+
+.track-info {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 1rem 1.25rem 0.5rem;
+  background: transparent;
+}
+
+.track-title {
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--color-ivory);
+  letter-spacing: 0.02em;
+}
+
+.track-duration {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--color-ivory);
+  opacity: 0.6;
+}
+
+.waveform-container {
+  height: 32px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 1px;
+  padding: 0 1.25rem;
+  background: transparent;
+  margin: 0.5rem 0;
+  opacity: 0.8;
+}
+
+.waveform-bar {
+  width: 2px;
+  min-height: 2px;
+  background: var(--color-ivory);
+  opacity: 0.2;
+  border-radius: 1px;
+  transition: all var(--transition-normal);
+}
+
+.audio-controls {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 1.25rem 1rem;
+  gap: var(--spacing-md);
+  background: transparent;
+}
+
+.player-button {
+  background: transparent;
+  border: none;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0;
+  transition: all var(--transition-normal);
+  opacity: 0.8;
+  cursor: pointer;
+  color: var(--color-ivory);
+  padding: 0;
+  touch-action: manipulation;
+}
+
+.player-button:hover {
+  opacity: 1;
+  background: transparent;
+  border-color: transparent;
+}
+
+.player-button:active {
+  opacity: 1;
+  transform: scale(0.9);
+}
+
+.progress-container {
+  flex: 1;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+  cursor: pointer;
+  position: relative;
+  border-radius: 1px;
+  transition: height var(--transition-normal);
+}
+
+.progress-container:hover {
+  height: 4px;
+}
+
+.progress-bar {
+  height: 100%;
+  width: 0%;
+  background: var(--color-indigo-light);
+  transition: width 0.1s linear;
+  position: relative;
+}
+
+.volume-container {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  opacity: 0.6;
+  transition: opacity var(--transition-normal);
+}
+
+.volume-container:hover {
+  opacity: 1;
+}
+
+.volume-slider {
+  width: 50px;
+  height: 2px;
+  appearance: none;
+  background: rgba(255, 255, 255, 0.2);
+  outline: none;
+  cursor: pointer;
+  border-radius: 1px;
+}
+
+.volume-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 8px;
+  height: 8px;
+  background: var(--color-ivory);
+  cursor: pointer;
+  border-radius: 50%;
+  transition: transform var(--transition-normal);
+}
+
+.volume-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.5);
+}
+
+/* Waveform animation */
+@keyframes sound {
+  0% { height: 10%; opacity: 0.3; }
+  50% { height: 90%; opacity: 0.8; }
+  100% { height: 10%; opacity: 0.3; }
+}

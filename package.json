@@ -1,7 +1,13 @@
 {
-  "dependencies": {
-    "@aws-sdk/client-s3": "^3.564.0",
-    "aws-sdk": "^2.1608.0",
-    "tslib": "^2.6.2"
+  "name": "luke-young-site",
+  "version": "2.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^5.4.0"
   }
 }

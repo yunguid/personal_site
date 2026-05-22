@@ -1,0 +1,10 @@
+{
+  "s3BaseUrl": "https://lukemusicbucket.s3.us-east-2.amazonaws.com",
+  "tracks": [
+    { "title": "Sunrise", "fileName": "SUNRISE.mp3", "duration": "1:21" },
+    { "title": "Karlsim", "fileName": "karlsim.mp3", "duration": "1:03" },
+    { "title": "Romestreetz", "fileName": "romestreetz.mp3", "duration": "1:06" },
+    { "title": "Drivers", "fileName": "ubr_drivers.mp3", "duration": "0:58" },
+    { "title": "127", "fileName": "baby2.mp3", "duration": "1:15" }
+  ]
+}

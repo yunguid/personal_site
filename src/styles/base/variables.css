@@ -1,0 +1,33 @@
+:root {
+  /* Colors */
+  --color-ivory: #FFFFF0;
+  --color-indigo-light: #a5b4fc;
+  --color-indigo-lighter: #c7d2fe;
+  --color-black: #000000;
+  --color-dark-bg: #111827;
+
+  /* Typography */
+  --font-sans: 'Inter', sans-serif;
+  --font-serif: 'Playfair Display', serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+
+  /* Spacing */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 2rem;
+  --spacing-xl: 4rem;
+
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.2s ease;
+  --transition-slow: 0.3s ease;
+
+  /* Borders */
+  --border-radius-sm: 4px;
+  --border-radius-md: 6px;
+
+  /* Shadows */
+  --text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+  --text-shadow-lg: 0 2px 4px rgba(0,0,0,0.5);
+}

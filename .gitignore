@@ -1,3 +1,5 @@
 /assets/img/montana_pics/
 .aider*
 .env
+node_modules/
+dist/

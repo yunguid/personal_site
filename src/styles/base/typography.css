@@ -1,0 +1,20 @@
+h1, h2, h3 {
+  font-family: var(--font-serif);
+  font-weight: 400;
+}
+
+.ivory-text {
+  color: var(--color-ivory);
+}
+
+.link {
+  color: var(--color-indigo-light);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: all var(--transition-normal);
+}
+
+.link:hover {
+  color: var(--color-indigo-lighter);
+  border-bottom-color: var(--color-indigo-lighter);
+}

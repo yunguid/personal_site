@@ -1,0 +1,12 @@
+/* Main CSS entry - imports all partials */
+@import './base/variables.css';
+@import './base/reset.css';
+@import './base/typography.css';
+
+@import './layout/canvas.css';
+@import './layout/sections.css';
+@import './layout/responsive.css';
+
+@import './components/pagination.css';
+@import './components/cards.css';
+@import './components/audio-player.css';

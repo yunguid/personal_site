@@ -1,0 +1,163 @@
+/* iOS safe area support */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .content-container {
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+  }
+}
+
+/* Spacer/Hero area */
+.spacer {
+  height: 100vh;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: var(--spacing-lg);
+  pointer-events: none;
+}
+
+.scroll-arrow {
+  opacity: 0.6;
+  animation: bounce 2s infinite;
+  color: var(--color-ivory);
+}
+
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-10px); }
+  60% { transform: translateY(-5px); }
+}
+
+/* Main content container */
+.content-container {
+  min-height: 100vh;
+  padding: var(--spacing-lg);
+  display: flex;
+  justify-content: center;
+  padding-bottom: 8rem;
+  position: relative;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.black-card {
+  background: transparent;
+  backdrop-filter: none;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  max-width: 900px;
+  width: 100%;
+  box-shadow: none;
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+/* Sections */
+.section {
+  margin-bottom: var(--spacing-xl);
+}
+
+.section-title {
+  font-size: 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 240, 0.3);
+  padding-bottom: var(--spacing-sm);
+  margin-bottom: var(--spacing-lg);
+  letter-spacing: 0.05em;
+  text-shadow: var(--text-shadow-lg);
+}
+
+.section-subtitle {
+  margin-bottom: 1.5rem;
+  opacity: 0.8;
+  font-weight: 300;
+}
+
+/* Header */
+.site-header {
+  margin-bottom: 2rem;
+  text-align: center;
+  padding: 0 0.5rem;
+}
+
+.site-header h1 {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+.header-links {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  gap: 1.5rem;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  opacity: 0.6;
+}
+
+.header-links a {
+  padding: 0.5rem 0;
+  transition: color var(--transition-normal);
+}
+
+.header-links a:hover {
+  color: white;
+}
+
+/* Footer */
+.site-footer {
+  text-align: center;
+  font-size: 0.875rem;
+  opacity: 0.4;
+  margin-top: 3rem;
+  font-family: var(--font-mono);
+}
+
+/* Resume Items */
+.resume-item {
+  margin-bottom: var(--spacing-lg);
+  text-shadow: var(--text-shadow);
+}
+
+.resume-role {
+  font-size: 1.1rem;
+  margin-bottom: var(--spacing-xs);
+}
+
+.resume-date {
+  font-size: 0.85rem;
+  opacity: 0.6;
+  margin-bottom: 0.75rem;
+  font-family: var(--font-mono);
+}
+
+.resume-desc {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  opacity: 0.9;
+}
+
+/* About Section */
+.about-content {
+  line-height: 1.8;
+  opacity: 0.9;
+  text-shadow: var(--text-shadow);
+}
+
+.about-content p {
+  margin-bottom: 0.5rem;
+}
+
+/* Productions subsection */
+.productions-subsection {
+  margin-top: 3rem;
+}
+
+.productions-subsection h3 {
+  font-size: 1.25rem;
+  margin-bottom: 1.5rem;
+  font-weight: 300;
+  opacity: 0.8;
+}

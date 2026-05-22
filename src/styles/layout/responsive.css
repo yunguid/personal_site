@@ -1,0 +1,119 @@
+@media (max-width: 768px) {
+  .content-container {
+    padding: var(--spacing-md);
+    padding-bottom: var(--spacing-xl);
+  }
+
+  .black-card {
+    padding: 0;
+  }
+
+  .spacer {
+    height: 50vh;
+  }
+
+  .section {
+    margin-bottom: 2.5rem;
+  }
+
+  .section-title {
+    font-size: 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .site-header h1 {
+    font-size: 2rem;
+  }
+
+  .book-grid {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
+  }
+
+  .music-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .production-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .resume-item {
+    margin-bottom: 1.5rem;
+  }
+
+  .resume-role {
+    font-size: 1rem;
+    line-height: 1.4;
+  }
+
+  .resume-desc {
+    font-size: 0.9rem;
+  }
+
+  .nav-btn {
+    width: 44px;
+    height: 44px;
+  }
+
+  .pagination-controls {
+    gap: var(--spacing-md);
+  }
+
+  .volume-container {
+    display: none;
+  }
+
+  .audio-controls {
+    padding: 0.75rem 1rem 1rem;
+  }
+
+  .player-button {
+    width: 36px;
+    height: 36px;
+  }
+
+  .track-info {
+    padding: 0.75rem 1rem 0.5rem;
+  }
+
+  .waveform-container {
+    padding: 0 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .content-container {
+    padding: 0.75rem;
+  }
+
+  .book-card {
+    padding: var(--spacing-md);
+  }
+
+  .music-item {
+    padding: 0.875rem;
+  }
+
+  .resume-role {
+    font-size: 0.95rem;
+  }
+
+  .resume-date {
+    font-size: 0.8rem;
+  }
+
+  .resume-desc {
+    font-size: 0.85rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .site-header h1 {
+    font-size: 3rem;
+  }
+
+  .site-header {
+    margin-bottom: 3rem;
+  }
+}

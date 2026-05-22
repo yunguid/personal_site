@@ -1,0 +1,30 @@
+[
+  {
+    "role": "AI Software Engineer",
+    "company": "Catalyst Operations & Analytics",
+    "url": "https://www.catalystops.com/",
+    "dates": "Jan 2025 - Present",
+    "description": "Built large-scale AI products addressing critical needs for government and defense-related clients. Projects include air-gapped bulk processing systems for multi-language audio and documents, real-time live transcription and translation engines, and advanced media processing tools."
+  },
+  {
+    "role": "Software Engineer Intern",
+    "company": "Quikirr",
+    "url": "https://quikirr.com/",
+    "dates": "May 2024 - Sep 2024",
+    "description": "Joined as the first engineer to build due diligence tools for Private Equity and Investment Banking."
+  },
+  {
+    "role": "Lead Developer (Contract)",
+    "company": "m_vis",
+    "url": "https://vangelis.vercel.app/",
+    "dates": "May 2024 - Sep 2024",
+    "description": "Solely architected and built an AI assisted audio visualization platform. Delivered a full-stack solution that automates video generation from audio inputs."
+  },
+  {
+    "role": "Software Engineer Intern",
+    "company": "Jackpine Technologies",
+    "url": null,
+    "dates": "June 2023 - Aug 2023",
+    "description": "Automated QA testing and migrated cloud assets, improving test coverage and accuracy for Windows/Linux environments."
+  }
+]
