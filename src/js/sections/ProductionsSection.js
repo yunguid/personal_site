@@ -3,6 +3,7 @@ import { AudioPlayer } from '../components/AudioPlayer.js';
 import productionsData from '../../data/productions.json';
 
 let currentPlayers = [];
+let renderedPlayers = [];
 
 export function initProductionsSection() {
   const container = document.getElementById('production-list');
@@ -28,13 +29,14 @@ export function initProductionsSection() {
         duration: track.duration,
         url: `${s3BaseUrl}/${track.fileName}`
       }, index);
-      currentPlayers.push(player);
+      renderedPlayers.push(player);
       return playerContainer;
     },
     onPageChange: () => {
       // Clean up old players when page changes
       currentPlayers.forEach(player => player.destroy());
-      currentPlayers = [];
+      currentPlayers = renderedPlayers;
+      renderedPlayers = [];
     }
   });
 }

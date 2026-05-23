@@ -58,7 +58,7 @@ export class AudioPlayer {
           </div>
         </div>
         <audio id="audio-${this.index}" preload="metadata">
-          <source src="${this.track.url}" type="audio/mpeg">
+          <source src="${this.track.url}">
         </audio>
       </div>
     `;
@@ -138,14 +138,29 @@ export class AudioPlayer {
       }
     });
 
-    this.audio.play();
+    const playPromise = this.audio.play();
+    if (playPromise && typeof playPromise.then === 'function') {
+      playPromise
+        .then(() => this.showPlaying())
+        .catch(() => this.showPaused());
+      return;
+    }
+
+    this.showPlaying();
+  }
+
+  pause() {
+    this.audio.pause();
+    this.showPaused();
+  }
+
+  showPlaying() {
     this.isPlaying = true;
     this.playPauseBtn.innerHTML = PAUSE_ICON;
     this.startWaveformAnimation();
   }
 
-  pause() {
-    this.audio.pause();
+  showPaused() {
     this.isPlaying = false;
     this.playPauseBtn.innerHTML = PLAY_ICON;
     this.stopWaveformAnimation();
