@@ -169,11 +169,18 @@ export async function readCatalog() {
       Bucket: BUCKET,
       Key: CATALOG_KEY,
     }));
-    return JSON.parse(await object.Body.transformToString());
+    return sanitizeCatalog(JSON.parse(await object.Body.transformToString()));
   } catch (error) {
-    if (['NoSuchKey', 'NotFound'].includes(error.name)) return staticCatalog;
-    return staticCatalog;
+    if (['NoSuchKey', 'NotFound'].includes(error.name)) return sanitizeCatalog(staticCatalog);
+    return sanitizeCatalog(staticCatalog);
   }
+}
+
+function sanitizeCatalog(catalog) {
+  return {
+    ...catalog,
+    source: catalog.source?.startsWith('/') ? 'render-project' : catalog.source,
+  };
 }
 
 export async function writeCatalog(tracks) {

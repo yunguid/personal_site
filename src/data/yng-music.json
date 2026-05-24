@@ -1,6 +1,6 @@
 {
   "generatedAt": "2026-05-24T18:57:54.980Z",
-  "source": "/Users/luke/Desktop/render-project",
+  "source": "render-project",
   "bucket": "yng-music-archive",
   "prefix": "tracks/render-project",
   "publicBaseUrl": "https://yng-music-archive.s3.us-east-1.amazonaws.com",

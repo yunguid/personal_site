@@ -253,7 +253,7 @@ async function uploadAndVerify(track) {
 async function writeCatalog(tracks) {
   const catalog = {
     generatedAt: new Date().toISOString(),
-    source: SOURCE_DIR,
+    source: 'render-project',
     bucket: BUCKET,
     prefix: PREFIX,
     publicBaseUrl: PUBLIC_BASE_URL,
