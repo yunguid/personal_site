@@ -15,10 +15,18 @@
     <main class="music-archive-shell">
         <header class="music-archive-header">
             <a class="music-archive-back" href="/" aria-label="Back to main site">Luke Young</a>
-            <div>
+            <div class="music-archive-title">
                 <h1>YNG Music</h1>
                 <p id="music-summary">Unlisted archive of exported tracks.</p>
             </div>
+            <section id="music-upload" class="music-upload" aria-label="Upload music">
+                <input id="music-upload-input" type="file" accept=".mp3,audio/mpeg" multiple hidden>
+                <button id="music-upload-button" class="music-upload-button" type="button">
+                    <span class="music-upload-primary">Drop MP3s</span>
+                    <span class="music-upload-secondary">Browse</span>
+                </button>
+                <p id="music-upload-status" class="music-upload-status" aria-live="polite"></p>
+            </section>
         </header>
 
         <section class="music-archive-toolbar" aria-label="Music filters">
@@ -27,33 +35,8 @@
             <div id="music-count" class="music-count"></div>
         </section>
 
-        <section id="music-upload" class="music-upload" aria-label="Upload music">
-            <input id="music-upload-input" type="file" accept=".mp3,audio/mpeg" multiple hidden>
-            <button id="music-upload-button" class="music-upload-button" type="button">
-                <span class="music-upload-primary">Drop MP3s</span>
-                <span class="music-upload-secondary">Browse</span>
-            </button>
-            <p id="music-upload-status" class="music-upload-status" aria-live="polite"></p>
-        </section>
-
         <section id="music-list" class="music-archive-list" aria-live="polite"></section>
     </main>
-
-    <section class="music-player" aria-label="Music player">
-        <div class="music-player-inner">
-            <button id="music-player-toggle" class="music-player-toggle" type="button" disabled>Play</button>
-            <div class="music-player-now">
-                <p class="music-player-kicker">Now</p>
-                <h2 id="music-player-title">Select a track</h2>
-                <p id="music-player-meta">Ready</p>
-            </div>
-            <div class="music-player-timeline">
-                <span id="music-player-current">0:00</span>
-                <input id="music-player-progress" class="music-player-progress" type="range" min="0" max="1000" value="0" disabled aria-label="Seek">
-                <span id="music-player-duration">0:00</span>
-            </div>
-        </div>
-    </section>
 
     <script type="module" src="/yng-music-page.js"></script>
 </body>
