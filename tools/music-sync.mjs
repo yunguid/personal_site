@@ -195,9 +195,9 @@ async function setupBucket() {
     JSON.stringify({
       CORSRules: [{
         AllowedHeaders: ['*'],
-        AllowedMethods: ['GET', 'HEAD'],
+        AllowedMethods: ['GET', 'HEAD', 'PUT'],
         AllowedOrigins: ['*'],
-        ExposeHeaders: ['Content-Length', 'Content-Type'],
+        ExposeHeaders: ['Content-Length', 'Content-Type', 'ETag'],
         MaxAgeSeconds: 3000,
       }],
     }),

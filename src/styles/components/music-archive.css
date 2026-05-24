@@ -92,6 +92,57 @@
   border-top: 1px solid rgba(255, 255, 240, 0.18);
 }
 
+.music-upload {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: end;
+  padding: 0 0 1.5rem;
+}
+
+.music-upload-button {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: center;
+  width: 100%;
+  min-height: 3.25rem;
+  padding: 0.8rem 0;
+  border: 0;
+  border-top: 1px solid rgba(255, 255, 240, 0.12);
+  border-bottom: 1px solid rgba(255, 255, 240, 0.3);
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-ivory);
+  text-align: left;
+}
+
+.music-upload-button span:first-child {
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.music-upload-button span:last-child,
+.music-upload-status {
+  color: rgba(255, 255, 240, 0.5);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.music-upload-status {
+  margin: 0 0 0.8rem;
+  white-space: nowrap;
+}
+
+.music-upload.is-dragging .music-upload-button,
+.music-upload.is-uploading .music-upload-button,
+.music-upload-button:focus-visible {
+  border-bottom-color: rgba(255, 255, 240, 0.72);
+  outline: 0;
+}
+
 .music-archive-track {
   display: grid;
   grid-template-columns: 4.5rem minmax(0, 1fr) minmax(10rem, 16rem);
@@ -252,6 +303,8 @@
 
   .music-archive-header,
   .music-archive-toolbar,
+  .music-upload,
+  .music-upload-button,
   .music-archive-track,
   .music-player-inner {
     grid-template-columns: 1fr;
@@ -267,9 +320,15 @@
   }
 
   .music-count,
-  .music-archive-meta {
+  .music-archive-meta,
+  .music-upload-status {
     justify-self: start;
     text-align: left;
+  }
+
+  .music-upload-status {
+    margin: 0;
+    white-space: normal;
   }
 
   .music-archive-track {
