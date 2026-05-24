@@ -5,7 +5,11 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "music:setup-bucket": "node tools/music-sync.mjs setup-bucket",
+    "music:scan": "node tools/music-sync.mjs scan",
+    "music:sync": "node tools/music-sync.mjs sync",
+    "music:sync-delete": "node tools/music-sync.mjs sync --delete-after-verify"
   },
   "devDependencies": {
     "vite": "^5.4.0"

@@ -11,6 +11,7 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, 'src/index.html'),
         montana: resolve(__dirname, 'src/montana_gallery.html'),
+        yngMusic: resolve(__dirname, 'src/yng-music.html'),
       },
       output: {
         assetFileNames: 'assets/[name]-[hash][extname]',

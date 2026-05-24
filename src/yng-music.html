@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>YNG Music</title>
+    <meta name="robots" content="noindex,nofollow">
+    <meta name="theme-color" content="#111827">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body class="music-archive-page">
+    <main class="music-archive-shell">
+        <header class="music-archive-header">
+            <a class="music-archive-back" href="/" aria-label="Back to main site">Luke Young</a>
+            <div>
+                <h1>YNG Music</h1>
+                <p id="music-summary">Unlisted archive of exported tracks.</p>
+            </div>
+        </header>
+
+        <section class="music-archive-toolbar" aria-label="Music filters">
+            <label class="music-search-label" for="music-search">Search</label>
+            <input id="music-search" class="music-search" type="search" autocomplete="off" placeholder="Filter tracks">
+            <div id="music-count" class="music-count"></div>
+        </section>
+
+        <section id="music-list" class="music-archive-list" aria-live="polite"></section>
+    </main>
+
+    <section class="music-player" aria-label="Music player">
+        <div class="music-player-inner">
+            <button id="music-player-toggle" class="music-player-toggle" type="button" disabled>Play</button>
+            <div class="music-player-now">
+                <p class="music-player-kicker">Now</p>
+                <h2 id="music-player-title">Select a track</h2>
+                <p id="music-player-meta">Ready</p>
+            </div>
+            <div class="music-player-timeline">
+                <span id="music-player-current">0:00</span>
+                <input id="music-player-progress" class="music-player-progress" type="range" min="0" max="1000" value="0" disabled aria-label="Seek">
+                <span id="music-player-duration">0:00</span>
+            </div>
+        </div>
+    </section>
+
+    <script type="module" src="/yng-music-page.js"></script>
+</body>
+</html>
