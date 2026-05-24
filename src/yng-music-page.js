@@ -5,6 +5,12 @@ const list = document.getElementById('music-list');
 const search = document.getElementById('music-search');
 const count = document.getElementById('music-count');
 const summary = document.getElementById('music-summary');
+const playerToggle = document.getElementById('music-player-toggle');
+const playerTitle = document.getElementById('music-player-title');
+const playerMeta = document.getElementById('music-player-meta');
+const playerCurrent = document.getElementById('music-player-current');
+const playerDuration = document.getElementById('music-player-duration');
+const playerProgress = document.getElementById('music-player-progress');
 const upload = document.getElementById('music-upload');
 const uploadInput = document.getElementById('music-upload-input');
 const uploadButton = document.getElementById('music-upload-button');
@@ -17,6 +23,7 @@ const audio = new Audio();
 audio.preload = 'none';
 
 let currentTrack = null;
+let isSeeking = false;
 let isUploading = false;
 let uploadDragDepth = 0;
 
@@ -230,11 +237,27 @@ function syncActiveRows() {
   });
 }
 
+function updatePlayerText(track = currentTrack) {
+  playerTitle.textContent = track?.title || 'Select a track';
+  playerMeta.textContent = track ? trackMeta(track) : `${tracks.length} tracks`;
+  playerDuration.textContent = formatClock(audio.duration || track?.durationSeconds);
+}
+
 function updatePlaybackState() {
+  const hasTrack = Boolean(currentTrack);
+  playerToggle.disabled = !hasTrack;
+  playerProgress.disabled = !hasTrack;
+  playerToggle.textContent = audio.paused ? 'Play' : 'Pause';
   syncActiveRows();
 }
 
 function updateProgress() {
+  const duration = audio.duration || currentTrack?.durationSeconds || 0;
+  if (!isSeeking) {
+    playerProgress.value = duration ? String((audio.currentTime / duration) * 1000) : '0';
+  }
+  playerCurrent.textContent = formatClock(audio.currentTime);
+  playerDuration.textContent = formatClock(duration);
   syncActiveRows();
 }
 
@@ -247,7 +270,7 @@ async function playTrack(track) {
     audio.currentTime = 0;
   }
 
-  syncActiveRows();
+  updatePlayerText(track);
   updatePlaybackState();
 
   try {
@@ -306,7 +329,30 @@ list.addEventListener('click', (event) => {
   }
 });
 
+playerToggle.addEventListener('click', () => {
+  if (!currentTrack) return;
+  if (audio.paused) {
+    audio.play().catch(() => updatePlaybackState());
+  } else {
+    audio.pause();
+  }
+});
+
+playerProgress.addEventListener('input', () => {
+  if (!currentTrack) return;
+  isSeeking = true;
+  const duration = audio.duration || currentTrack.durationSeconds || 0;
+  audio.currentTime = duration * (Number(playerProgress.value) / 1000);
+  updateProgress();
+});
+
+playerProgress.addEventListener('change', () => {
+  isSeeking = false;
+  updateProgress();
+});
+
 audio.addEventListener('loadedmetadata', () => {
+  updatePlayerText();
   updateProgress();
 });
 audio.addEventListener('timeupdate', updateProgress);
@@ -335,6 +381,7 @@ upload.addEventListener('drop', (event) => {
   uploadFiles(event.dataTransfer.files);
 });
 
+updatePlayerText(null);
 updatePlaybackState();
 render();
 loadCatalog();

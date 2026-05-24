@@ -35,6 +35,19 @@
             <div id="music-count" class="music-count"></div>
         </section>
 
+        <section class="music-player" aria-label="Music player">
+            <button id="music-player-toggle" class="music-player-toggle" type="button" disabled>Play</button>
+            <div class="music-player-now">
+                <h2 id="music-player-title">Select a track</h2>
+                <p id="music-player-meta">Ready</p>
+            </div>
+            <div class="music-player-timeline">
+                <span id="music-player-current">0:00</span>
+                <input id="music-player-progress" class="music-player-progress" type="range" min="0" max="1000" value="0" disabled aria-label="Seek">
+                <span id="music-player-duration">0:00</span>
+            </div>
+        </section>
+
         <section id="music-list" class="music-archive-list" aria-live="polite"></section>
     </main>
 
