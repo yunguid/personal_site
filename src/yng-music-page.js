@@ -24,6 +24,7 @@ audio.preload = 'none';
 let currentTrack = null;
 let isSeeking = false;
 let isUploading = false;
+let uploadDragDepth = 0;
 
 function sortTracks(nextTracks) {
   return [...nextTracks].sort((a, b) => a.title.localeCompare(b.title));
@@ -57,6 +58,7 @@ function trackMeta(track) {
 
 function setUploadStatus(message) {
   uploadStatus.textContent = message;
+  upload.classList.toggle('has-status', Boolean(message));
 }
 
 function uploadKey() {
@@ -158,7 +160,11 @@ async function uploadFile(file, key, index, total) {
 
 async function uploadFiles(fileList) {
   const files = [...fileList].filter(file => file.name.toLowerCase().endsWith('.mp3'));
-  if (!files.length || isUploading) return;
+  if (isUploading) return;
+  if (!files.length) {
+    setUploadStatus('No MP3s selected.');
+    return;
+  }
 
   const key = uploadKey();
   if (!key) return;
@@ -326,13 +332,22 @@ audio.addEventListener('pause', updatePlaybackState);
 audio.addEventListener('ended', updatePlaybackState);
 uploadButton.addEventListener('click', () => uploadInput.click());
 uploadInput.addEventListener('change', () => uploadFiles(uploadInput.files));
+upload.addEventListener('dragenter', (event) => {
+  event.preventDefault();
+  uploadDragDepth += 1;
+  upload.classList.add('is-dragging');
+});
 upload.addEventListener('dragover', (event) => {
   event.preventDefault();
   upload.classList.add('is-dragging');
 });
-upload.addEventListener('dragleave', () => upload.classList.remove('is-dragging'));
+upload.addEventListener('dragleave', () => {
+  uploadDragDepth = Math.max(0, uploadDragDepth - 1);
+  if (!uploadDragDepth) upload.classList.remove('is-dragging');
+});
 upload.addEventListener('drop', (event) => {
   event.preventDefault();
+  uploadDragDepth = 0;
   upload.classList.remove('is-dragging');
   uploadFiles(event.dataTransfer.files);
 });

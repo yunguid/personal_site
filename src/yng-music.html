@@ -30,10 +30,10 @@
         <section id="music-upload" class="music-upload" aria-label="Upload music">
             <input id="music-upload-input" type="file" accept=".mp3,audio/mpeg" multiple hidden>
             <button id="music-upload-button" class="music-upload-button" type="button">
-                <span>Drop .mp3 files here</span>
-                <span>Click to choose</span>
+                <span class="music-upload-primary">Drop MP3s</span>
+                <span class="music-upload-secondary">Browse</span>
             </button>
-            <p id="music-upload-status" class="music-upload-status">Uploads go straight to the archive bucket.</p>
+            <p id="music-upload-status" class="music-upload-status" aria-live="polite"></p>
         </section>
 
         <section id="music-list" class="music-archive-list" aria-live="polite"></section>
