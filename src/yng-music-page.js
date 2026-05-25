@@ -6,6 +6,7 @@ const search = document.getElementById('music-search');
 const count = document.getElementById('music-count');
 const summary = document.getElementById('music-summary');
 const playerToggle = document.getElementById('music-player-toggle');
+const playerShuffle = document.getElementById('music-player-shuffle');
 const playerTitle = document.getElementById('music-player-title');
 const playerMeta = document.getElementById('music-player-meta');
 const playerCurrent = document.getElementById('music-player-current');
@@ -17,6 +18,7 @@ const uploadButton = document.getElementById('music-upload-button');
 const uploadStatus = document.getElementById('music-upload-status');
 
 let tracks = sortTracks(musicCatalog.tracks);
+let visibleTracks = tracks;
 let trackNumbers = new Map();
 let trackById = new Map();
 const audio = new Audio();
@@ -246,6 +248,7 @@ function updatePlayerText(track = currentTrack) {
 function updatePlaybackState() {
   const hasTrack = Boolean(currentTrack);
   playerToggle.disabled = !hasTrack;
+  playerShuffle.disabled = !tracks.length;
   playerProgress.disabled = !hasTrack;
   playerToggle.textContent = audio.paused ? 'Play' : 'Pause';
   syncActiveRows();
@@ -280,11 +283,29 @@ async function playTrack(track) {
   }
 }
 
+function randomVisibleTrack() {
+  const pool = visibleTracks.length ? visibleTracks : tracks;
+  if (!pool.length) return null;
+  if (pool.length === 1) return pool[0];
+
+  let nextTrack = pool[Math.floor(Math.random() * pool.length)];
+  while (nextTrack.id === currentTrack?.id) {
+    nextTrack = pool[Math.floor(Math.random() * pool.length)];
+  }
+  return nextTrack;
+}
+
+function shuffleTrack() {
+  const nextTrack = randomVisibleTrack();
+  if (nextTrack) playTrack(nextTrack);
+}
+
 function render() {
   const query = search.value.trim().toLowerCase();
   const filtered = query
     ? tracks.filter(track => track.title.toLowerCase().includes(query) || track.fileName.toLowerCase().includes(query))
     : tracks;
+  visibleTracks = filtered;
 
   if (filtered.length) {
     list.replaceChildren(...filtered.map(renderTrack));
@@ -337,6 +358,7 @@ playerToggle.addEventListener('click', () => {
     audio.pause();
   }
 });
+playerShuffle.addEventListener('click', shuffleTrack);
 
 playerProgress.addEventListener('input', () => {
   if (!currentTrack) return;
