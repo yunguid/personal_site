@@ -23,6 +23,7 @@ let trackNumbers = new Map();
 let trackById = new Map();
 const audio = new Audio();
 audio.preload = 'none';
+playerProgress.style.setProperty('--player-progress', '0%');
 
 let currentTrack = null;
 let isSeeking = false;
@@ -247,18 +248,28 @@ function updatePlayerText(track = currentTrack) {
 
 function updatePlaybackState() {
   const hasTrack = Boolean(currentTrack);
+  const isPlaying = hasTrack && !audio.paused;
+  const label = hasTrack
+    ? `${audio.paused ? 'Play' : 'Pause'} ${currentTrack.title}`
+    : 'Select a track to play';
+
   playerToggle.disabled = !hasTrack;
   playerShuffle.disabled = !tracks.length;
   playerProgress.disabled = !hasTrack;
-  playerToggle.textContent = audio.paused ? 'Play' : 'Pause';
+  playerToggle.classList.toggle('is-playing', isPlaying);
+  playerToggle.setAttribute('aria-label', label);
+  playerToggle.title = label;
+  playerToggle.querySelector('.music-player-toggle-label').textContent = audio.paused ? 'Play' : 'Pause';
   syncActiveRows();
 }
 
 function updateProgress() {
   const duration = audio.duration || currentTrack?.durationSeconds || 0;
+  const progress = duration ? Math.min(1, Math.max(0, audio.currentTime / duration)) : 0;
   if (!isSeeking) {
-    playerProgress.value = duration ? String((audio.currentTime / duration) * 1000) : '0';
+    playerProgress.value = duration ? String(progress * 1000) : '0';
   }
+  playerProgress.style.setProperty('--player-progress', `${progress * 100}%`);
   playerCurrent.textContent = formatClock(audio.currentTime);
   playerDuration.textContent = formatClock(duration);
   syncActiveRows();

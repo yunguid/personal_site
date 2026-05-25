@@ -7,9 +7,6 @@
     <meta name="robots" content="noindex,nofollow">
     <meta name="theme-color" content="#111827">
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 </head>
 <body class="music-archive-page">
     <main class="music-archive-shell">
@@ -36,7 +33,20 @@
         </section>
 
         <section class="music-player" aria-label="Music player">
-            <button id="music-player-toggle" class="music-player-toggle" type="button" disabled>Play</button>
+            <button id="music-player-toggle" class="music-player-toggle" type="button" aria-label="Select a track to play" title="Select a track to play" disabled>
+                <span class="music-player-icon music-player-icon-play" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" focusable="false">
+                        <path d="M8 5v14l11-7z"></path>
+                    </svg>
+                </span>
+                <span class="music-player-icon music-player-icon-pause" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" focusable="false">
+                        <path d="M7 5h3v14H7z"></path>
+                        <path d="M14 5h3v14h-3z"></path>
+                    </svg>
+                </span>
+                <span class="music-player-toggle-label">Play</span>
+            </button>
             <button id="music-player-shuffle" class="music-player-shuffle" type="button" aria-label="Shuffle tracks" title="Shuffle tracks" disabled>
                 <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
                     <path d="m18 14 4 4-4 4"></path>

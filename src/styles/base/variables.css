@@ -7,9 +7,9 @@
   --color-dark-bg: #111827;
 
   /* Typography */
-  --font-sans: 'Inter', sans-serif;
-  --font-serif: 'Playfair Display', serif;
-  --font-mono: 'IBM Plex Mono', monospace;
+  --font-sans: "Times New Roman", Times, Georgia, serif;
+  --font-serif: "Times New Roman", Times, Georgia, serif;
+  --font-mono: "Courier New", Courier, monospace;
 
   /* Spacing */
   --spacing-xs: 0.25rem;
