@@ -19,8 +19,8 @@
 
 .music-archive-header {
   display: grid;
-  grid-template-columns: 8rem minmax(0, 1fr) minmax(12rem, 17rem);
-  gap: 2rem;
+  grid-template-columns: 3rem minmax(0, 1fr) minmax(12rem, 17rem);
+  gap: 1.5rem;
   align-items: start;
   padding-bottom: 2rem;
 }
@@ -40,13 +40,29 @@
 }
 
 .music-archive-back {
-  width: fit-content;
-  color: rgba(255, 255, 240, 0.62);
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  letter-spacing: 0.08em;
-  line-height: 1.4;
-  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.65rem;
+  height: 1.65rem;
+  color: rgba(255, 255, 240, 0.72);
+  font-family: var(--font-serif);
+  font-size: 1.45rem;
+  line-height: 1;
+  text-decoration: none;
+  text-underline-offset: 0.22em;
+  transition: color var(--transition-normal);
+}
+
+.music-archive-back:hover,
+.music-archive-back:focus-visible {
+  color: var(--color-ivory);
+  text-decoration: underline;
+}
+
+.music-archive-back:focus-visible {
+  outline: 1px solid rgba(255, 255, 240, 0.65);
+  outline-offset: 4px;
 }
 
 .music-archive-toolbar {
@@ -277,7 +293,7 @@
   margin: 0;
   appearance: none;
   background:
-    linear-gradient(90deg, var(--color-indigo-light) var(--player-progress), rgba(255, 255, 240, 0.14) 0);
+    linear-gradient(90deg, var(--color-ivory) var(--player-progress), rgba(255, 255, 240, 0.18) 0);
   border-radius: 999px;
   cursor: pointer;
 }
@@ -313,7 +329,7 @@
 .music-player-progress::-moz-range-progress {
   height: 0.42rem;
   border-radius: 999px;
-  background: var(--color-indigo-light);
+  background: var(--color-ivory);
 }
 
 .music-player-progress::-moz-range-thumb {
@@ -656,6 +672,35 @@
   .music-archive-meta {
     grid-column: 2;
     white-space: normal;
+  }
+}
+
+@media (min-width: 761px) and (max-width: 900px) {
+  .music-archive-header {
+    grid-template-columns: 2.25rem minmax(0, 1fr);
+    gap: 1rem;
+  }
+
+  .music-upload {
+    grid-column: 2;
+    justify-self: start;
+    max-width: 20rem;
+  }
+
+  .music-player {
+    grid-template-columns: 2.75rem minmax(0, 1fr) 2.75rem;
+  }
+
+  .music-player-shuffle {
+    grid-column: 3;
+  }
+
+  .music-player-timeline {
+    grid-column: 1 / -1;
+  }
+
+  .music-archive-track {
+    grid-template-columns: 3.5rem minmax(0, 1fr) minmax(9rem, 12rem);
   }
 }
 
