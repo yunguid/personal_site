@@ -458,6 +458,84 @@
   color: rgba(255, 255, 240, 0.58);
 }
 
+.music-track-group {
+  position: relative;
+  margin: 0 -0.65rem;
+  border-radius: 8px;
+}
+
+.music-track-group.has-variants {
+  background: rgba(255, 255, 240, 0.018);
+}
+
+.music-track-group.has-variants::before {
+  content: "";
+  position: absolute;
+  top: 1rem;
+  bottom: 0.85rem;
+  left: 4.5rem;
+  width: 1px;
+  background: linear-gradient(180deg, rgba(255, 255, 240, 0.2), rgba(255, 255, 240, 0.04));
+}
+
+.music-track-group > .music-archive-track {
+  margin: 0;
+}
+
+.music-track-title {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.55rem;
+  align-items: baseline;
+}
+
+.music-track-title-text {
+  min-width: 0;
+}
+
+.music-track-group-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.15rem;
+  padding: 0.08rem 0.42rem;
+  border: 1px solid rgba(255, 255, 240, 0.1);
+  border-radius: 999px;
+  color: rgba(255, 255, 240, 0.52);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.music-track-variants {
+  position: relative;
+  display: grid;
+  padding: 0 0.65rem 0.55rem 5.65rem;
+}
+
+.music-track-variant {
+  grid-template-columns: minmax(0, 1fr) minmax(10rem, 16rem);
+  gap: 1.25rem;
+  min-height: 2.65rem;
+  padding: 0.48rem 0;
+  border-top: 1px solid rgba(255, 255, 240, 0.055);
+  border-radius: 0;
+}
+
+.music-track-variant .music-track-number {
+  display: none;
+}
+
+.music-track-variant .music-track-title {
+  color: rgba(255, 255, 240, 0.68);
+  font-size: 0.96rem;
+}
+
+.music-track-variant .music-archive-meta {
+  color: rgba(255, 255, 240, 0.4);
+}
+
 @media (max-width: 760px) {
   .music-archive-shell {
     padding-top: max(1rem, env(safe-area-inset-top));
@@ -652,6 +730,36 @@
     border-top: 0;
   }
 
+  .music-track-group {
+    margin: 0;
+    border-radius: 0;
+  }
+
+  .music-track-group.has-variants {
+    background: transparent;
+  }
+
+  .music-track-group.has-variants::before {
+    top: 1rem;
+    bottom: 0.7rem;
+    left: 3.15rem;
+  }
+
+  .music-track-group-badge {
+    font-size: 0.58rem;
+  }
+
+  .music-track-variants {
+    padding: 0 0 0.5rem 4.25rem;
+  }
+
+  .music-track-variant {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.2rem;
+    min-height: 2.75rem;
+    padding: 0.5rem 0;
+  }
+
   .music-archive-track:hover,
   .music-archive-track:focus-visible,
   .music-archive-track.is-active {
@@ -672,6 +780,10 @@
   .music-archive-meta {
     grid-column: 2;
     white-space: normal;
+  }
+
+  .music-track-variant .music-archive-meta {
+    grid-column: 1;
   }
 }
 

@@ -19,8 +19,11 @@ const uploadStatus = document.getElementById('music-upload-status');
 
 let tracks = sortTracks(musicCatalog.tracks);
 let visibleTracks = tracks;
+let trackGroups = [];
+let visibleGroups = [];
 let trackNumbers = new Map();
 let trackById = new Map();
+let groupByTrackId = new Map();
 const audio = new Audio();
 audio.preload = 'none';
 playerProgress.style.setProperty('--player-progress', '0%');
@@ -43,6 +46,67 @@ function sortTracks(nextTracks) {
 function rebuildTrackNumbers() {
   trackNumbers = new Map(tracks.map((track, index) => [track.id, String(index + 1).padStart(3, '0')]));
   trackById = new Map(tracks.map(track => [track.id, track]));
+  trackGroups = buildTrackGroups(tracks);
+  groupByTrackId = new Map(trackGroups.flatMap(group => group.tracks.map(track => [track.id, group])));
+}
+
+function normalizeGroupText(value) {
+  return String(value || '')
+    .normalize('NFKD')
+    .replace(/\.[a-z0-9]+$/i, '')
+    .replace(/&/g, ' and ')
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .trim()
+    .replace(/\s+/g, ' ')
+    .toLowerCase();
+}
+
+function similarTrackKey(track) {
+  const rawTitle = track.title || track.fileName || '';
+  const withoutExtension = String(rawTitle).replace(/\.[a-z0-9]+$/i, '');
+  let base = withoutExtension
+    .replace(/\s*\[[^\]]+\]\s*$/g, '')
+    .replace(/\s*\([^)]*\)\s*$/g, '')
+    .replace(/\s+-\s*(?:alt|bounce|copy|export|final|master|mix|take|version|v)\s*\d*$/i, '');
+
+  base = normalizeGroupText(base);
+  if (/\p{L}/u.test(base)) {
+    base = normalizeGroupText(base.replace(/\s*(?:alt|copy|final|master|mix|take|version|v)?\s*\d+$/i, ''));
+  }
+
+  return base.length >= 2 ? base : normalizeGroupText(withoutExtension);
+}
+
+function primaryTrackForGroup(groupTracks) {
+  return [...groupTracks].sort((a, b) => (
+    a.title.length - b.title.length
+    || a.title.localeCompare(b.title)
+  ))[0];
+}
+
+function buildTrackGroups(nextTracks) {
+  const groupsByKey = new Map();
+
+  for (const track of nextTracks) {
+    const key = similarTrackKey(track);
+    groupsByKey.set(key, [...(groupsByKey.get(key) || []), track]);
+  }
+
+  return [...groupsByKey.entries()]
+    .map(([key, groupTracks]) => {
+      const groupTracksSorted = [...groupTracks].sort((a, b) => a.title.localeCompare(b.title));
+      const primary = primaryTrackForGroup(groupTracksSorted);
+      return {
+        id: key,
+        key,
+        primary,
+        tracks: [
+          primary,
+          ...groupTracksSorted.filter(track => track.id !== primary.id),
+        ],
+      };
+    })
+    .sort((a, b) => a.primary.title.localeCompare(b.primary.title));
 }
 
 function formatBytes(bytes) {
@@ -219,11 +283,12 @@ async function uploadFiles(fileList) {
   }
 }
 
-function renderTrack(track) {
+function renderTrack(track, options = {}) {
+  const { group = null, variant = false } = options;
   const isActive = currentTrack?.id === track.id;
   const item = document.createElement('button');
   item.type = 'button';
-  item.className = 'music-archive-track';
+  item.className = variant ? 'music-archive-track music-track-variant' : 'music-archive-track';
   item.dataset.trackId = track.id;
   item.setAttribute('aria-pressed', isActive ? 'true' : 'false');
   if (isActive) item.classList.add('is-active');
@@ -234,7 +299,18 @@ function renderTrack(track) {
 
   const title = document.createElement('span');
   title.className = 'music-track-title';
-  title.textContent = track.title;
+
+  const titleText = document.createElement('span');
+  titleText.className = 'music-track-title-text';
+  titleText.textContent = track.title;
+  title.append(titleText);
+
+  if (group?.tracks.length > 1 && !variant) {
+    const badge = document.createElement('span');
+    badge.className = 'music-track-group-badge';
+    badge.textContent = `${group.tracks.length} takes`;
+    title.append(badge);
+  }
 
   const meta = document.createElement('p');
   meta.className = 'music-archive-meta';
@@ -242,6 +318,22 @@ function renderTrack(track) {
 
   item.append(number, title, meta);
   return item;
+}
+
+function renderGroup(group) {
+  if (group.tracks.length === 1) return renderTrack(group.primary, { group });
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'music-track-group has-variants';
+  wrapper.dataset.groupId = group.id;
+
+  const variants = document.createElement('div');
+  variants.className = 'music-track-variants';
+  variants.setAttribute('aria-label', `Variants of ${group.primary.title}`);
+  variants.replaceChildren(...group.tracks.slice(1).map(track => renderTrack(track, { group, variant: true })));
+
+  wrapper.append(renderTrack(group.primary, { group }), variants);
+  return wrapper;
 }
 
 function syncActiveRows() {
@@ -273,7 +365,7 @@ function updatePlaybackState() {
     : 'Select a track to play';
 
   playerToggle.disabled = !hasTrack;
-  playerShuffle.disabled = !tracks.length;
+  playerShuffle.disabled = !trackGroups.length;
   playerProgress.disabled = !hasTrack;
   playerToggle.classList.toggle('is-playing', isPlaying);
   playerToggle.setAttribute('aria-label', label);
@@ -314,15 +406,16 @@ async function playTrack(track) {
 }
 
 function randomVisibleTrack() {
-  const pool = visibleTracks.length ? visibleTracks : tracks;
+  const pool = visibleGroups.length ? visibleGroups : trackGroups;
   if (!pool.length) return null;
-  if (pool.length === 1) return pool[0];
+  if (pool.length === 1) return pool[0].primary;
 
-  let nextTrack = pool[Math.floor(Math.random() * pool.length)];
-  while (nextTrack.id === currentTrack?.id) {
-    nextTrack = pool[Math.floor(Math.random() * pool.length)];
+  const currentGroupId = currentTrack ? groupByTrackId.get(currentTrack.id)?.id : null;
+  let nextGroup = pool[Math.floor(Math.random() * pool.length)];
+  while (nextGroup.id === currentGroupId) {
+    nextGroup = pool[Math.floor(Math.random() * pool.length)];
   }
-  return nextTrack;
+  return nextGroup.primary;
 }
 
 function shuffleTrack() {
@@ -332,13 +425,19 @@ function shuffleTrack() {
 
 function render() {
   const query = search.value.trim().toLowerCase();
-  const filtered = query
-    ? tracks.filter(track => track.title.toLowerCase().includes(query) || track.fileName.toLowerCase().includes(query))
-    : tracks;
-  visibleTracks = filtered;
+  const filteredGroups = query
+    ? trackGroups.filter(group => group.tracks.some(track => (
+      track.title.toLowerCase().includes(query)
+      || track.fileName.toLowerCase().includes(query)
+    )))
+    : trackGroups;
+  const filteredTrackCount = filteredGroups.reduce((sum, group) => sum + group.tracks.length, 0);
 
-  if (filtered.length) {
-    list.replaceChildren(...filtered.map(renderTrack));
+  visibleGroups = filteredGroups;
+  visibleTracks = filteredGroups.map(group => group.primary);
+
+  if (filteredGroups.length) {
+    list.replaceChildren(...filteredGroups.map(renderGroup));
   } else {
     const empty = document.createElement('p');
     empty.className = 'music-archive-empty';
@@ -346,7 +445,7 @@ function render() {
     list.replaceChildren(empty);
   }
 
-  count.textContent = `${filtered.length} / ${tracks.length} tracks`;
+  count.textContent = `${filteredTrackCount} / ${tracks.length} tracks · ${filteredGroups.length} groups`;
 }
 
 async function loadCatalog() {
