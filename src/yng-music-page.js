@@ -25,6 +25,12 @@ const audio = new Audio();
 audio.preload = 'none';
 playerProgress.style.setProperty('--player-progress', '0%');
 
+const UPLOAD_CONTENT_TYPES = {
+  mp3: 'audio/mpeg',
+  wav: 'audio/wav',
+  wave: 'audio/wav',
+};
+
 let currentTrack = null;
 let isSeeking = false;
 let isUploading = false;
@@ -73,6 +79,19 @@ function activeTrackMeta(track) {
 function setUploadStatus(message) {
   uploadStatus.textContent = message;
   upload.classList.toggle('has-status', Boolean(message));
+}
+
+function uploadFormat(fileName) {
+  return fileName.split('.').pop()?.toLowerCase() || '';
+}
+
+function isUploadableAudio(file) {
+  return Object.hasOwn(UPLOAD_CONTENT_TYPES, uploadFormat(file.name));
+}
+
+function uploadContentType(file) {
+  const format = uploadFormat(file.name);
+  return file.type || UPLOAD_CONTENT_TYPES[format] || 'application/octet-stream';
 }
 
 function uploadKey() {
@@ -137,8 +156,8 @@ function applyCatalog(catalog) {
 }
 
 async function uploadFile(file, key, index, total) {
-  if (!file.name.toLowerCase().endsWith('.mp3')) {
-    throw new Error(`${file.name} is not an .mp3 file.`);
+  if (!isUploadableAudio(file)) {
+    throw new Error(`${file.name} is not an MP3 or WAV file.`);
   }
 
   setUploadStatus(`Hashing ${index} / ${total}`);
@@ -150,7 +169,7 @@ async function uploadFile(file, key, index, total) {
   const base = {
     action: 'sign',
     fileName: file.name,
-    contentType: 'audio/mpeg',
+    contentType: uploadContentType(file),
     sizeBytes: file.size,
     sha256,
     durationSeconds,
@@ -173,10 +192,10 @@ async function uploadFile(file, key, index, total) {
 }
 
 async function uploadFiles(fileList) {
-  const files = [...fileList].filter(file => file.name.toLowerCase().endsWith('.mp3'));
+  const files = [...fileList].filter(isUploadableAudio);
   if (isUploading) return;
   if (!files.length) {
-    setUploadStatus('No MP3s selected.');
+    setUploadStatus('No MP3 or WAV files selected.');
     return;
   }
 

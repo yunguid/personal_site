@@ -10,6 +10,24 @@ export const PUBLIC_BASE_URL = `https://${BUCKET}.s3.${REGION}.amazonaws.com`;
 export const CATALOG_KEY = `${PREFIX}/catalog.json`;
 export const MAX_UPLOAD_BYTES = 500 * 1024 * 1024;
 
+const UPLOAD_FORMATS = {
+  mp3: {
+    extension: 'mp3',
+    contentTypes: new Set(['audio/mpeg', 'audio/mp3', 'application/octet-stream']),
+    defaultContentType: 'audio/mpeg',
+  },
+  wav: {
+    extension: 'wav',
+    contentTypes: new Set(['audio/wav', 'audio/wave', 'audio/x-wav', 'audio/vnd.wave', 'application/octet-stream']),
+    defaultContentType: 'audio/wav',
+  },
+  wave: {
+    extension: 'wav',
+    contentTypes: new Set(['audio/wav', 'audio/wave', 'audio/x-wav', 'audio/vnd.wave', 'application/octet-stream']),
+    defaultContentType: 'audio/wav',
+  },
+};
+
 const s3 = new S3Client({ region: REGION });
 
 export function sendJson(response, statusCode, data) {
@@ -78,6 +96,19 @@ export function publicUrlForKey(key) {
   return `${PUBLIC_BASE_URL}/${encodeURI(key).replace(/%2F/g, '/')}`;
 }
 
+export function uploadFormatFromFilename(fileName) {
+  const extension = String(fileName || '').split('.').pop()?.toLowerCase() || '';
+  return UPLOAD_FORMATS[extension] || null;
+}
+
+export function uploadContentType(fileName, contentType) {
+  const format = uploadFormatFromFilename(fileName);
+  if (!format) return '';
+
+  const normalized = String(contentType || format.defaultContentType).toLowerCase();
+  return format.contentTypes.has(normalized) ? normalized : '';
+}
+
 export function buildTrack(input) {
   const fileName = String(input.fileName || '').trim();
   const sha256 = String(input.sha256 || '').toLowerCase();
@@ -85,13 +116,15 @@ export function buildTrack(input) {
   const sizeBytes = Number(input.sizeBytes);
   const durationSeconds = Number(input.durationSeconds) || 0;
   const safeId = sha256 ? sha256.slice(0, 16) : randomUUID().replace(/-/g, '').slice(0, 16);
-  const key = `${PREFIX}/${slugify(title)}-${safeId.slice(0, 12)}.mp3`;
+  const format = uploadFormatFromFilename(fileName);
+  const extension = format?.extension || 'mp3';
+  const key = `${PREFIX}/${slugify(title)}-${safeId.slice(0, 12)}.${extension}`;
 
   return {
     id: safeId,
     title,
     fileName,
-    format: 'mp3',
+    format: extension,
     sizeBytes,
     modifiedAt: new Date().toISOString(),
     durationSeconds,
@@ -106,20 +139,22 @@ export function validateUpload(input) {
   const fileName = String(input.fileName || '').trim();
   const sizeBytes = Number(input.sizeBytes);
   const sha256 = String(input.sha256 || '').toLowerCase();
-  const contentType = String(input.contentType || 'audio/mpeg').toLowerCase();
+  const format = uploadFormatFromFilename(fileName);
+  const contentType = uploadContentType(fileName, input.contentType);
 
-  if (!fileName.toLowerCase().endsWith('.mp3')) return 'Only .mp3 uploads are supported here.';
+  if (!format) return 'Only .mp3 and .wav uploads are supported here.';
   if (!Number.isFinite(sizeBytes) || sizeBytes <= 0) return 'Upload size is invalid.';
   if (sizeBytes > MAX_UPLOAD_BYTES) return 'Upload is too large.';
   if (!/^[a-f0-9]{64}$/.test(sha256)) return 'Upload checksum is invalid.';
-  if (!['audio/mpeg', 'audio/mp3', 'application/octet-stream'].includes(contentType)) {
-    return 'Upload must be an MP3 file.';
-  }
+  if (!contentType) return 'Upload must be an MP3 or WAV file.';
 
   return '';
 }
 
 export async function createUpload(track, contentType) {
+  const safeContentType = uploadContentType(track.fileName, contentType)
+    || uploadFormatFromFilename(track.fileName)?.defaultContentType
+    || 'application/octet-stream';
   const metadata = {
     sha256: track.sha256,
     filename: encodeURIComponent(track.fileName),
@@ -130,7 +165,7 @@ export async function createUpload(track, contentType) {
   const command = new PutObjectCommand({
     Bucket: BUCKET,
     Key: track.s3Key,
-    ContentType: contentType || 'audio/mpeg',
+    ContentType: safeContentType,
     CacheControl: 'public, max-age=31536000, immutable',
     Metadata: metadata,
   });
@@ -140,7 +175,7 @@ export async function createUpload(track, contentType) {
   return {
     uploadUrl,
     headers: {
-      'Content-Type': contentType || 'audio/mpeg',
+      'Content-Type': safeContentType,
       'Cache-Control': 'public, max-age=31536000, immutable',
     },
   };
