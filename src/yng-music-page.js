@@ -33,7 +33,6 @@ let pendingUploadGroup = null;
 const expandedGroups = new Set();
 const collapsedGroups = new Set();
 const audio = new Audio();
-audio.crossOrigin = 'anonymous';
 audio.preload = 'none';
 playerProgress.style.setProperty('--player-progress', '0%');
 
@@ -54,8 +53,10 @@ let uploadDragDepth = 0;
 let audioContext = null;
 let audioSourceNode = null;
 let analyserNode = null;
+let visualizerMediaStream = null;
 let visualizerRaf = 0;
 let visualizerLastFrame = 0;
+let visualizerRetryTimer = 0;
 let visualizerError = '';
 
 const visualizerSizes = {
@@ -436,8 +437,34 @@ function updateVisualizerState(live = isVisualizerLive()) {
   visualizer.setAttribute('aria-label', `Audio visualizer: ${label}`);
 }
 
+function queueVisualizerRetry() {
+  if (!currentTrack || audio.paused || visualizerRetryTimer) return;
+
+  visualizerRetryTimer = window.setTimeout(() => {
+    visualizerRetryTimer = 0;
+    ensureVisualizerAudio()
+      .then(() => updateVisualizerState())
+      .catch(() => updateVisualizerState());
+  }, 250);
+}
+
+function clearVisualizerRetry() {
+  if (!visualizerRetryTimer) return;
+  window.clearTimeout(visualizerRetryTimer);
+  visualizerRetryTimer = 0;
+}
+
+function createAnalyser() {
+  const analyser = audioContext.createAnalyser();
+  analyser.fftSize = 2048;
+  analyser.minDecibels = -90;
+  analyser.maxDecibels = -14;
+  analyser.smoothingTimeConstant = 0.82;
+  return analyser;
+}
+
 async function ensureVisualizerAudio() {
-  if (!visualizer || visualizerError) return false;
+  if (!visualizer) return false;
 
   const AudioContextConstructor = window.AudioContext || window.webkitAudioContext;
   if (!AudioContextConstructor) {
@@ -449,31 +476,29 @@ async function ensureVisualizerAudio() {
   try {
     if (!audioContext) {
       audioContext = new AudioContextConstructor();
-      analyserNode = audioContext.createAnalyser();
-      analyserNode.fftSize = 2048;
-      analyserNode.minDecibels = -90;
-      analyserNode.maxDecibels = -14;
-      analyserNode.smoothingTimeConstant = 0.82;
-
-      const captureStream = audio.captureStream || audio.mozCaptureStream;
-      if (typeof captureStream === 'function') {
-        const mediaStream = captureStream.call(audio);
-        audioSourceNode = audioContext.createMediaStreamSource(mediaStream);
-        audioSourceNode.connect(analyserNode);
-      } else {
-        audioSourceNode = audioContext.createMediaElementSource(audio);
-        audioSourceNode.connect(analyserNode);
-        analyserNode.connect(audioContext.destination);
-      }
     }
 
     if (audioContext.state === 'suspended') {
       await audioContext.resume();
     }
+
+    if (analyserNode) return true;
+
+    const captureStream = audio.captureStream || audio.mozCaptureStream;
+    if (typeof captureStream !== 'function') return false;
+
+    visualizerMediaStream = captureStream.call(audio);
+    if (!visualizerMediaStream?.getAudioTracks?.().length) {
+      queueVisualizerRetry();
+      return false;
+    }
+
+    analyserNode = createAnalyser();
+    audioSourceNode = audioContext.createMediaStreamSource(visualizerMediaStream);
+    audioSourceNode.connect(analyserNode);
     return true;
   } catch {
-    visualizerError = 'Analyzer unavailable';
-    updateVisualizerState(false);
+    queueVisualizerRetry();
     return false;
   }
 }
@@ -1038,11 +1063,18 @@ audio.addEventListener('play', () => {
   updatePlaybackState();
   updateVisualizerState();
 });
+audio.addEventListener('playing', () => {
+  ensureVisualizerAudio()
+    .then(() => updateVisualizerState())
+    .catch(() => updateVisualizerState());
+});
 audio.addEventListener('pause', () => {
+  clearVisualizerRetry();
   updatePlaybackState();
   updateVisualizerState();
 });
 audio.addEventListener('ended', () => {
+  clearVisualizerRetry();
   updatePlaybackState();
   updateVisualizerState();
 });
