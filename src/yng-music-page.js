@@ -34,6 +34,10 @@ const expandedGroups = new Set();
 const collapsedGroups = new Set();
 const audio = new Audio();
 audio.preload = 'none';
+const visualizerAudio = new Audio();
+visualizerAudio.crossOrigin = 'anonymous';
+visualizerAudio.preload = 'none';
+visualizerAudio.playsInline = true;
 playerProgress.style.setProperty('--player-progress', '0%');
 
 const VISUALIZER_ACTIVE_FRAME_MS = 33;
@@ -53,10 +57,9 @@ let uploadDragDepth = 0;
 let audioContext = null;
 let audioSourceNode = null;
 let analyserNode = null;
-let visualizerMediaStream = null;
+let visualizerOutputNode = null;
 let visualizerRaf = 0;
 let visualizerLastFrame = 0;
-let visualizerRetryTimer = 0;
 let visualizerError = '';
 
 const visualizerSizes = {
@@ -437,23 +440,6 @@ function updateVisualizerState(live = isVisualizerLive()) {
   visualizer.setAttribute('aria-label', `Audio visualizer: ${label}`);
 }
 
-function queueVisualizerRetry() {
-  if (!currentTrack || audio.paused || visualizerRetryTimer) return;
-
-  visualizerRetryTimer = window.setTimeout(() => {
-    visualizerRetryTimer = 0;
-    ensureVisualizerAudio()
-      .then(() => updateVisualizerState())
-      .catch(() => updateVisualizerState());
-  }, 250);
-}
-
-function clearVisualizerRetry() {
-  if (!visualizerRetryTimer) return;
-  window.clearTimeout(visualizerRetryTimer);
-  visualizerRetryTimer = 0;
-}
-
 function createAnalyser() {
   const analyser = audioContext.createAnalyser();
   analyser.fftSize = 2048;
@@ -463,8 +449,31 @@ function createAnalyser() {
   return analyser;
 }
 
+function prepareVisualizerTrack(track) {
+  if (!track || visualizerAudio.src === track.url) return;
+
+  visualizerAudio.pause();
+  visualizerAudio.src = track.url;
+  visualizerAudio.preload = 'auto';
+  visualizerAudio.load();
+}
+
+function syncVisualizerPosition(force = false) {
+  if (!currentTrack || !visualizerAudio.src || !Number.isFinite(audio.currentTime)) return;
+  if (visualizerAudio.readyState < 1) return;
+
+  const drift = Math.abs((visualizerAudio.currentTime || 0) - audio.currentTime);
+  if (!force && drift < 0.35) return;
+
+  try {
+    visualizerAudio.currentTime = audio.currentTime;
+  } catch {
+    // Some browsers reject seeks until enough metadata has loaded. The next sync will retry.
+  }
+}
+
 async function ensureVisualizerAudio() {
-  if (!visualizer) return false;
+  if (!visualizer || visualizerError) return false;
 
   const AudioContextConstructor = window.AudioContext || window.webkitAudioContext;
   if (!AudioContextConstructor) {
@@ -484,23 +493,44 @@ async function ensureVisualizerAudio() {
 
     if (analyserNode) return true;
 
-    const captureStream = audio.captureStream || audio.mozCaptureStream;
-    if (typeof captureStream !== 'function') return false;
-
-    visualizerMediaStream = captureStream.call(audio);
-    if (!visualizerMediaStream?.getAudioTracks?.().length) {
-      queueVisualizerRetry();
-      return false;
-    }
-
     analyserNode = createAnalyser();
-    audioSourceNode = audioContext.createMediaStreamSource(visualizerMediaStream);
+    visualizerOutputNode = audioContext.createGain();
+    visualizerOutputNode.gain.value = 0;
+    audioSourceNode = audioContext.createMediaElementSource(visualizerAudio);
     audioSourceNode.connect(analyserNode);
+    analyserNode.connect(visualizerOutputNode);
+    visualizerOutputNode.connect(audioContext.destination);
     return true;
   } catch {
-    queueVisualizerRetry();
+    visualizerError = 'Analyzer unavailable';
+    updateVisualizerState(false);
     return false;
   }
+}
+
+async function startVisualizerPlayback() {
+  if (!currentTrack) return false;
+
+  prepareVisualizerTrack(currentTrack);
+  const canAnalyze = await ensureVisualizerAudio();
+  if (!canAnalyze) return false;
+
+  visualizerAudio.playbackRate = audio.playbackRate || 1;
+  syncVisualizerPosition(true);
+
+  try {
+    await visualizerAudio.play();
+    updateVisualizerState();
+    return true;
+  } catch {
+    updateVisualizerState();
+    return false;
+  }
+}
+
+function pauseVisualizerPlayback() {
+  visualizerAudio.pause();
+  updateVisualizerState();
 }
 
 function drawVisualizerFrame(timestamp = 0) {
@@ -892,7 +922,7 @@ function updateProgress() {
 
 async function startAudioPlayback() {
   const playPromise = audio.play();
-  ensureVisualizerAudio()
+  startVisualizerPlayback()
     .then(() => updateVisualizerState())
     .catch(() => updateVisualizerState());
   await playPromise;
@@ -905,6 +935,7 @@ async function playTrack(track) {
   if (isNewTrack) {
     audio.src = track.url;
     audio.currentTime = 0;
+    prepareVisualizerTrack(track);
   }
 
   updatePlayerText(track);
@@ -1046,6 +1077,7 @@ playerProgress.addEventListener('input', () => {
   isSeeking = true;
   const duration = audio.duration || currentTrack.durationSeconds || 0;
   audio.currentTime = duration * (Number(playerProgress.value) / 1000);
+  syncVisualizerPosition(true);
   updateProgress();
 });
 
@@ -1057,27 +1089,37 @@ playerProgress.addEventListener('change', () => {
 audio.addEventListener('loadedmetadata', () => {
   updatePlayerText();
   updateProgress();
+  syncVisualizerPosition(true);
 });
-audio.addEventListener('timeupdate', updateProgress);
+audio.addEventListener('timeupdate', () => {
+  updateProgress();
+  syncVisualizerPosition();
+});
 audio.addEventListener('play', () => {
   updatePlaybackState();
   updateVisualizerState();
 });
 audio.addEventListener('playing', () => {
-  ensureVisualizerAudio()
+  startVisualizerPlayback()
     .then(() => updateVisualizerState())
     .catch(() => updateVisualizerState());
 });
 audio.addEventListener('pause', () => {
-  clearVisualizerRetry();
+  pauseVisualizerPlayback();
   updatePlaybackState();
   updateVisualizerState();
 });
 audio.addEventListener('ended', () => {
-  clearVisualizerRetry();
+  pauseVisualizerPlayback();
   updatePlaybackState();
   updateVisualizerState();
 });
+audio.addEventListener('seeking', () => syncVisualizerPosition(true));
+audio.addEventListener('seeked', () => syncVisualizerPosition(true));
+audio.addEventListener('ratechange', () => {
+  visualizerAudio.playbackRate = audio.playbackRate || 1;
+});
+visualizerAudio.addEventListener('loadedmetadata', () => syncVisualizerPosition(true));
 uploadButton.addEventListener('click', () => {
   pendingUploadGroup = null;
   uploadInput.click();
