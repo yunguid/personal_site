@@ -13,6 +13,11 @@ const playerMeta = document.getElementById('music-player-meta');
 const playerCurrent = document.getElementById('music-player-current');
 const playerDuration = document.getElementById('music-player-duration');
 const playerProgress = document.getElementById('music-player-progress');
+const visualizer = document.getElementById('music-visualizer');
+const visualizerStatus = document.getElementById('music-visualizer-status');
+const spectrogramCanvas = document.getElementById('music-spectrogram-canvas');
+const scopeCanvas = document.getElementById('music-scope-canvas');
+const spectrumCanvas = document.getElementById('music-spectrum-canvas');
 const upload = document.getElementById('music-upload');
 const uploadInput = document.getElementById('music-upload-input');
 const uploadButton = document.getElementById('music-upload-button');
@@ -29,8 +34,13 @@ let pendingUploadGroup = null;
 const expandedGroups = new Set();
 const collapsedGroups = new Set();
 const audio = new Audio();
+audio.crossOrigin = 'anonymous';
 audio.preload = 'none';
 playerProgress.style.setProperty('--player-progress', '0%');
+
+const VISUALIZER_ACTIVE_FRAME_MS = 33;
+const VISUALIZER_IDLE_FRAME_MS = 80;
+const VISUALIZER_DPR_LIMIT = 2;
 
 const UPLOAD_CONTENT_TYPES = {
   mp3: 'audio/mpeg',
@@ -42,6 +52,24 @@ let currentTrack = null;
 let isSeeking = false;
 let isUploading = false;
 let uploadDragDepth = 0;
+let audioContext = null;
+let audioSourceNode = null;
+let analyserNode = null;
+let visualizerRaf = 0;
+let visualizerLastFrame = 0;
+let visualizerError = '';
+
+const visualizerSizes = {
+  spectrogram: {},
+  scope: {},
+  spectrum: {},
+};
+
+const visualizerBuffers = {
+  freq: null,
+  time: null,
+  timeByte: null,
+};
 
 const dateFormatter = new Intl.DateTimeFormat(undefined, {
   month: 'short',
@@ -194,6 +222,314 @@ function activeTrackMeta(track) {
     `${formatClock(audio.currentTime)} / ${formatClock(duration)}`,
     formatBytes(track.sizeBytes),
   ].filter(Boolean).join(' / ');
+}
+
+function clamp(value, min = 0, max = 1) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function syncVisualizerCanvas(canvas, ctx, sizeRef) {
+  const rect = canvas.getBoundingClientRect();
+  const dpr = Math.min(window.devicePixelRatio || 1, VISUALIZER_DPR_LIMIT);
+  const width = Math.max(1, Math.floor(rect.width));
+  const height = Math.max(1, Math.floor(rect.height));
+  const resized = (
+    sizeRef.width !== width
+    || sizeRef.height !== height
+    || sizeRef.dpr !== dpr
+  );
+
+  if (resized) {
+    canvas.width = Math.max(1, Math.floor(width * dpr));
+    canvas.height = Math.max(1, Math.floor(height * dpr));
+    sizeRef.width = width;
+    sizeRef.height = height;
+    sizeRef.dpr = dpr;
+  }
+
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  if (resized) ctx.clearRect(0, 0, width, height);
+  return { width, height, resized };
+}
+
+function readTimeDomain(analyser, floatBuffer, byteBuffer) {
+  if (analyser.getFloatTimeDomainData) {
+    analyser.getFloatTimeDomainData(floatBuffer);
+    return floatBuffer;
+  }
+
+  analyser.getByteTimeDomainData(byteBuffer);
+  for (let i = 0; i < byteBuffer.length; i += 1) {
+    floatBuffer[i] = (byteBuffer[i] - 128) / 128;
+  }
+  return floatBuffer;
+}
+
+function frequencyBandValue(freqData, fromRatio, toRatio) {
+  if (!freqData?.length) return 0;
+
+  const start = Math.max(1, Math.floor(freqData.length * fromRatio));
+  const end = Math.max(start + 1, Math.floor(freqData.length * toRatio));
+  let sum = 0;
+  for (let index = start; index < Math.min(end, freqData.length); index += 1) {
+    sum += freqData[index] / 255;
+  }
+  return clamp(sum / Math.max(1, end - start));
+}
+
+function drawVisualizerGrid(ctx, width, height, accent = 0) {
+  const gradient = ctx.createLinearGradient(0, 0, width, height);
+  gradient.addColorStop(0, `rgba(${12 + accent * 26}, ${15 + accent * 18}, ${14 + accent * 8}, 0.96)`);
+  gradient.addColorStop(1, 'rgba(4, 5, 5, 0.96)');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, width, height);
+
+  ctx.strokeStyle = `rgba(255, 255, 240, ${0.045 + accent * 0.045})`;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  const verticalStep = Math.max(32, width / 6);
+  for (let x = 0; x <= width; x += verticalStep) {
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, height);
+  }
+  const horizontalStep = Math.max(24, height / 4);
+  for (let y = 0; y <= height; y += horizontalStep) {
+    ctx.moveTo(0, y);
+    ctx.lineTo(width, y);
+  }
+  ctx.stroke();
+}
+
+function drawIdleSpectrogram(ctx, canvas, width, height, timestamp) {
+  ctx.drawImage(canvas, -1, 0, width, height);
+  const drift = (Math.sin(timestamp / 900) + 1) / 2;
+  for (let y = 0; y < height; y += 1) {
+    const tone = (Math.sin(y * 0.08 + timestamp / 700) + 1) / 2;
+    const value = 0.04 + tone * 0.08 + drift * 0.035;
+    ctx.fillStyle = `rgba(${42 + value * 160}, ${62 + value * 210}, ${70 + value * 160}, ${0.12 + value})`;
+    ctx.fillRect(width - 1, y, 1, 1);
+  }
+}
+
+function drawSpectrogram(ctx, canvas, freqData, width, height, energy) {
+  ctx.drawImage(canvas, -1, 0, width, height);
+  const maxIndex = freqData.length - 1;
+  for (let y = 0; y < height; y += 1) {
+    const ratio = 1 - (y / Math.max(1, height - 1));
+    const curved = ratio * ratio * ratio;
+    const index = Math.min(maxIndex, Math.floor(curved * maxIndex));
+    const value = Math.pow(freqData[index] / 255, 1.16);
+    const hue = 190 - value * 145 + energy * 22;
+    const light = 9 + value * 64;
+    const alpha = 0.22 + value * 0.78;
+    ctx.fillStyle = `hsla(${hue}, 92%, ${light}%, ${alpha})`;
+    ctx.fillRect(width - 1, y, 1, 1);
+  }
+}
+
+function drawScope(ctx, data, width, height, energy, timestamp, isLive) {
+  drawVisualizerGrid(ctx, width, height, energy);
+
+  const mid = height * 0.52;
+  ctx.strokeStyle = 'rgba(255, 255, 240, 0.1)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, mid);
+  ctx.lineTo(width, mid);
+  ctx.stroke();
+
+  const sampleCount = data?.length || 192;
+  const step = Math.max(1, Math.floor(sampleCount / Math.max(120, width)));
+  const amplitude = isLive ? 0.84 : 0.18;
+  ctx.lineWidth = isLive ? 1.65 : 1.2;
+  ctx.strokeStyle = isLive ? 'rgba(255, 241, 190, 0.92)' : 'rgba(255, 255, 240, 0.32)';
+  ctx.shadowColor = isLive ? 'rgba(116, 240, 210, 0.48)' : 'rgba(255, 255, 240, 0.12)';
+  ctx.shadowBlur = isLive ? 12 + energy * 18 : 5;
+  ctx.beginPath();
+
+  for (let i = 0; i < sampleCount; i += step) {
+    const sample = isLive
+      ? data[i]
+      : Math.sin((i / sampleCount) * Math.PI * 4 + timestamp / 620) * 0.32;
+    const x = (i / Math.max(1, sampleCount - 1)) * width;
+    const y = mid - sample * height * amplitude * 0.42;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+}
+
+function spectrumBucket(freqData, bucketIndex, bucketCount) {
+  const startRatio = (bucketIndex / bucketCount) ** 2.25;
+  const endRatio = ((bucketIndex + 1) / bucketCount) ** 2.25;
+  const start = Math.max(1, Math.floor(freqData.length * startRatio));
+  const end = Math.max(start + 1, Math.floor(freqData.length * endRatio));
+  let peak = 0;
+  let sum = 0;
+  for (let index = start; index < Math.min(end, freqData.length); index += 1) {
+    const value = freqData[index] / 255;
+    peak = Math.max(peak, value);
+    sum += value;
+  }
+  return clamp((peak * 0.72) + ((sum / Math.max(1, end - start)) * 0.28));
+}
+
+function drawSpectrum(ctx, freqData, width, height, energy, timestamp, isLive) {
+  drawVisualizerGrid(ctx, width, height, energy);
+
+  const bucketCount = Math.max(28, Math.min(112, Math.floor(width / 6)));
+  const gap = width < 360 ? 1 : 1.8;
+  const barWidth = Math.max(1, (width - gap * (bucketCount - 1)) / bucketCount);
+  const ridge = [];
+
+  for (let index = 0; index < bucketCount; index += 1) {
+    const idle = 0.12 + Math.max(0, Math.sin(index * 0.42 + timestamp / 480)) * 0.16;
+    const value = isLive ? Math.pow(spectrumBucket(freqData, index, bucketCount), 1.34) : idle;
+    const barHeight = Math.max(2, value * height * 0.82);
+    const x = index * (barWidth + gap);
+    const y = height - barHeight;
+    const ratio = index / Math.max(1, bucketCount - 1);
+    const hue = ratio < 0.18 ? 48 - ratio * 50 : 176 + ratio * 42;
+
+    const fill = ctx.createLinearGradient(0, y, 0, height);
+    fill.addColorStop(0, `hsla(${hue}, 92%, ${58 + value * 22}%, ${isLive ? 0.94 : 0.34})`);
+    fill.addColorStop(1, `hsla(${hue}, 90%, 24%, ${isLive ? 0.18 : 0.08})`);
+    ctx.fillStyle = fill;
+    ctx.fillRect(x, y, barWidth, barHeight);
+    ridge.push([x + barWidth / 2, y]);
+  }
+
+  ctx.strokeStyle = isLive ? 'rgba(255, 255, 240, 0.72)' : 'rgba(255, 255, 240, 0.22)';
+  ctx.lineWidth = 1.1;
+  ctx.beginPath();
+  ridge.forEach(([x, y], index) => {
+    if (index === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+}
+
+function isVisualizerLive() {
+  return Boolean(
+    analyserNode
+    && currentTrack
+    && !audio.paused
+    && !audio.ended
+    && !visualizerError
+    && document.visibilityState !== 'hidden'
+  );
+}
+
+function updateVisualizerState(live = isVisualizerLive()) {
+  if (!visualizer) return;
+
+  let label = 'Idle';
+  if (visualizerError) label = 'Offline';
+  else if (live) label = 'Live';
+  else if (currentTrack && audio.paused) label = 'Paused';
+  else if (currentTrack) label = 'Ready';
+
+  visualizer.classList.toggle('is-live', live);
+  visualizer.classList.toggle('has-track', Boolean(currentTrack));
+  visualizer.classList.toggle('is-offline', Boolean(visualizerError));
+  visualizerStatus.textContent = label;
+}
+
+async function ensureVisualizerAudio() {
+  if (!visualizer || visualizerError) return false;
+
+  const AudioContextConstructor = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextConstructor) {
+    visualizerError = 'Web Audio unavailable';
+    updateVisualizerState(false);
+    return false;
+  }
+
+  try {
+    if (!audioContext) {
+      audioContext = new AudioContextConstructor();
+      audioSourceNode = audioContext.createMediaElementSource(audio);
+      analyserNode = audioContext.createAnalyser();
+      analyserNode.fftSize = 2048;
+      analyserNode.minDecibels = -90;
+      analyserNode.maxDecibels = -14;
+      analyserNode.smoothingTimeConstant = 0.82;
+      audioSourceNode.connect(analyserNode);
+      analyserNode.connect(audioContext.destination);
+    }
+
+    if (audioContext.state === 'suspended') {
+      await audioContext.resume();
+    }
+    return true;
+  } catch {
+    visualizerError = 'Analyzer unavailable';
+    updateVisualizerState(false);
+    return false;
+  }
+}
+
+function drawVisualizerFrame(timestamp = 0) {
+  if (!spectrogramCanvas || !scopeCanvas || !spectrumCanvas) return;
+
+  const spectrogramCtx = spectrogramCanvas.getContext('2d');
+  const scopeCtx = scopeCanvas.getContext('2d');
+  const spectrumCtx = spectrumCanvas.getContext('2d');
+  if (!spectrogramCtx || !scopeCtx || !spectrumCtx) return;
+
+  const spectrogramSize = syncVisualizerCanvas(spectrogramCanvas, spectrogramCtx, visualizerSizes.spectrogram);
+  const scopeSize = syncVisualizerCanvas(scopeCanvas, scopeCtx, visualizerSizes.scope);
+  const spectrumSize = syncVisualizerCanvas(spectrumCanvas, spectrumCtx, visualizerSizes.spectrum);
+  const live = isVisualizerLive();
+  updateVisualizerState(live);
+
+  if (!live) {
+    drawIdleSpectrogram(spectrogramCtx, spectrogramCanvas, spectrogramSize.width, spectrogramSize.height, timestamp);
+    drawScope(scopeCtx, null, scopeSize.width, scopeSize.height, 0, timestamp, false);
+    drawSpectrum(spectrumCtx, null, spectrumSize.width, spectrumSize.height, 0, timestamp, false);
+    return;
+  }
+
+  if (!visualizerBuffers.freq || visualizerBuffers.freq.length !== analyserNode.frequencyBinCount) {
+    visualizerBuffers.freq = new Uint8Array(analyserNode.frequencyBinCount);
+  }
+  if (!visualizerBuffers.time || visualizerBuffers.time.length !== analyserNode.fftSize) {
+    visualizerBuffers.time = new Float32Array(analyserNode.fftSize);
+    visualizerBuffers.timeByte = new Uint8Array(analyserNode.fftSize);
+  }
+
+  analyserNode.getByteFrequencyData(visualizerBuffers.freq);
+  const timeData = readTimeDomain(analyserNode, visualizerBuffers.time, visualizerBuffers.timeByte);
+  const lowEnergy = frequencyBandValue(visualizerBuffers.freq, 0.005, 0.08);
+  const midEnergy = frequencyBandValue(visualizerBuffers.freq, 0.08, 0.34);
+  const energy = clamp(lowEnergy * 0.75 + midEnergy * 0.25);
+
+  drawSpectrogram(
+    spectrogramCtx,
+    spectrogramCanvas,
+    visualizerBuffers.freq,
+    spectrogramSize.width,
+    spectrogramSize.height,
+    energy,
+  );
+  drawScope(scopeCtx, timeData, scopeSize.width, scopeSize.height, energy, timestamp, true);
+  drawSpectrum(spectrumCtx, visualizerBuffers.freq, spectrumSize.width, spectrumSize.height, energy, timestamp, true);
+}
+
+function startVisualizerLoop() {
+  if (!visualizer || visualizerRaf) return;
+
+  const render = (timestamp) => {
+    visualizerRaf = requestAnimationFrame(render);
+    const frameMs = isVisualizerLive() ? VISUALIZER_ACTIVE_FRAME_MS : VISUALIZER_IDLE_FRAME_MS;
+    if (timestamp - visualizerLastFrame < frameMs) return;
+    visualizerLastFrame = timestamp;
+    drawVisualizerFrame(timestamp);
+  };
+
+  visualizerRaf = requestAnimationFrame(render);
 }
 
 function setUploadStatus(message) {
@@ -522,6 +858,11 @@ function updateProgress() {
   syncActiveRows();
 }
 
+async function startAudioPlayback() {
+  await ensureVisualizerAudio();
+  await audio.play();
+}
+
 async function playTrack(track) {
   const isNewTrack = currentTrack?.id !== track.id;
   currentTrack = track;
@@ -535,9 +876,10 @@ async function playTrack(track) {
   updatePlaybackState();
 
   try {
-    await audio.play();
+    await startAudioPlayback();
   } catch {
     updatePlaybackState();
+    updateVisualizerState();
   }
 }
 
@@ -639,7 +981,10 @@ list.addEventListener('click', (event) => {
 
   if (currentTrack?.id === track.id) {
     if (audio.paused) {
-      audio.play().catch(() => updatePlaybackState());
+      startAudioPlayback().catch(() => {
+        updatePlaybackState();
+        updateVisualizerState();
+      });
     } else {
       audio.pause();
     }
@@ -651,7 +996,10 @@ list.addEventListener('click', (event) => {
 playerToggle.addEventListener('click', () => {
   if (!currentTrack) return;
   if (audio.paused) {
-    audio.play().catch(() => updatePlaybackState());
+    startAudioPlayback().catch(() => {
+      updatePlaybackState();
+      updateVisualizerState();
+    });
   } else {
     audio.pause();
   }
@@ -676,9 +1024,18 @@ audio.addEventListener('loadedmetadata', () => {
   updateProgress();
 });
 audio.addEventListener('timeupdate', updateProgress);
-audio.addEventListener('play', updatePlaybackState);
-audio.addEventListener('pause', updatePlaybackState);
-audio.addEventListener('ended', updatePlaybackState);
+audio.addEventListener('play', () => {
+  updatePlaybackState();
+  updateVisualizerState();
+});
+audio.addEventListener('pause', () => {
+  updatePlaybackState();
+  updateVisualizerState();
+});
+audio.addEventListener('ended', () => {
+  updatePlaybackState();
+  updateVisualizerState();
+});
 uploadButton.addEventListener('click', () => {
   pendingUploadGroup = null;
   uploadInput.click();
@@ -706,5 +1063,7 @@ upload.addEventListener('drop', (event) => {
 
 updatePlayerText(null);
 updatePlaybackState();
+updateVisualizerState();
+startVisualizerLoop();
 render();
 loadCatalog();

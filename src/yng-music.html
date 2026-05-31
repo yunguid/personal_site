@@ -77,6 +77,27 @@
             </div>
         </section>
 
+        <section id="music-visualizer" class="music-visualizer" aria-label="Audio visualizer">
+            <div class="music-visualizer-header">
+                <span>Wave Candy</span>
+                <span id="music-visualizer-status">Idle</span>
+            </div>
+            <div class="music-visualizer-grid">
+                <div class="music-visualizer-tile music-visualizer-spectrogram">
+                    <span>Spectrogram</span>
+                    <canvas id="music-spectrogram-canvas" class="music-visualizer-canvas"></canvas>
+                </div>
+                <div class="music-visualizer-tile music-visualizer-scope">
+                    <span>Oscilloscope</span>
+                    <canvas id="music-scope-canvas" class="music-visualizer-canvas"></canvas>
+                </div>
+                <div class="music-visualizer-tile music-visualizer-spectrum">
+                    <span>Spectrum</span>
+                    <canvas id="music-spectrum-canvas" class="music-visualizer-canvas"></canvas>
+                </div>
+            </div>
+        </section>
+
         <section id="music-list" class="music-archive-list" aria-live="polite"></section>
     </main>
 
