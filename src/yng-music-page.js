@@ -3,6 +3,7 @@ import musicCatalog from './data/yng-music.json';
 
 const list = document.getElementById('music-list');
 const search = document.getElementById('music-search');
+const sort = document.getElementById('music-sort');
 const count = document.getElementById('music-count');
 const summary = document.getElementById('music-summary');
 const playerToggle = document.getElementById('music-player-toggle');
@@ -24,6 +25,9 @@ let visibleGroups = [];
 let trackNumbers = new Map();
 let trackById = new Map();
 let groupByTrackId = new Map();
+let pendingUploadGroup = null;
+const expandedGroups = new Set();
+const collapsedGroups = new Set();
 const audio = new Audio();
 audio.preload = 'none';
 playerProgress.style.setProperty('--player-progress', '0%');
@@ -39,8 +43,37 @@ let isSeeking = false;
 let isUploading = false;
 let uploadDragDepth = 0;
 
+const dateFormatter = new Intl.DateTimeFormat(undefined, {
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+});
+
+function currentSortMode() {
+  return sort?.value || 'newest';
+}
+
+function trackUploadedTimestamp(track) {
+  const timestamp = Date.parse(track.uploadedAt || track.modifiedAt || track.createdAt || '');
+  return Number.isFinite(timestamp) ? timestamp : 0;
+}
+
+function compareTrackTitle(a, b) {
+  return String(a.title || '').localeCompare(String(b.title || ''), undefined, { sensitivity: 'base' })
+    || String(a.fileName || '').localeCompare(String(b.fileName || ''), undefined, { sensitivity: 'base' })
+    || String(a.id || '').localeCompare(String(b.id || ''));
+}
+
 function sortTracks(nextTracks) {
-  return [...nextTracks].sort((a, b) => a.title.localeCompare(b.title));
+  const mode = currentSortMode();
+  return [...nextTracks].sort((a, b) => {
+    if (mode === 'title') return compareTrackTitle(a, b);
+
+    const dateDelta = mode === 'oldest'
+      ? trackUploadedTimestamp(a) - trackUploadedTimestamp(b)
+      : trackUploadedTimestamp(b) - trackUploadedTimestamp(a);
+    return dateDelta || compareTrackTitle(a, b);
+  });
 }
 
 function rebuildTrackNumbers() {
@@ -62,7 +95,7 @@ function normalizeGroupText(value) {
 }
 
 function similarTrackKey(track) {
-  const rawTitle = track.title || track.fileName || '';
+  const rawTitle = track.groupTitle || track.title || track.fileName || '';
   const withoutExtension = String(rawTitle).replace(/\.[a-z0-9]+$/i, '');
   let base = withoutExtension
     .replace(/\s*\[[^\]]+\]\s*$/g, '')
@@ -79,7 +112,8 @@ function similarTrackKey(track) {
 
 function primaryTrackForGroup(groupTracks) {
   return [...groupTracks].sort((a, b) => (
-    a.title.length - b.title.length
+    Number(Boolean(a.groupTitle)) - Number(Boolean(b.groupTitle))
+    || a.title.length - b.title.length
     || a.title.localeCompare(b.title)
   ))[0];
 }
@@ -94,7 +128,7 @@ function buildTrackGroups(nextTracks) {
 
   return [...groupsByKey.entries()]
     .map(([key, groupTracks]) => {
-      const groupTracksSorted = [...groupTracks].sort((a, b) => a.title.localeCompare(b.title));
+      const groupTracksSorted = sortTracks(groupTracks);
       const primary = primaryTrackForGroup(groupTracksSorted);
       return {
         id: key,
@@ -106,7 +140,22 @@ function buildTrackGroups(nextTracks) {
         ],
       };
     })
-    .sort((a, b) => a.primary.title.localeCompare(b.primary.title));
+    .sort(compareTrackGroups);
+}
+
+function groupUploadedTimestamp(group) {
+  const timestamps = group.tracks.map(trackUploadedTimestamp);
+  return currentSortMode() === 'oldest' ? Math.min(...timestamps) : Math.max(...timestamps);
+}
+
+function compareTrackGroups(a, b) {
+  const mode = currentSortMode();
+  if (mode === 'title') return compareTrackTitle(a.primary, b.primary);
+
+  const dateDelta = mode === 'oldest'
+    ? groupUploadedTimestamp(a) - groupUploadedTimestamp(b)
+    : groupUploadedTimestamp(b) - groupUploadedTimestamp(a);
+  return dateDelta || compareTrackTitle(a.primary, b.primary);
 }
 
 function formatBytes(bytes) {
@@ -123,9 +172,15 @@ function formatClock(seconds) {
   return `${minutes}:${remainder}`;
 }
 
+function formatUploadedDate(track) {
+  const timestamp = trackUploadedTimestamp(track);
+  return timestamp ? dateFormatter.format(new Date(timestamp)) : '';
+}
+
 function trackMeta(track) {
   return [
     track.format.toUpperCase(),
+    formatUploadedDate(track),
     track.duration,
     formatBytes(track.sizeBytes),
   ].filter(Boolean).join(' / ');
@@ -135,6 +190,7 @@ function activeTrackMeta(track) {
   const duration = audio.duration || track.durationSeconds || 0;
   return [
     track.format.toUpperCase(),
+    formatUploadedDate(track),
     `${formatClock(audio.currentTime)} / ${formatClock(duration)}`,
     formatBytes(track.sizeBytes),
   ].filter(Boolean).join(' / ');
@@ -143,6 +199,17 @@ function activeTrackMeta(track) {
 function setUploadStatus(message) {
   uploadStatus.textContent = message;
   upload.classList.toggle('has-status', Boolean(message));
+}
+
+function groupLabel(group) {
+  return group?.primary?.groupTitle || group?.primary?.title || 'group';
+}
+
+function groupElementId(group) {
+  const slug = String(group.id || '')
+    .replace(/[^a-z0-9_-]+/gi, '-')
+    .replace(/^-+|-+$/g, '') || 'group';
+  return `music-group-${slug}-${group.primary.id}`;
 }
 
 function uploadFormat(fileName) {
@@ -219,12 +286,15 @@ function applyCatalog(catalog) {
   syncActiveRows();
 }
 
-async function uploadFile(file, key, index, total) {
+async function uploadFile(file, key, index, total, group = null) {
   if (!isUploadableAudio(file)) {
     throw new Error(`${file.name} is not an MP3 or WAV file.`);
   }
 
-  setUploadStatus(`Hashing ${index} / ${total}`);
+  const groupTitle = group ? groupLabel(group) : '';
+  const uploadLabel = groupTitle ? `Adding to ${groupTitle}` : 'Uploading';
+
+  setUploadStatus(`${uploadLabel}: hashing ${index} / ${total}`);
   const [sha256, durationSeconds] = await Promise.all([
     sha256File(file),
     durationFromFile(file),
@@ -237,12 +307,13 @@ async function uploadFile(file, key, index, total) {
     sizeBytes: file.size,
     sha256,
     durationSeconds,
+    ...(groupTitle ? { groupTitle } : {}),
   };
 
-  setUploadStatus(`Signing ${index} / ${total}`);
+  setUploadStatus(`${uploadLabel}: signing ${index} / ${total}`);
   const signed = await postUploadAction(base, key);
 
-  setUploadStatus(`Uploading ${index} / ${total}`);
+  setUploadStatus(`${uploadLabel}: uploading ${index} / ${total}`);
   const uploadResponse = await fetch(signed.uploadUrl, {
     method: 'PUT',
     headers: signed.headers,
@@ -250,12 +321,16 @@ async function uploadFile(file, key, index, total) {
   });
   if (!uploadResponse.ok) throw new Error(`S3 upload failed for ${file.name}.`);
 
-  setUploadStatus(`Saving ${index} / ${total}`);
+  setUploadStatus(`${uploadLabel}: saving ${index} / ${total}`);
   const completed = await postUploadAction({ ...base, action: 'complete' }, key);
+  if (group) {
+    collapsedGroups.delete(group.id);
+    expandedGroups.add(group.id);
+  }
   applyCatalog(completed.catalog);
 }
 
-async function uploadFiles(fileList) {
+async function uploadFiles(fileList, group = null) {
   const files = [...fileList].filter(isUploadableAudio);
   if (isUploading) return;
   if (!files.length) {
@@ -271,13 +346,16 @@ async function uploadFiles(fileList) {
 
   try {
     for (const [index, file] of files.entries()) {
-      await uploadFile(file, key, index + 1, files.length);
+      await uploadFile(file, key, index + 1, files.length, group);
     }
-    setUploadStatus(`Uploaded ${files.length} track${files.length === 1 ? '' : 's'}.`);
+    setUploadStatus(group
+      ? `Added ${files.length} track${files.length === 1 ? '' : 's'} to ${groupLabel(group)}.`
+      : `Uploaded ${files.length} track${files.length === 1 ? '' : 's'}.`);
   } catch (error) {
     setUploadStatus(error.message || 'Upload failed.');
   } finally {
     isUploading = false;
+    pendingUploadGroup = null;
     upload.classList.remove('is-uploading', 'is-dragging');
     uploadInput.value = '';
   }
@@ -308,7 +386,7 @@ function renderTrack(track, options = {}) {
   if (group?.tracks.length > 1 && !variant) {
     const badge = document.createElement('span');
     badge.className = 'music-track-group-badge';
-    badge.textContent = `${group.tracks.length} takes`;
+    badge.textContent = `${group.tracks.length} tracks`;
     title.append(badge);
   }
 
@@ -323,17 +401,75 @@ function renderTrack(track, options = {}) {
 function renderGroup(group) {
   if (group.tracks.length === 1) return renderTrack(group.primary, { group });
 
+  const isExpanded = isGroupExpanded(group);
   const wrapper = document.createElement('div');
-  wrapper.className = 'music-track-group has-variants';
+  wrapper.className = `music-track-group has-variants${isExpanded ? ' is-expanded' : ' is-collapsed'}`;
   wrapper.dataset.groupId = group.id;
+
+  const primaryRow = document.createElement('div');
+  primaryRow.className = 'music-track-group-row';
+
+  const actions = document.createElement('div');
+  actions.className = 'music-track-group-actions';
+  actions.append(renderGroupToggle(group, isExpanded), renderGroupUpload(group));
 
   const variants = document.createElement('div');
   variants.className = 'music-track-variants';
+  variants.id = groupElementId(group);
   variants.setAttribute('aria-label', `Variants of ${group.primary.title}`);
-  variants.replaceChildren(...group.tracks.slice(1).map(track => renderTrack(track, { group, variant: true })));
+  if (isExpanded) {
+    variants.replaceChildren(...group.tracks.slice(1).map(track => renderTrack(track, { group, variant: true })));
+  }
 
-  wrapper.append(renderTrack(group.primary, { group }), variants);
+  primaryRow.append(renderTrack(group.primary, { group }), actions);
+  wrapper.append(primaryRow, variants);
   return wrapper;
+}
+
+function isGroupExpanded(group) {
+  if (collapsedGroups.has(group.id)) return false;
+
+  const query = search.value.trim();
+  const hasActiveVariant = group.tracks.some(track => (
+    track.id === currentTrack?.id && track.id !== group.primary.id
+  ));
+  return expandedGroups.has(group.id) || Boolean(query) || hasActiveVariant;
+}
+
+function renderGroupToggle(group, isExpanded) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'music-group-action music-group-toggle';
+  button.dataset.action = 'toggle-group';
+  button.dataset.groupId = group.id;
+  button.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');
+  button.setAttribute('aria-controls', groupElementId(group));
+  button.setAttribute('aria-label', `${isExpanded ? 'Collapse' : 'Show'} ${group.tracks.length - 1} more track${group.tracks.length === 2 ? '' : 's'} for ${group.primary.title}`);
+  button.title = isExpanded ? 'Collapse tracks' : 'Show tracks';
+  button.innerHTML = `
+    <span class="music-group-action-count">${group.tracks.length - 1}</span>
+    <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
+      <path d="m6 9 6 6 6-6"></path>
+    </svg>
+  `;
+  return button;
+}
+
+function renderGroupUpload(group) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'music-group-action music-group-upload';
+  button.dataset.action = 'upload-group';
+  button.dataset.groupId = group.id;
+  button.setAttribute('aria-label', `Add audio to ${group.primary.title}`);
+  button.title = 'Add track to this group';
+  button.innerHTML = `
+    <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
+      <path d="M12 5v14"></path>
+      <path d="M5 12h14"></path>
+    </svg>
+  `;
+  return button;
 }
 
 function syncActiveRows() {
@@ -429,6 +565,7 @@ function render() {
     ? trackGroups.filter(group => group.tracks.some(track => (
       track.title.toLowerCase().includes(query)
       || track.fileName.toLowerCase().includes(query)
+      || track.groupTitle?.toLowerCase().includes(query)
     )))
     : trackGroups;
   const filteredTrackCount = filteredGroups.reduce((sum, group) => sum + group.tracks.length, 0);
@@ -461,7 +598,39 @@ async function loadCatalog() {
 rebuildTrackNumbers();
 summary.textContent = `${tracks.length} exported tracks.`;
 search.addEventListener('input', render);
+sort.addEventListener('change', () => {
+  tracks = sortTracks(tracks);
+  rebuildTrackNumbers();
+  render();
+  syncActiveRows();
+});
 list.addEventListener('click', (event) => {
+  const actionButton = event.target.closest('.music-group-action');
+  if (actionButton) {
+    const group = trackGroups.find(nextGroup => nextGroup.id === actionButton.dataset.groupId);
+    if (!group) return;
+
+    if (actionButton.dataset.action === 'toggle-group') {
+      if (isGroupExpanded(group)) {
+        expandedGroups.delete(group.id);
+        collapsedGroups.add(group.id);
+      } else {
+        collapsedGroups.delete(group.id);
+        expandedGroups.add(group.id);
+      }
+      render();
+      syncActiveRows();
+    }
+
+    if (actionButton.dataset.action === 'upload-group') {
+      pendingUploadGroup = group;
+      setUploadStatus(`Choose audio for ${groupLabel(group)}.`);
+      uploadInput.click();
+    }
+
+    return;
+  }
+
   const item = event.target.closest('.music-archive-track');
   if (!item) return;
 
@@ -510,8 +679,11 @@ audio.addEventListener('timeupdate', updateProgress);
 audio.addEventListener('play', updatePlaybackState);
 audio.addEventListener('pause', updatePlaybackState);
 audio.addEventListener('ended', updatePlaybackState);
-uploadButton.addEventListener('click', () => uploadInput.click());
-uploadInput.addEventListener('change', () => uploadFiles(uploadInput.files));
+uploadButton.addEventListener('click', () => {
+  pendingUploadGroup = null;
+  uploadInput.click();
+});
+uploadInput.addEventListener('change', () => uploadFiles(uploadInput.files, pendingUploadGroup));
 upload.addEventListener('dragenter', (event) => {
   event.preventDefault();
   uploadDragDepth += 1;

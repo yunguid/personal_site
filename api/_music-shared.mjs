@@ -1,5 +1,5 @@
 import { randomUUID, timingSafeEqual } from 'node:crypto';
-import { HeadObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { HeadObjectCommand, GetObjectCommand, ListObjectsV2Command, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import staticCatalog from '../src/data/yng-music.json' with { type: 'json' };
 
@@ -113,20 +113,24 @@ export function buildTrack(input) {
   const fileName = String(input.fileName || '').trim();
   const sha256 = String(input.sha256 || '').toLowerCase();
   const title = String(input.title || titleFromFilename(fileName)).trim() || 'Untitled';
+  const groupTitle = String(input.groupTitle || '').trim();
   const sizeBytes = Number(input.sizeBytes);
   const durationSeconds = Number(input.durationSeconds) || 0;
   const safeId = sha256 ? sha256.slice(0, 16) : randomUUID().replace(/-/g, '').slice(0, 16);
   const format = uploadFormatFromFilename(fileName);
   const extension = format?.extension || 'mp3';
   const key = `${PREFIX}/${slugify(title)}-${safeId.slice(0, 12)}.${extension}`;
+  const uploadedAt = new Date().toISOString();
 
   return {
     id: safeId,
     title,
+    ...(groupTitle ? { groupTitle } : {}),
     fileName,
     format: extension,
     sizeBytes,
-    modifiedAt: new Date().toISOString(),
+    uploadedAt,
+    modifiedAt: uploadedAt,
     durationSeconds,
     duration: formatDuration(durationSeconds),
     sha256,
@@ -159,6 +163,7 @@ export async function createUpload(track, contentType) {
     sha256: track.sha256,
     filename: encodeURIComponent(track.fileName),
     title: encodeURIComponent(track.title),
+    ...(track.groupTitle ? { groupTitle: encodeURIComponent(track.groupTitle) } : {}),
     durationSeconds: String(track.durationSeconds || 0),
   };
 
@@ -199,16 +204,22 @@ export async function verifyUploadedTrack(track) {
 }
 
 export async function readCatalog() {
+  let catalog;
+
   try {
     const object = await s3.send(new GetObjectCommand({
       Bucket: BUCKET,
       Key: CATALOG_KEY,
     }));
-    return sanitizeCatalog(JSON.parse(await object.Body.transformToString()));
-  } catch (error) {
-    if (['NoSuchKey', 'NotFound'].includes(error.name)) return sanitizeCatalog(staticCatalog);
-    return sanitizeCatalog(staticCatalog);
+    catalog = sanitizeCatalog(JSON.parse(await object.Body.transformToString()));
+  } catch {
+    catalog = sanitizeCatalog(staticCatalog);
   }
+
+  return sortCatalog({
+    ...catalog,
+    tracks: await tracksWithUploadedAt(catalog.tracks || []),
+  });
 }
 
 function sanitizeCatalog(catalog) {
@@ -218,18 +229,79 @@ function sanitizeCatalog(catalog) {
   };
 }
 
+async function tracksWithUploadedAt(tracks) {
+  if (tracks.every(track => track.uploadedAt)) return tracks;
+
+  try {
+    const uploadedAtByKey = await listUploadedAtByKey();
+    return tracks.map(track => ({
+      ...track,
+      uploadedAt: track.uploadedAt
+        || uploadedAtByKey.get(track.s3Key)
+        || track.modifiedAt,
+    }));
+  } catch {
+    return tracks;
+  }
+}
+
+async function listUploadedAtByKey() {
+  const uploadedAtByKey = new Map();
+  let continuationToken;
+
+  do {
+    const page = await s3.send(new ListObjectsV2Command({
+      Bucket: BUCKET,
+      Prefix: `${PREFIX}/`,
+      ContinuationToken: continuationToken,
+    }));
+
+    for (const object of page.Contents || []) {
+      if (object.Key && object.LastModified) {
+        uploadedAtByKey.set(object.Key, object.LastModified.toISOString());
+      }
+    }
+
+    continuationToken = page.IsTruncated ? page.NextContinuationToken : undefined;
+  } while (continuationToken);
+
+  return uploadedAtByKey;
+}
+
+function catalogTrackTimestamp(track) {
+  const timestamp = Date.parse(track.uploadedAt || track.modifiedAt || '');
+  return Number.isFinite(timestamp) ? timestamp : 0;
+}
+
+function compareCatalogTrackTitle(a, b) {
+  return String(a.title || '').localeCompare(String(b.title || ''), undefined, { sensitivity: 'base' })
+    || String(a.fileName || '').localeCompare(String(b.fileName || ''), undefined, { sensitivity: 'base' })
+    || String(a.id || '').localeCompare(String(b.id || ''));
+}
+
+function sortCatalog(catalog) {
+  const sortedTracks = [...(catalog.tracks || [])].sort((a, b) => (
+    catalogTrackTimestamp(b) - catalogTrackTimestamp(a)
+    || compareCatalogTrackTitle(a, b)
+  ));
+
+  return {
+    ...catalog,
+    trackCount: sortedTracks.length,
+    totalSizeBytes: sortedTracks.reduce((sum, track) => sum + Number(track.sizeBytes || 0), 0),
+    tracks: sortedTracks,
+  };
+}
+
 export async function writeCatalog(tracks) {
-  const sortedTracks = [...tracks].sort((a, b) => a.title.localeCompare(b.title));
-  const catalog = {
+  const catalog = sortCatalog({
     generatedAt: new Date().toISOString(),
     source: 'web-upload',
     bucket: BUCKET,
     prefix: PREFIX,
     publicBaseUrl: PUBLIC_BASE_URL,
-    trackCount: sortedTracks.length,
-    totalSizeBytes: sortedTracks.reduce((sum, track) => sum + Number(track.sizeBytes || 0), 0),
-    tracks: sortedTracks,
-  };
+    tracks,
+  });
 
   await s3.send(new PutObjectCommand({
     Bucket: BUCKET,

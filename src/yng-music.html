@@ -31,6 +31,14 @@
         <section class="music-archive-toolbar" aria-label="Music filters">
             <label class="music-search-label" for="music-search">Search</label>
             <input id="music-search" class="music-search" type="search" autocomplete="off" placeholder="Filter tracks">
+            <div class="music-sort-field">
+                <label for="music-sort">Sort</label>
+                <select id="music-sort" class="music-sort">
+                    <option value="newest" selected>Newest first</option>
+                    <option value="oldest">Oldest first</option>
+                    <option value="title">Title A-Z</option>
+                </select>
+            </div>
             <div id="music-count" class="music-count"></div>
         </section>
 

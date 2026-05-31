@@ -67,6 +67,18 @@
   text-shadow: var(--text-shadow-lg);
 }
 
+.section-title-link,
+.section-title-link:hover,
+.section-title-link:focus,
+.section-title-link:focus-visible,
+.section-title-link:active,
+.section-title-link:visited {
+  color: inherit;
+  text-decoration: none;
+  outline: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
 .section-subtitle {
   margin-bottom: 1.5rem;
   opacity: 0.8;

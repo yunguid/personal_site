@@ -333,7 +333,7 @@ async function uploadAndVerify(track) {
       existing.ContentLength === track.sizeBytes &&
       existing.Metadata?.sha256 === track.sha256
     ) {
-      return { ...track, uploaded: false, verified: true };
+      return { ...track, uploadedAt: existing.LastModified, uploaded: false, verified: true };
     }
   }
 
@@ -361,7 +361,7 @@ async function uploadAndVerify(track) {
     throw new Error(`SHA metadata mismatch for ${track.sourcePath}`);
   }
 
-  return { ...track, uploaded: true, verified: true };
+  return { ...track, uploadedAt: remote.LastModified, uploaded: true, verified: true };
 }
 
 async function verifyRemoteTrack(track) {
@@ -452,9 +452,11 @@ async function writeCatalog(tracks, options = {}) {
     tracks: catalogTracks.map(track => ({
       id: track.id,
       title: track.title,
+      ...(track.groupTitle ? { groupTitle: track.groupTitle } : {}),
       fileName: track.fileName,
       format: track.format,
       sizeBytes: track.sizeBytes,
+      uploadedAt: track.uploadedAt || track.modifiedAt,
       modifiedAt: track.modifiedAt,
       durationSeconds: track.durationSeconds,
       duration: track.duration,
