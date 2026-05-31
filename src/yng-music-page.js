@@ -14,7 +14,6 @@ const playerCurrent = document.getElementById('music-player-current');
 const playerDuration = document.getElementById('music-player-duration');
 const playerProgress = document.getElementById('music-player-progress');
 const visualizer = document.getElementById('music-visualizer');
-const visualizerStatus = document.getElementById('music-visualizer-status');
 const spectrogramCanvas = document.getElementById('music-spectrogram-canvas');
 const scopeCanvas = document.getElementById('music-scope-canvas');
 const spectrumCanvas = document.getElementById('music-spectrum-canvas');
@@ -434,7 +433,7 @@ function updateVisualizerState(live = isVisualizerLive()) {
   visualizer.classList.toggle('is-live', live);
   visualizer.classList.toggle('has-track', Boolean(currentTrack));
   visualizer.classList.toggle('is-offline', Boolean(visualizerError));
-  visualizerStatus.textContent = label;
+  visualizer.setAttribute('aria-label', `Audio visualizer: ${label}`);
 }
 
 async function ensureVisualizerAudio() {
@@ -450,14 +449,22 @@ async function ensureVisualizerAudio() {
   try {
     if (!audioContext) {
       audioContext = new AudioContextConstructor();
-      audioSourceNode = audioContext.createMediaElementSource(audio);
       analyserNode = audioContext.createAnalyser();
       analyserNode.fftSize = 2048;
       analyserNode.minDecibels = -90;
       analyserNode.maxDecibels = -14;
       analyserNode.smoothingTimeConstant = 0.82;
-      audioSourceNode.connect(analyserNode);
-      analyserNode.connect(audioContext.destination);
+
+      const captureStream = audio.captureStream || audio.mozCaptureStream;
+      if (typeof captureStream === 'function') {
+        const mediaStream = captureStream.call(audio);
+        audioSourceNode = audioContext.createMediaStreamSource(mediaStream);
+        audioSourceNode.connect(analyserNode);
+      } else {
+        audioSourceNode = audioContext.createMediaElementSource(audio);
+        audioSourceNode.connect(analyserNode);
+        analyserNode.connect(audioContext.destination);
+      }
     }
 
     if (audioContext.state === 'suspended') {
@@ -859,8 +866,11 @@ function updateProgress() {
 }
 
 async function startAudioPlayback() {
-  await ensureVisualizerAudio();
-  await audio.play();
+  const playPromise = audio.play();
+  ensureVisualizerAudio()
+    .then(() => updateVisualizerState())
+    .catch(() => updateVisualizerState());
+  await playPromise;
 }
 
 async function playTrack(track) {
