@@ -25,6 +25,9 @@
                     <span class="music-upload-secondary">Browse</span>
                 </button>
                 <p id="music-upload-status" class="music-upload-status" aria-live="polite"></p>
+                <div class="music-upload-progress" aria-hidden="true">
+                    <span id="music-upload-progress-bar"></span>
+                </div>
             </section>
         </header>
 
@@ -39,6 +42,12 @@
                     <option value="title">Title A-Z</option>
                 </select>
             </div>
+            <button id="music-favorites-filter" class="music-favorites-filter" type="button" aria-pressed="false" title="Show favorites">
+                <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
+                    <path d="m12 3.6 2.6 5.2 5.8.8-4.2 4.1 1 5.7-5.2-2.7-5.2 2.7 1-5.7-4.2-4.1 5.8-.8z"></path>
+                </svg>
+                <span>Favorites</span>
+            </button>
             <div id="music-count" class="music-count"></div>
         </section>
 

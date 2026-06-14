@@ -4,6 +4,7 @@ import musicCatalog from './data/yng-music.json';
 const list = document.getElementById('music-list');
 const search = document.getElementById('music-search');
 const sort = document.getElementById('music-sort');
+const favoritesFilter = document.getElementById('music-favorites-filter');
 const count = document.getElementById('music-count');
 const summary = document.getElementById('music-summary');
 const playerToggle = document.getElementById('music-player-toggle');
@@ -21,6 +22,7 @@ const upload = document.getElementById('music-upload');
 const uploadInput = document.getElementById('music-upload-input');
 const uploadButton = document.getElementById('music-upload-button');
 const uploadStatus = document.getElementById('music-upload-status');
+const uploadProgressBar = document.getElementById('music-upload-progress-bar');
 
 let tracks = sortTracks(musicCatalog.tracks);
 let visibleTracks = tracks;
@@ -30,6 +32,7 @@ let trackNumbers = new Map();
 let trackById = new Map();
 let groupByTrackId = new Map();
 let pendingUploadGroup = null;
+let showFavoritesOnly = false;
 const expandedGroups = new Set();
 const collapsedGroups = new Set();
 const audio = new Audio();
@@ -43,6 +46,7 @@ playerProgress.style.setProperty('--player-progress', '0%');
 const VISUALIZER_ACTIVE_FRAME_MS = 33;
 const VISUALIZER_IDLE_FRAME_MS = 80;
 const VISUALIZER_DPR_LIMIT = 2;
+const FAVORITES_STORAGE_KEY = 'yngMusicFavoriteTracks';
 
 const UPLOAD_CONTENT_TYPES = {
   mp3: 'audio/mpeg',
@@ -51,6 +55,7 @@ const UPLOAD_CONTENT_TYPES = {
 };
 
 let currentTrack = null;
+let previousActiveTrackId = null;
 let isSeeking = false;
 let isUploading = false;
 let uploadDragDepth = 0;
@@ -58,6 +63,8 @@ let audioContext = null;
 let audioSourceNode = null;
 let analyserNode = null;
 let visualizerOutputNode = null;
+let visualizerMode = '';
+let visualizerCaptureStream = null;
 let visualizerRaf = 0;
 let visualizerLastFrame = 0;
 let visualizerError = '';
@@ -73,6 +80,8 @@ const visualizerBuffers = {
   time: null,
   timeByte: null,
 };
+
+const favoriteTrackIds = new Set(readFavoriteTrackIds());
 
 const dateFormatter = new Intl.DateTimeFormat(undefined, {
   month: 'short',
@@ -229,6 +238,42 @@ function activeTrackMeta(track) {
 
 function clamp(value, min = 0, max = 1) {
   return Math.min(max, Math.max(min, value));
+}
+
+function readFavoriteTrackIds() {
+  try {
+    const stored = JSON.parse(window.localStorage.getItem(FAVORITES_STORAGE_KEY) || '[]');
+    return Array.isArray(stored) ? stored.filter(Boolean).map(String) : [];
+  } catch {
+    return [];
+  }
+}
+
+function persistFavoriteTrackIds() {
+  window.localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify([...favoriteTrackIds]));
+}
+
+function isFavoriteTrack(trackId) {
+  return favoriteTrackIds.has(String(trackId || ''));
+}
+
+function setFavoriteTrack(trackId, isFavorite) {
+  const id = String(trackId || '');
+  if (!id) return;
+  if (isFavorite) favoriteTrackIds.add(id);
+  else favoriteTrackIds.delete(id);
+  persistFavoriteTrackIds();
+  syncFavoriteButtons(id);
+}
+
+function syncFavoriteButtons(trackId) {
+  list.querySelectorAll(`.music-track-favorite[data-track-id="${CSS.escape(trackId)}"]`).forEach((button) => {
+    const isFavorite = isFavoriteTrack(trackId);
+    button.classList.toggle('is-favorite', isFavorite);
+    button.setAttribute('aria-pressed', isFavorite ? 'true' : 'false');
+    button.title = isFavorite ? 'Remove favorite' : 'Favorite track';
+    button.setAttribute('aria-label', `${isFavorite ? 'Remove favorite' : 'Favorite'} ${trackById.get(trackId)?.title || 'track'}`);
+  });
 }
 
 function syncVisualizerCanvas(canvas, ctx, sizeRef) {
@@ -458,7 +503,22 @@ function prepareVisualizerTrack(track) {
   visualizerAudio.load();
 }
 
+function connectVisualizerSource(sourceNode, mode) {
+  analyserNode = createAnalyser();
+  visualizerMode = mode;
+  audioSourceNode = sourceNode;
+  audioSourceNode.connect(analyserNode);
+
+  if (mode === 'fallback-element') {
+    visualizerOutputNode = audioContext.createGain();
+    visualizerOutputNode.gain.value = 0;
+    analyserNode.connect(visualizerOutputNode);
+    visualizerOutputNode.connect(audioContext.destination);
+  }
+}
+
 function syncVisualizerPosition(force = false) {
+  if (visualizerMode !== 'fallback-element') return;
   if (!currentTrack || !visualizerAudio.src || !Number.isFinite(audio.currentTime)) return;
   if (visualizerAudio.readyState < 1) return;
 
@@ -493,13 +553,17 @@ async function ensureVisualizerAudio() {
 
     if (analyserNode) return true;
 
-    analyserNode = createAnalyser();
-    visualizerOutputNode = audioContext.createGain();
-    visualizerOutputNode.gain.value = 0;
-    audioSourceNode = audioContext.createMediaElementSource(visualizerAudio);
-    audioSourceNode.connect(analyserNode);
-    analyserNode.connect(visualizerOutputNode);
-    visualizerOutputNode.connect(audioContext.destination);
+    const captureStream = audio.captureStream || audio.mozCaptureStream;
+    if (typeof captureStream === 'function') {
+      visualizerCaptureStream = captureStream.call(audio);
+      if (visualizerCaptureStream?.getAudioTracks?.().length) {
+        connectVisualizerSource(audioContext.createMediaStreamSource(visualizerCaptureStream), 'playback-stream');
+        return true;
+      }
+    }
+
+    prepareVisualizerTrack(currentTrack);
+    connectVisualizerSource(audioContext.createMediaElementSource(visualizerAudio), 'fallback-element');
     return true;
   } catch {
     visualizerError = 'Analyzer unavailable';
@@ -515,10 +579,14 @@ async function startVisualizerPlayback() {
   const canAnalyze = await ensureVisualizerAudio();
   if (!canAnalyze) return false;
 
-  visualizerAudio.playbackRate = audio.playbackRate || 1;
-  syncVisualizerPosition(true);
+  if (visualizerMode === 'playback-stream') {
+    updateVisualizerState();
+    return true;
+  }
 
   try {
+    visualizerAudio.playbackRate = audio.playbackRate || 1;
+    syncVisualizerPosition(true);
     await visualizerAudio.play();
     updateVisualizerState();
     return true;
@@ -594,9 +662,14 @@ function startVisualizerLoop() {
   visualizerRaf = requestAnimationFrame(render);
 }
 
-function setUploadStatus(message) {
+function setUploadStatus(message, progress = null) {
   uploadStatus.textContent = message;
   upload.classList.toggle('has-status', Boolean(message));
+  upload.classList.toggle('has-progress', Number.isFinite(progress));
+  if (uploadProgressBar) {
+    const clamped = Number.isFinite(progress) ? clamp(progress, 0, 1) : 0;
+    uploadProgressBar.style.transform = `scaleX(${clamped})`;
+  }
 }
 
 function groupLabel(group) {
@@ -684,6 +757,25 @@ function applyCatalog(catalog) {
   syncActiveRows();
 }
 
+function putFileWithProgress(url, headers, file, onProgress) {
+  return new Promise((resolve, reject) => {
+    const request = new XMLHttpRequest();
+    request.open('PUT', url);
+    Object.entries(headers || {}).forEach(([name, value]) => request.setRequestHeader(name, value));
+
+    request.upload.onprogress = (event) => {
+      if (event.lengthComputable) onProgress(event.loaded / event.total);
+    };
+    request.onload = () => {
+      if (request.status >= 200 && request.status < 300) resolve();
+      else reject(new Error(`S3 upload failed for ${file.name}.`));
+    };
+    request.onerror = () => reject(new Error(`S3 upload failed for ${file.name}.`));
+    request.onabort = () => reject(new Error(`S3 upload cancelled for ${file.name}.`));
+    request.send(file);
+  });
+}
+
 async function uploadFile(file, key, index, total, group = null) {
   if (!isUploadableAudio(file)) {
     throw new Error(`${file.name} is not an MP3 or WAV file.`);
@@ -691,8 +783,13 @@ async function uploadFile(file, key, index, total, group = null) {
 
   const groupTitle = group ? groupLabel(group) : '';
   const uploadLabel = groupTitle ? `Adding to ${groupTitle}` : 'Uploading';
+  const stepBase = (index - 1) / total;
+  const stepSize = 1 / total;
+  const setStepStatus = (message, stepProgress) => {
+    setUploadStatus(message, stepBase + (stepSize * stepProgress));
+  };
 
-  setUploadStatus(`${uploadLabel}: hashing ${index} / ${total}`);
+  setStepStatus(`${uploadLabel}: hashing ${index} / ${total}`, 0.05);
   const [sha256, durationSeconds] = await Promise.all([
     sha256File(file),
     durationFromFile(file),
@@ -708,18 +805,15 @@ async function uploadFile(file, key, index, total, group = null) {
     ...(groupTitle ? { groupTitle } : {}),
   };
 
-  setUploadStatus(`${uploadLabel}: signing ${index} / ${total}`);
+  setStepStatus(`${uploadLabel}: signing ${index} / ${total}`, 0.18);
   const signed = await postUploadAction(base, key);
 
-  setUploadStatus(`${uploadLabel}: uploading ${index} / ${total}`);
-  const uploadResponse = await fetch(signed.uploadUrl, {
-    method: 'PUT',
-    headers: signed.headers,
-    body: file,
+  setStepStatus(`${uploadLabel}: uploading ${index} / ${total} · 0%`, 0.2);
+  await putFileWithProgress(signed.uploadUrl, signed.headers, file, (progress) => {
+    setStepStatus(`${uploadLabel}: uploading ${index} / ${total} · ${Math.round(progress * 100)}%`, 0.2 + (progress * 0.62));
   });
-  if (!uploadResponse.ok) throw new Error(`S3 upload failed for ${file.name}.`);
 
-  setUploadStatus(`${uploadLabel}: saving ${index} / ${total}`);
+  setStepStatus(`${uploadLabel}: saving ${index} / ${total}`, 0.9);
   const completed = await postUploadAction({ ...base, action: 'complete' }, key);
   if (group) {
     collapsedGroups.delete(group.id);
@@ -748,7 +842,7 @@ async function uploadFiles(fileList, group = null) {
     }
     setUploadStatus(group
       ? `Added ${files.length} track${files.length === 1 ? '' : 's'} to ${groupLabel(group)}.`
-      : `Uploaded ${files.length} track${files.length === 1 ? '' : 's'}.`);
+      : `Uploaded ${files.length} track${files.length === 1 ? '' : 's'}.`, 1);
   } catch (error) {
     setUploadStatus(error.message || 'Upload failed.');
   } finally {
@@ -762,10 +856,11 @@ async function uploadFiles(fileList, group = null) {
 function renderTrack(track, options = {}) {
   const { group = null, variant = false } = options;
   const isActive = currentTrack?.id === track.id;
-  const item = document.createElement('button');
-  item.type = 'button';
+  const item = document.createElement('div');
   item.className = variant ? 'music-archive-track music-track-variant' : 'music-archive-track';
   item.dataset.trackId = track.id;
+  item.role = 'button';
+  item.tabIndex = 0;
   item.setAttribute('aria-pressed', isActive ? 'true' : 'false');
   if (isActive) item.classList.add('is-active');
 
@@ -792,7 +887,21 @@ function renderTrack(track, options = {}) {
   meta.className = 'music-archive-meta';
   meta.textContent = isActive ? activeTrackMeta(track) : trackMeta(track);
 
-  item.append(number, title, meta);
+  const favorite = document.createElement('button');
+  favorite.type = 'button';
+  favorite.className = 'music-track-favorite';
+  favorite.dataset.trackId = track.id;
+  favorite.setAttribute('aria-pressed', isFavoriteTrack(track.id) ? 'true' : 'false');
+  favorite.setAttribute('aria-label', `${isFavoriteTrack(track.id) ? 'Remove favorite' : 'Favorite'} ${track.title}`);
+  favorite.title = isFavoriteTrack(track.id) ? 'Remove favorite' : 'Favorite track';
+  if (isFavoriteTrack(track.id)) favorite.classList.add('is-favorite');
+  favorite.innerHTML = `
+    <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
+      <path d="m12 3.6 2.6 5.2 5.8.8-4.2 4.1 1 5.7-5.2-2.7-5.2 2.7 1-5.7-4.2-4.1 5.8-.8z"></path>
+    </svg>
+  `;
+
+  item.append(number, title, meta, favorite);
   return item;
 }
 
@@ -870,10 +979,13 @@ function renderGroupUpload(group) {
   return button;
 }
 
-function syncActiveRows() {
-  list.querySelectorAll('.music-archive-track').forEach((item) => {
+function syncTrackRow(trackId) {
+  if (!trackId) return;
+  list.querySelectorAll(`.music-archive-track[data-track-id="${CSS.escape(trackId)}"]`).forEach((item) => {
     const track = trackById.get(item.dataset.trackId);
-    const isActive = track?.id === currentTrack?.id;
+    if (!track) return;
+
+    const isActive = track.id === currentTrack?.id;
     item.classList.toggle('is-active', isActive);
     item.setAttribute('aria-pressed', isActive ? 'true' : 'false');
     item.querySelector('.music-track-number').textContent = isActive
@@ -883,6 +995,15 @@ function syncActiveRows() {
       ? activeTrackMeta(track)
       : trackMeta(track);
   });
+}
+
+function syncActiveRows() {
+  syncTrackRow(previousActiveTrackId);
+  syncTrackRow(currentTrack?.id);
+}
+
+function syncCurrentRowProgress() {
+  syncTrackRow(currentTrack?.id);
 }
 
 function updatePlayerText(track = currentTrack) {
@@ -917,7 +1038,7 @@ function updateProgress() {
   playerProgress.style.setProperty('--player-progress', `${progress * 100}%`);
   playerCurrent.textContent = formatClock(audio.currentTime);
   playerDuration.textContent = formatClock(duration);
-  syncActiveRows();
+  syncCurrentRowProgress();
 }
 
 async function startAudioPlayback() {
@@ -930,12 +1051,12 @@ async function startAudioPlayback() {
 
 async function playTrack(track) {
   const isNewTrack = currentTrack?.id !== track.id;
+  previousActiveTrackId = currentTrack?.id || null;
   currentTrack = track;
 
   if (isNewTrack) {
     audio.src = track.url;
     audio.currentTime = 0;
-    prepareVisualizerTrack(track);
   }
 
   updatePlayerText(track);
@@ -969,13 +1090,25 @@ function shuffleTrack() {
 
 function render() {
   const query = search.value.trim().toLowerCase();
-  const filteredGroups = query
+  const searchedGroups = query
     ? trackGroups.filter(group => group.tracks.some(track => (
       track.title.toLowerCase().includes(query)
       || track.fileName.toLowerCase().includes(query)
       || track.groupTitle?.toLowerCase().includes(query)
     )))
     : trackGroups;
+  const filteredGroups = showFavoritesOnly
+    ? searchedGroups
+      .map(group => ({
+        ...group,
+        tracks: group.tracks.filter(track => isFavoriteTrack(track.id)),
+      }))
+      .filter(group => group.tracks.length)
+      .map(group => ({
+        ...group,
+        primary: isFavoriteTrack(group.primary.id) ? group.primary : group.tracks[0],
+      }))
+    : searchedGroups;
   const filteredTrackCount = filteredGroups.reduce((sum, group) => sum + group.tracks.length, 0);
 
   visibleGroups = filteredGroups;
@@ -990,7 +1123,9 @@ function render() {
     list.replaceChildren(empty);
   }
 
-  count.textContent = `${filteredTrackCount} / ${tracks.length} tracks · ${filteredGroups.length} groups`;
+  favoritesFilter?.classList.toggle('is-active', showFavoritesOnly);
+  favoritesFilter?.setAttribute('aria-pressed', showFavoritesOnly ? 'true' : 'false');
+  count.textContent = `${filteredTrackCount} / ${tracks.length} tracks · ${filteredGroups.length} groups · ${favoriteTrackIds.size} favorites`;
 }
 
 async function loadCatalog() {
@@ -1012,7 +1147,21 @@ sort.addEventListener('change', () => {
   render();
   syncActiveRows();
 });
+favoritesFilter?.addEventListener('click', () => {
+  showFavoritesOnly = !showFavoritesOnly;
+  render();
+  syncActiveRows();
+});
 list.addEventListener('click', (event) => {
+  const favoriteButton = event.target.closest('.music-track-favorite');
+  if (favoriteButton) {
+    const trackId = favoriteButton.dataset.trackId;
+    setFavoriteTrack(trackId, !isFavoriteTrack(trackId));
+    render();
+    syncActiveRows();
+    return;
+  }
+
   const actionButton = event.target.closest('.music-group-action');
   if (actionButton) {
     const group = trackGroups.find(nextGroup => nextGroup.id === actionButton.dataset.groupId);
@@ -1057,6 +1206,16 @@ list.addEventListener('click', (event) => {
   } else {
     playTrack(track);
   }
+});
+list.addEventListener('keydown', (event) => {
+  if (event.key !== 'Enter' && event.key !== ' ') return;
+  if (event.target.closest('button')) return;
+
+  const item = event.target.closest('.music-archive-track');
+  if (!item) return;
+
+  event.preventDefault();
+  item.click();
 });
 
 playerToggle.addEventListener('click', () => {
