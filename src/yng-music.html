@@ -32,8 +32,10 @@
         </header>
 
         <section class="music-archive-toolbar" aria-label="Music filters">
-            <label class="music-search-label" for="music-search">Search</label>
-            <input id="music-search" class="music-search" type="search" autocomplete="off" placeholder="Filter tracks">
+            <div class="music-search-field">
+                <label class="music-search-label" for="music-search">Search</label>
+                <input id="music-search" class="music-search" type="search" autocomplete="off" placeholder="Filter tracks">
+            </div>
             <div class="music-sort-field">
                 <label for="music-sort">Sort</label>
                 <select id="music-sort" class="music-sort">
@@ -52,29 +54,31 @@
         </section>
 
         <section class="music-player" aria-label="Music player">
-            <button id="music-player-toggle" class="music-player-toggle" type="button" aria-label="Select a track to play" title="Select a track to play" disabled>
-                <span class="music-player-icon music-player-icon-play" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" focusable="false">
-                        <path d="M8 5v14l11-7z"></path>
+            <div class="music-player-controls">
+                <button id="music-player-toggle" class="music-player-toggle" type="button" aria-label="Select a track to play" title="Select a track to play" disabled>
+                    <span class="music-player-icon music-player-icon-play" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" focusable="false">
+                            <path d="M8 5v14l11-7z"></path>
+                        </svg>
+                    </span>
+                    <span class="music-player-icon music-player-icon-pause" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" focusable="false">
+                            <path d="M7 5h3v14H7z"></path>
+                            <path d="M14 5h3v14h-3z"></path>
+                        </svg>
+                    </span>
+                    <span class="music-player-toggle-label">Play</span>
+                </button>
+                <button id="music-player-shuffle" class="music-player-shuffle" type="button" aria-label="Shuffle tracks" title="Shuffle tracks" disabled>
+                    <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
+                        <path d="m18 14 4 4-4 4"></path>
+                        <path d="m18 2 4 4-4 4"></path>
+                        <path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7L14 6.7C14.8 5.6 16 5 17.3 5H22"></path>
+                        <path d="M2 6h1.9c1.5 0 2.9.9 3.6 2.2"></path>
+                        <path d="M22 18h-4.7c-1.3 0-2.5-.6-3.3-1.7l-.8-1"></path>
                     </svg>
-                </span>
-                <span class="music-player-icon music-player-icon-pause" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" focusable="false">
-                        <path d="M7 5h3v14H7z"></path>
-                        <path d="M14 5h3v14h-3z"></path>
-                    </svg>
-                </span>
-                <span class="music-player-toggle-label">Play</span>
-            </button>
-            <button id="music-player-shuffle" class="music-player-shuffle" type="button" aria-label="Shuffle tracks" title="Shuffle tracks" disabled>
-                <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
-                    <path d="m18 14 4 4-4 4"></path>
-                    <path d="m18 2 4 4-4 4"></path>
-                    <path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7L14 6.7C14.8 5.6 16 5 17.3 5H22"></path>
-                    <path d="M2 6h1.9c1.5 0 2.9.9 3.6 2.2"></path>
-                    <path d="M22 18h-4.7c-1.3 0-2.5-.6-3.3-1.7l-.8-1"></path>
-                </svg>
-            </button>
+                </button>
+            </div>
             <div class="music-player-now">
                 <h2 id="music-player-title">Select a track</h2>
                 <p id="music-player-meta">Ready</p>
