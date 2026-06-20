@@ -1,5 +1,6 @@
 import './styles/main.css';
 import musicCatalog from './data/yng-music.json';
+import { createTrackLoader } from './js/audio/track-loader.js';
 
 const list = document.getElementById('music-list');
 const search = document.getElementById('music-search');
@@ -36,7 +37,7 @@ let showFavoritesOnly = false;
 const expandedGroups = new Set();
 const collapsedGroups = new Set();
 const audio = new Audio();
-audio.preload = 'none';
+audio.preload = 'auto';
 const visualizerAudio = new Audio();
 visualizerAudio.crossOrigin = 'anonymous';
 visualizerAudio.preload = 'none';
@@ -56,6 +57,8 @@ const UPLOAD_CONTENT_TYPES = {
 
 let currentTrack = null;
 let previousActiveTrackId = null;
+let playToken = 0;
+let isBuffering = false;
 let isSeeking = false;
 let isUploading = false;
 let uploadDragDepth = 0;
@@ -82,6 +85,17 @@ const visualizerBuffers = {
 };
 
 const favoriteTrackIds = new Set(readFavoriteTrackIds());
+
+const trackLoader = createTrackLoader({
+  onState: (track, state) => {
+    if (track?.id !== currentTrack?.id) return;
+    setBuffering(state === 'buffering');
+  },
+  onProgress: (track, info) => {
+    if (track?.id !== currentTrack?.id) return;
+    updateDownloadProgress(info.fraction);
+  },
+});
 
 const dateFormatter = new Intl.DateTimeFormat(undefined, {
   month: 'short',
@@ -495,10 +509,15 @@ function createAnalyser() {
 }
 
 function prepareVisualizerTrack(track) {
-  if (!track || visualizerAudio.src === track.url) return;
+  if (!track) return;
+
+  // Reuse the already-downloaded blob when we have it so the analyzer never
+  // pulls a second copy of the audio over the network.
+  const readyUrl = trackLoader.getReadyUrl(track) || track.url;
+  if (visualizerAudio.src === readyUrl) return;
 
   visualizerAudio.pause();
-  visualizerAudio.src = track.url;
+  visualizerAudio.src = readyUrl;
   visualizerAudio.preload = 'auto';
   visualizerAudio.load();
 }
@@ -1012,6 +1031,35 @@ function updatePlayerText(track = currentTrack) {
   playerDuration.textContent = formatClock(audio.duration || track?.durationSeconds);
 }
 
+function setBuffering(next) {
+  isBuffering = Boolean(next);
+  playerToggle.classList.toggle('is-buffering', isBuffering && Boolean(currentTrack));
+  visualizer?.classList.toggle('is-buffering', isBuffering && Boolean(currentTrack));
+}
+
+function updateDownloadProgress(fraction) {
+  const clamped = clamp(Number.isFinite(fraction) ? fraction : 0, 0, 1);
+  playerProgress.style.setProperty('--player-download', `${clamped * 100}%`);
+}
+
+function bufferedFraction() {
+  const duration = audio.duration || currentTrack?.durationSeconds || 0;
+  if (!duration || !audio.buffered || !audio.buffered.length) return 0;
+
+  let end = 0;
+  for (let i = 0; i < audio.buffered.length; i += 1) {
+    if (audio.buffered.start(i) <= audio.currentTime + 0.25) {
+      end = Math.max(end, audio.buffered.end(i));
+    }
+  }
+  if (!end) end = audio.buffered.end(audio.buffered.length - 1);
+  return clamp(end / duration, 0, 1);
+}
+
+function updateBufferedDisplay() {
+  playerProgress.style.setProperty('--player-buffered', `${bufferedFraction() * 100}%`);
+}
+
 function updatePlaybackState() {
   const hasTrack = Boolean(currentTrack);
   const isPlaying = hasTrack && !audio.paused;
@@ -1038,6 +1086,7 @@ function updateProgress() {
   playerProgress.style.setProperty('--player-progress', `${progress * 100}%`);
   playerCurrent.textContent = formatClock(audio.currentTime);
   playerDuration.textContent = formatClock(duration);
+  updateBufferedDisplay();
   syncCurrentRowProgress();
 }
 
@@ -1053,14 +1102,21 @@ async function playTrack(track) {
   const isNewTrack = currentTrack?.id !== track.id;
   previousActiveTrackId = currentTrack?.id || null;
   currentTrack = track;
-
-  if (isNewTrack) {
-    audio.src = track.url;
-    audio.currentTime = 0;
-  }
+  const token = playToken += 1;
 
   updatePlayerText(track);
   updatePlaybackState();
+
+  if (isNewTrack) {
+    updateDownloadProgress(0);
+    try {
+      await trackLoader.attach(audio, track);
+    } catch {
+      audio.src = track.url;
+    }
+    // A newer track was requested while this one was still loading.
+    if (token !== playToken) return;
+  }
 
   try {
     await startAudioPlayback();
@@ -1068,6 +1124,21 @@ async function playTrack(track) {
     updatePlaybackState();
     updateVisualizerState();
   }
+}
+
+function nextVisibleTrack() {
+  const pool = visibleGroups.length ? visibleGroups : trackGroups;
+  if (!pool.length) return null;
+
+  const currentGroupId = currentTrack ? groupByTrackId.get(currentTrack.id)?.id : null;
+  const index = pool.findIndex(group => group.id === currentGroupId);
+  const next = pool[(index + 1) % pool.length];
+  return next?.primary || null;
+}
+
+function prefetchUpcoming() {
+  const next = nextVisibleTrack();
+  if (next && next.id !== currentTrack?.id) trackLoader.prefetch(next);
 }
 
 function randomVisibleTrack() {
@@ -1207,6 +1278,16 @@ list.addEventListener('click', (event) => {
     playTrack(track);
   }
 });
+const supportsHover = window.matchMedia?.('(hover: hover)')?.matches;
+if (supportsHover) {
+  list.addEventListener('pointerover', (event) => {
+    const item = event.target.closest('.music-archive-track');
+    if (!item) return;
+    const track = trackById.get(item.dataset.trackId);
+    // Warm the cache on hover — a strong signal the listener is about to play it.
+    if (track && track.id !== currentTrack?.id) trackLoader.prefetch(track);
+  });
+}
 list.addEventListener('keydown', (event) => {
   if (event.key !== 'Enter' && event.key !== ' ') return;
   if (event.target.closest('button')) return;
@@ -1259,16 +1340,30 @@ audio.addEventListener('play', () => {
   updateVisualizerState();
 });
 audio.addEventListener('playing', () => {
+  setBuffering(false);
+  prefetchUpcoming();
   startVisualizerPlayback()
     .then(() => updateVisualizerState())
     .catch(() => updateVisualizerState());
 });
+audio.addEventListener('canplay', () => setBuffering(false));
+audio.addEventListener('canplaythrough', () => setBuffering(false));
+audio.addEventListener('waiting', () => {
+  if (currentTrack && !audio.paused) setBuffering(true);
+});
+audio.addEventListener('stalled', () => {
+  if (currentTrack && !audio.paused) setBuffering(true);
+});
+audio.addEventListener('progress', updateBufferedDisplay);
+audio.addEventListener('error', () => setBuffering(false));
 audio.addEventListener('pause', () => {
+  setBuffering(false);
   pauseVisualizerPlayback();
   updatePlaybackState();
   updateVisualizerState();
 });
 audio.addEventListener('ended', () => {
+  setBuffering(false);
   pauseVisualizerPlayback();
   updatePlaybackState();
   updateVisualizerState();
