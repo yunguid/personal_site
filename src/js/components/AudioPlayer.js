@@ -54,10 +54,10 @@ export class AudioPlayer {
             <button class="player-button volume-btn" data-player="${this.index}" aria-label="Volume">
               ${VOLUME_ICON}
             </button>
-            <input type="range" class="volume-slider" id="volume-${this.index}" min="0" max="1" step="0.1" value="0.7">
+            <input type="range" class="volume-slider" id="volume-${this.index}" min="0" max="1" step="0.1" value="0.7" aria-label="Volume for ${this.track.title}">
           </div>
         </div>
-        <audio id="audio-${this.index}" preload="metadata">
+        <audio id="audio-${this.index}" preload="none">
           <source src="${this.track.url}">
         </audio>
       </div>

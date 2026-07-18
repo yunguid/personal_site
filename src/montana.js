@@ -2,7 +2,7 @@
 
 // Image data
 const bucketUrl = 'https://lukeyoung-montana-gallery.s3.amazonaws.com/';
-const thumbnailUrl = 'https://lukeyoung-montana-gallery.s3.amazonaws.com/thumbnails/';
+const thumbnailBaseUrl = '/assets/img/montana_thumbnails';
 const imageNames = [
   'FullSizeRender (1).jpg',
   'FullSizeRender (2).jpg',
@@ -29,28 +29,81 @@ let currentIndex = 0;
 const lightbox = document.getElementById('lightbox');
 const lightboxImg = document.getElementById('lightbox-img');
 
+function thumbnailSources(imageName) {
+  const webpName = encodeURIComponent(imageName.replace(/\.jpe?g$/i, '.webp'));
+  return {
+    src: `${thumbnailBaseUrl}/400/${webpName}`,
+    srcset: [320, 400, 640]
+      .map(width => `${thumbnailBaseUrl}/${width}/${webpName} ${width}w`)
+      .join(', '),
+  };
+}
+
+function loadThumbnail(img) {
+  img.src = img.dataset.src;
+  img.srcset = img.dataset.srcset;
+  img.removeAttribute('data-src');
+  img.removeAttribute('data-srcset');
+}
+
 // Initialize gallery
 function initGallery() {
   const gallery = document.getElementById('gallery');
   if (!gallery) return;
 
+  const deferredImages = [];
+  const eagerImageCount = window.innerWidth <= 768 ? 4 : 8;
+
   imageNames.forEach((imageName, index) => {
-    const item = document.createElement('div');
+    const item = document.createElement('button');
+    item.type = 'button';
     item.className = 'gallery-item';
     item.dataset.index = index;
+    item.setAttribute('aria-label', `Open Montana wilderness photo ${index + 1}`);
 
     const img = document.createElement('img');
-    // Use thumbnails for grid (faster loading)
-    img.src = thumbnailUrl + encodeURIComponent(imageName);
+    const sources = thumbnailSources(imageName);
     img.alt = `Montana wilderness photo ${index + 1}`;
-    img.loading = 'lazy';
+    img.width = 400;
+    img.height = 300;
+    img.decoding = index === 0 ? 'sync' : 'async';
+    img.sizes = '(max-width: 768px) calc(50vw - 1.25rem), min(25vw, 340px)';
+
+    if (index < eagerImageCount) {
+      img.src = sources.src;
+      img.srcset = sources.srcset;
+      img.loading = 'eager';
+      if (index === 0) img.fetchPriority = 'high';
+    } else {
+      img.dataset.src = sources.src;
+      img.dataset.srcset = sources.srcset;
+      deferredImages.push(img);
+    }
 
     item.appendChild(img);
     gallery.appendChild(item);
-
-    // Click to open lightbox
-    item.addEventListener('click', () => openLightbox(index));
   });
+
+  gallery.addEventListener('click', (event) => {
+    const item = event.target.closest('.gallery-item');
+    if (item) openLightbox(Number(item.dataset.index));
+  });
+
+  if ('IntersectionObserver' in window) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        const img = entry.target;
+        loadThumbnail(img);
+        observer.unobserve(img);
+      });
+    }, { rootMargin: '120px 0px' });
+    deferredImages.forEach(img => observer.observe(img));
+  } else {
+    deferredImages.forEach((img) => {
+      loadThumbnail(img);
+    });
+  }
 }
 
 // Lightbox functions
@@ -68,6 +121,13 @@ function updateLightboxImage() {
   const imageName = imageNames[currentIndex];
   lightboxImg.src = bucketUrl + encodeURIComponent(imageName);
   lightboxImg.alt = `Montana wilderness photo ${currentIndex + 1}`;
+  lightboxImg.fetchPriority = 'high';
+
+  for (const offset of [-1, 1]) {
+    const neighborIndex = (currentIndex + offset + imageNames.length) % imageNames.length;
+    const preload = new Image();
+    preload.src = bucketUrl + encodeURIComponent(imageNames[neighborIndex]);
+  }
 }
 
 function nextImage() {

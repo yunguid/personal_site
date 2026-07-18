@@ -206,6 +206,12 @@
   margin-top: 0.7rem;
 }
 
+.music-archive-list > .music-track-group,
+.music-archive-list > .music-archive-track {
+  content-visibility: auto;
+  contain-intrinsic-block-size: auto 4.25rem;
+}
+
 .music-visualizer {
   position: relative;
   overflow: hidden;

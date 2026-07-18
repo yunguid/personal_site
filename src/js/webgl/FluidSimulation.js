@@ -16,6 +16,13 @@ let velocity, density, divergence, pressure;
 let programs = {};
 let simWidth, simHeight;
 let lastTime = performance.now();
+let animationFrame = 0;
+let animationSyncFrame = 0;
+let resizeFrame = 0;
+let isAnimating = false;
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+const FRAME_INTERVAL_MS = 1000 / 30;
+let lastRenderedAt = 0;
 
 function createBlit(gl) {
   const vertexBuffer = gl.createBuffer();
@@ -41,8 +48,12 @@ function createBlit(gl) {
 let blit;
 
 function resize() {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
+  const width = Math.max(1, window.innerWidth);
+  const height = Math.max(1, window.innerHeight);
+  if (canvas.width === width && canvas.height === height) return;
+
+  canvas.width = width;
+  canvas.height = height;
   simWidth = Math.floor(canvas.width >> CONFIG.TEXTURE_DOWNSAMPLE);
   simHeight = Math.floor(canvas.height >> CONFIG.TEXTURE_DOWNSAMPLE);
   velocity = createDoubleFBO(gl, simWidth, simHeight, extLinear);
@@ -70,8 +81,15 @@ function splat(x, y, dx, dy, color, dt) {
 }
 
 function update(t) {
+  animationFrame = 0;
+  if (isAnimating && t - lastRenderedAt < FRAME_INTERVAL_MS) {
+    animationFrame = requestAnimationFrame(update);
+    return;
+  }
+
   const dt = Math.min((t - lastTime) / 1000, 0.016);
   lastTime = t;
+  lastRenderedAt = t;
   gl.viewport(0, 0, simWidth, simHeight);
   const time = t * 0.001;
 
@@ -148,7 +166,81 @@ function update(t) {
   density.read.attach(0);
   blit(null);
 
-  requestAnimationFrame(update);
+  if (isAnimating) animationFrame = requestAnimationFrame(update);
+}
+
+function shouldAnimate() {
+  return (
+    document.visibilityState !== 'hidden'
+    && window.scrollY < window.innerHeight * 1.15
+    && !reducedMotion.matches
+  );
+}
+
+function syncAnimation() {
+  const nextAnimating = shouldAnimate();
+  if (nextAnimating === isAnimating) return;
+  isAnimating = nextAnimating;
+
+  if (!isAnimating) {
+    if (animationFrame) cancelAnimationFrame(animationFrame);
+    animationFrame = 0;
+    return;
+  }
+
+  lastTime = performance.now();
+  animationFrame = requestAnimationFrame(update);
+}
+
+function scheduleAnimationSync() {
+  if (animationSyncFrame) return;
+  animationSyncFrame = requestAnimationFrame(() => {
+    animationSyncFrame = 0;
+    syncAnimation();
+  });
+}
+
+function scheduleResize() {
+  if (resizeFrame) return;
+  resizeFrame = requestAnimationFrame(() => {
+    resizeFrame = 0;
+    resize();
+  });
+}
+
+const programDefinitions = [
+  ['advection', advectionShader],
+  ['divergence', divergenceShader],
+  ['jacobi', jacobiShader],
+  ['gradientSubtract', gradientSubtractShader],
+  ['splat', splatShader],
+  ['display', displayShader],
+];
+
+function finishInitialization() {
+  resize();
+  window.addEventListener('resize', scheduleResize, { passive: true });
+  window.addEventListener('scroll', scheduleAnimationSync, { passive: true });
+  document.addEventListener('visibilitychange', syncAnimation);
+  reducedMotion.addEventListener?.('change', syncAnimation);
+
+  if (reducedMotion.matches) update(performance.now());
+  else syncAnimation();
+}
+
+function initializeNextProgram(index = 0) {
+  if (index >= programDefinitions.length) {
+    finishInitialization();
+    return;
+  }
+
+  try {
+    const [name, fragmentShader] = programDefinitions[index];
+    programs[name] = new Program(gl, vertexShader, fragmentShader);
+    requestAnimationFrame(() => initializeNextProgram(index + 1));
+  } catch (error) {
+    console.error('Initialization failed:', error);
+  }
 }
 
 export function initFluidSimulation() {
@@ -161,7 +253,7 @@ export function initFluidSimulation() {
   gl = canvas.getContext('webgl2');
   if (!gl) {
     console.error('WebGL 2.0 not available');
-    document.body.innerHTML = '<div style="color:white; text-align:center; padding-top:20px;">WebGL 2.0 is required</div>';
+    canvas.hidden = true;
     return;
   }
 
@@ -170,17 +262,5 @@ export function initFluidSimulation() {
 
   blit = createBlit(gl);
 
-  try {
-    programs.advection = new Program(gl, vertexShader, advectionShader);
-    programs.divergence = new Program(gl, vertexShader, divergenceShader);
-    programs.jacobi = new Program(gl, vertexShader, jacobiShader);
-    programs.gradientSubtract = new Program(gl, vertexShader, gradientSubtractShader);
-    programs.splat = new Program(gl, vertexShader, splatShader);
-    programs.display = new Program(gl, vertexShader, displayShader);
-    resize();
-    window.addEventListener('resize', resize);
-    requestAnimationFrame(update);
-  } catch (e) {
-    console.error('Initialization failed:', e);
-  }
+  initializeNextProgram();
 }

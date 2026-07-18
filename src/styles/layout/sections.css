@@ -36,6 +36,7 @@
   padding-bottom: 8rem;
   position: relative;
   z-index: 1;
+  background: #080808;
   pointer-events: none;
 }
 
@@ -122,7 +123,7 @@
 .site-footer {
   text-align: center;
   font-size: 0.875rem;
-  opacity: 0.4;
+  opacity: 0.58;
   margin-top: 3rem;
   font-family: var(--font-mono);
 }

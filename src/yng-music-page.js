@@ -1,5 +1,4 @@
-import './styles/main.css';
-import musicCatalog from './data/yng-music.json';
+import './styles/music-page.css';
 import { createTrackLoader } from './js/audio/track-loader.js';
 
 const list = document.getElementById('music-list');
@@ -25,7 +24,7 @@ const uploadButton = document.getElementById('music-upload-button');
 const uploadStatus = document.getElementById('music-upload-status');
 const uploadProgressBar = document.getElementById('music-upload-progress-bar');
 
-let tracks = sortTracks(musicCatalog.tracks);
+let tracks = [];
 let visibleTracks = tracks;
 let trackGroups = [];
 let visibleGroups = [];
@@ -37,16 +36,16 @@ let showFavoritesOnly = false;
 const expandedGroups = new Set();
 const collapsedGroups = new Set();
 const audio = new Audio();
-audio.preload = 'auto';
-const visualizerAudio = new Audio();
-visualizerAudio.crossOrigin = 'anonymous';
-visualizerAudio.preload = 'none';
-visualizerAudio.playsInline = true;
+audio.crossOrigin = 'anonymous';
+audio.preload = 'none';
 playerProgress.style.setProperty('--player-progress', '0%');
 
 const VISUALIZER_ACTIVE_FRAME_MS = 33;
 const VISUALIZER_IDLE_FRAME_MS = 80;
 const VISUALIZER_DPR_LIMIT = 2;
+const SPECTRUM_CELLS = 84;
+const INITIAL_GROUP_RENDER_COUNT = 56;
+const GROUP_RENDER_CHUNK_SIZE = 32;
 const FAVORITES_STORAGE_KEY = 'yngMusicFavoriteTracks';
 
 const UPLOAD_CONTENT_TYPES = {
@@ -65,12 +64,21 @@ let uploadDragDepth = 0;
 let audioContext = null;
 let audioSourceNode = null;
 let analyserNode = null;
-let visualizerOutputNode = null;
-let visualizerMode = '';
-let visualizerCaptureStream = null;
 let visualizerRaf = 0;
 let visualizerLastFrame = 0;
 let visualizerError = '';
+let visualizerInView = true;
+let visualizerNeedsResize = true;
+let visualizerStateKey = '';
+let renderRevision = 0;
+let catalogLoaded = false;
+let searchRenderRaf = 0;
+
+const visualizerContexts = {
+  spectrogram: spectrogramCanvas?.getContext('2d', { alpha: false }),
+  scope: scopeCanvas?.getContext('2d', { alpha: false }),
+  spectrum: spectrumCanvas?.getContext('2d', { alpha: false }),
+};
 
 const visualizerSizes = {
   spectrogram: {},
@@ -83,6 +91,17 @@ const visualizerBuffers = {
   time: null,
   timeByte: null,
 };
+
+const spectrumMotion = {
+  raw: new Float32Array(SPECTRUM_CELLS).fill(0.06),
+  smoothed: new Float32Array(SPECTRUM_CELLS).fill(0.06),
+  positions: new Float32Array(SPECTRUM_CELLS).fill(0.06),
+  previous: new Float32Array(SPECTRUM_CELLS).fill(0.06),
+  lastTimestamp: 0,
+};
+
+let trackMetaById = new Map();
+let trackSearchTextById = new Map();
 
 const favoriteTrackIds = new Set(readFavoriteTrackIds());
 
@@ -133,6 +152,12 @@ function sortTracks(nextTracks) {
 function rebuildTrackNumbers() {
   trackNumbers = new Map(tracks.map((track, index) => [track.id, String(index + 1).padStart(3, '0')]));
   trackById = new Map(tracks.map(track => [track.id, track]));
+  trackMetaById = new Map(tracks.map(track => [track.id, buildTrackMeta(track)]));
+  trackSearchTextById = new Map(tracks.map(track => [track.id, [
+    track.title,
+    track.fileName,
+    track.groupTitle,
+  ].filter(Boolean).join(' ').toLowerCase()]));
   trackGroups = buildTrackGroups(tracks);
   groupByTrackId = new Map(trackGroups.flatMap(group => group.tracks.map(track => [track.id, group])));
 }
@@ -226,18 +251,49 @@ function formatClock(seconds) {
   return `${minutes}:${remainder}`;
 }
 
+function trackDurationSeconds(track) {
+  const seconds = Number(track?.durationSeconds);
+  return Number.isFinite(seconds) && seconds > 0 ? seconds : 0;
+}
+
+function totalTrackDuration(nextTracks) {
+  return nextTracks.reduce((sum, track) => sum + trackDurationSeconds(track), 0);
+}
+
+function formatDurationSummary(seconds) {
+  if (!Number.isFinite(seconds) || seconds <= 0) return '';
+
+  const rounded = Math.max(1, Math.round(seconds));
+  const hours = Math.floor(rounded / 3600);
+  const minutes = Math.floor((rounded % 3600) / 60);
+  const remainingSeconds = rounded % 60;
+
+  if (hours) return minutes ? `${hours}h ${minutes}m` : `${hours}h`;
+  if (minutes) return remainingSeconds && minutes < 10 ? `${minutes}m ${remainingSeconds}s` : `${minutes}m`;
+  return `${remainingSeconds}s`;
+}
+
+function setArchiveSummary() {
+  const totalDuration = formatDurationSummary(totalTrackDuration(tracks));
+  summary.textContent = `${tracks.length} exported tracks${totalDuration ? ` · ${totalDuration} total` : ''}.`;
+}
+
 function formatUploadedDate(track) {
   const timestamp = trackUploadedTimestamp(track);
   return timestamp ? dateFormatter.format(new Date(timestamp)) : '';
 }
 
-function trackMeta(track) {
+function buildTrackMeta(track) {
   return [
     track.format.toUpperCase(),
     formatUploadedDate(track),
     track.duration,
     formatBytes(track.sizeBytes),
   ].filter(Boolean).join(' / ');
+}
+
+function trackMeta(track) {
+  return trackMetaById.get(track.id) || buildTrackMeta(track);
 }
 
 function activeTrackMeta(track) {
@@ -290,7 +346,11 @@ function syncFavoriteButtons(trackId) {
   });
 }
 
-function syncVisualizerCanvas(canvas, ctx, sizeRef) {
+function syncVisualizerCanvas(canvas, ctx, sizeRef, shouldMeasure) {
+  if (!shouldMeasure && sizeRef.width && sizeRef.height) {
+    return { width: sizeRef.width, height: sizeRef.height, resized: false };
+  }
+
   const rect = canvas.getBoundingClientRect();
   const dpr = Math.min(window.devicePixelRatio || 1, VISUALIZER_DPR_LIMIT);
   const width = Math.max(1, Math.floor(rect.width));
@@ -423,54 +483,130 @@ function drawScope(ctx, data, width, height, energy, timestamp, isLive) {
   ctx.shadowBlur = 0;
 }
 
-function spectrumBucket(freqData, bucketIndex, bucketCount) {
-  const startRatio = (bucketIndex / bucketCount) ** 2.25;
-  const endRatio = ((bucketIndex + 1) / bucketCount) ** 2.25;
-  const start = Math.max(1, Math.floor(freqData.length * startRatio));
-  const end = Math.max(start + 1, Math.floor(freqData.length * endRatio));
-  let peak = 0;
-  let sum = 0;
-  for (let index = start; index < Math.min(end, freqData.length); index += 1) {
-    const value = freqData[index] / 255;
-    peak = Math.max(peak, value);
-    sum += value;
+function sampleLogSpectrum(freqData, timestamp, isLive) {
+  const { raw, smoothed } = spectrumMotion;
+
+  if (!isLive || !freqData?.length) {
+    for (let index = 0; index < raw.length; index += 1) {
+      const position = index / Math.max(1, raw.length - 1);
+      const firstWave = Math.max(0, Math.sin(index * 0.38 + timestamp / 520));
+      const secondWave = Math.max(0, Math.sin(index * 0.13 - timestamp / 880));
+      raw[index] = 0.055 + firstWave * 0.085 + secondWave * 0.045 + position * 0.015;
+      smoothed[index] += (raw[index] - smoothed[index]) * 0.12;
+    }
+    return;
   }
-  return clamp((peak * 0.72) + ((sum / Math.max(1, end - start)) * 0.28));
+
+  const sampleRate = audioContext?.sampleRate || 48000;
+  const fftSize = analyserNode?.fftSize || freqData.length * 2;
+  const hzPerBin = sampleRate / fftSize;
+  const minFrequency = 28;
+  const maxFrequency = Math.min(18000, sampleRate * 0.48);
+  const frequencyRatio = maxFrequency / minFrequency;
+
+  for (let index = 0; index < raw.length; index += 1) {
+    const startFrequency = minFrequency * frequencyRatio ** (index / raw.length);
+    const endFrequency = minFrequency * frequencyRatio ** ((index + 1) / raw.length);
+    const startBin = Math.max(1, Math.floor(startFrequency / hzPerBin));
+    const endBin = Math.max(startBin + 1, Math.ceil(endFrequency / hzPerBin));
+    let peak = 0;
+
+    for (let bin = startBin; bin < Math.min(endBin, freqData.length); bin += 1) {
+      peak = Math.max(peak, freqData[bin]);
+    }
+
+    const next = Math.pow(peak / 255, 1.18);
+    raw[index] = next;
+    const response = next > smoothed[index] ? 0.58 : 0.13;
+    smoothed[index] += (next - smoothed[index]) * response;
+  }
+}
+
+function stepSpectrumString(timestamp) {
+  const state = spectrumMotion;
+  const elapsed = state.lastTimestamp ? (timestamp - state.lastTimestamp) / 1000 : 0.033;
+  const total = clamp(elapsed, 0.008, 0.06);
+  state.lastTimestamp = timestamp;
+  const substeps = Math.max(1, Math.min(3, Math.ceil(total / 0.018)));
+  const step = total / substeps;
+  const stepSquared = step * step;
+
+  for (let pass = 0; pass < substeps; pass += 1) {
+    for (let index = 0; index < state.positions.length; index += 1) {
+      const position = state.positions[index];
+      const left = state.positions[index > 0 ? index - 1 : index];
+      const right = state.positions[index < state.positions.length - 1 ? index + 1 : index];
+      const acceleration = (
+        118 * (state.smoothed[index] - position)
+        + 260 * (left + right - 2 * position)
+      );
+      const next = position + (position - state.previous[index]) * 0.88 + acceleration * stepSquared;
+      state.previous[index] = position;
+      state.positions[index] = Number.isFinite(next) ? clamp(next, 0, 1.08) : state.smoothed[index];
+    }
+  }
+}
+
+function traceSpectrum(ctx, values, width, height) {
+  const baseline = height - 1;
+  ctx.beginPath();
+  for (let index = 0; index < values.length; index += 1) {
+    const x = (index / Math.max(1, values.length - 1)) * width;
+    const value = clamp(values[index]);
+    const y = baseline - value * height * 0.82;
+    if (index === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
 }
 
 function drawSpectrum(ctx, freqData, width, height, energy, timestamp, isLive) {
-  drawVisualizerGrid(ctx, width, height, energy);
+  sampleLogSpectrum(freqData, timestamp, isLive);
+  stepSpectrumString(timestamp);
 
-  const bucketCount = Math.max(28, Math.min(112, Math.floor(width / 6)));
-  const gap = width < 360 ? 1 : 1.8;
-  const barWidth = Math.max(1, (width - gap * (bucketCount - 1)) / bucketCount);
-  const ridge = [];
+  ctx.fillStyle = '#1d2021';
+  ctx.fillRect(0, 0, width, height);
 
-  for (let index = 0; index < bucketCount; index += 1) {
-    const idle = 0.12 + Math.max(0, Math.sin(index * 0.42 + timestamp / 480)) * 0.16;
-    const value = isLive ? Math.pow(spectrumBucket(freqData, index, bucketCount), 1.34) : idle;
-    const barHeight = Math.max(2, value * height * 0.82);
-    const x = index * (barWidth + gap);
-    const y = height - barHeight;
-    const ratio = index / Math.max(1, bucketCount - 1);
-    const hue = ratio < 0.18 ? 48 - ratio * 50 : 176 + ratio * 42;
-
-    const fill = ctx.createLinearGradient(0, y, 0, height);
-    fill.addColorStop(0, `hsla(${hue}, 92%, ${58 + value * 22}%, ${isLive ? 0.94 : 0.34})`);
-    fill.addColorStop(1, `hsla(${hue}, 90%, 24%, ${isLive ? 0.18 : 0.08})`);
-    ctx.fillStyle = fill;
-    ctx.fillRect(x, y, barWidth, barHeight);
-    ridge.push([x + barWidth / 2, y]);
-  }
-
-  ctx.strokeStyle = isLive ? 'rgba(255, 255, 240, 0.72)' : 'rgba(255, 255, 240, 0.22)';
-  ctx.lineWidth = 1.1;
+  ctx.strokeStyle = 'rgba(235, 219, 178, 0.09)';
+  ctx.lineWidth = 1;
   ctx.beginPath();
-  ridge.forEach(([x, y], index) => {
-    if (index === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  });
+  for (const frequency of [100, 1000, 10000]) {
+    const x = (Math.log(frequency / 28) / Math.log(18000 / 28)) * width;
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, height);
+  }
+  for (const level of [0.25, 0.5, 0.75]) {
+    const y = height - level * height;
+    ctx.moveTo(0, y);
+    ctx.lineTo(width, y);
+  }
   ctx.stroke();
+
+  traceSpectrum(ctx, spectrumMotion.raw, width, height);
+  ctx.lineTo(width, height);
+  ctx.lineTo(0, height);
+  ctx.closePath();
+  ctx.fillStyle = `rgba(214, 93, 14, ${isLive ? 0.16 + energy * 0.12 : 0.08})`;
+  ctx.fill();
+
+  traceSpectrum(ctx, spectrumMotion.positions, width, height);
+  ctx.lineTo(width, height);
+  ctx.lineTo(0, height);
+  ctx.closePath();
+  const fill = ctx.createLinearGradient(0, 0, 0, height);
+  fill.addColorStop(0, `rgba(251, 73, 52, ${isLive ? 0.48 : 0.2})`);
+  fill.addColorStop(0.58, `rgba(214, 93, 14, ${isLive ? 0.3 : 0.13})`);
+  fill.addColorStop(1, 'rgba(214, 93, 14, 0.025)');
+  ctx.fillStyle = fill;
+  ctx.fill();
+
+  ctx.save();
+  ctx.shadowColor = `rgba(214, 93, 14, ${isLive ? 0.78 : 0.34})`;
+  ctx.shadowBlur = isLive ? 7 + energy * 9 : 4;
+  ctx.strokeStyle = isLive ? '#ebdbb2' : 'rgba(235, 219, 178, 0.56)';
+  ctx.lineWidth = isLive ? 1.65 : 1.2;
+  traceSpectrum(ctx, spectrumMotion.positions, width, height);
+  ctx.stroke();
+  ctx.restore();
 }
 
 function isVisualizerLive() {
@@ -493,6 +629,10 @@ function updateVisualizerState(live = isVisualizerLive()) {
   else if (currentTrack && audio.paused) label = 'Paused';
   else if (currentTrack) label = 'Ready';
 
+  const stateKey = `${label}:${Boolean(currentTrack)}:${Boolean(visualizerError)}`;
+  if (stateKey === visualizerStateKey) return;
+  visualizerStateKey = stateKey;
+
   visualizer.classList.toggle('is-live', live);
   visualizer.classList.toggle('has-track', Boolean(currentTrack));
   visualizer.classList.toggle('is-offline', Boolean(visualizerError));
@@ -508,47 +648,12 @@ function createAnalyser() {
   return analyser;
 }
 
-function prepareVisualizerTrack(track) {
-  if (!track) return;
-
-  // Reuse the already-downloaded blob when we have it so the analyzer never
-  // pulls a second copy of the audio over the network.
-  const readyUrl = trackLoader.getReadyUrl(track) || track.url;
-  if (visualizerAudio.src === readyUrl) return;
-
-  visualizerAudio.pause();
-  visualizerAudio.src = readyUrl;
-  visualizerAudio.preload = 'auto';
-  visualizerAudio.load();
-}
-
 function connectVisualizerSource(sourceNode, mode) {
   analyserNode = createAnalyser();
-  visualizerMode = mode;
   audioSourceNode = sourceNode;
   audioSourceNode.connect(analyserNode);
 
-  if (mode === 'fallback-element') {
-    visualizerOutputNode = audioContext.createGain();
-    visualizerOutputNode.gain.value = 0;
-    analyserNode.connect(visualizerOutputNode);
-    visualizerOutputNode.connect(audioContext.destination);
-  }
-}
-
-function syncVisualizerPosition(force = false) {
-  if (visualizerMode !== 'fallback-element') return;
-  if (!currentTrack || !visualizerAudio.src || !Number.isFinite(audio.currentTime)) return;
-  if (visualizerAudio.readyState < 1) return;
-
-  const drift = Math.abs((visualizerAudio.currentTime || 0) - audio.currentTime);
-  if (!force && drift < 0.35) return;
-
-  try {
-    visualizerAudio.currentTime = audio.currentTime;
-  } catch {
-    // Some browsers reject seeks until enough metadata has loaded. The next sync will retry.
-  }
+  if (mode === 'media-element') analyserNode.connect(audioContext.destination);
 }
 
 async function ensureVisualizerAudio() {
@@ -574,15 +679,14 @@ async function ensureVisualizerAudio() {
 
     const captureStream = audio.captureStream || audio.mozCaptureStream;
     if (typeof captureStream === 'function') {
-      visualizerCaptureStream = captureStream.call(audio);
-      if (visualizerCaptureStream?.getAudioTracks?.().length) {
-        connectVisualizerSource(audioContext.createMediaStreamSource(visualizerCaptureStream), 'playback-stream');
+      const playbackStream = captureStream.call(audio);
+      if (playbackStream?.getAudioTracks?.().length) {
+        connectVisualizerSource(audioContext.createMediaStreamSource(playbackStream), 'playback-stream');
         return true;
       }
     }
 
-    prepareVisualizerTrack(currentTrack);
-    connectVisualizerSource(audioContext.createMediaElementSource(visualizerAudio), 'fallback-element');
+    connectVisualizerSource(audioContext.createMediaElementSource(audio), 'media-element');
     return true;
   } catch {
     visualizerError = 'Analyzer unavailable';
@@ -594,43 +698,28 @@ async function ensureVisualizerAudio() {
 async function startVisualizerPlayback() {
   if (!currentTrack) return false;
 
-  prepareVisualizerTrack(currentTrack);
   const canAnalyze = await ensureVisualizerAudio();
-  if (!canAnalyze) return false;
-
-  if (visualizerMode === 'playback-stream') {
-    updateVisualizerState();
-    return true;
-  }
-
-  try {
-    visualizerAudio.playbackRate = audio.playbackRate || 1;
-    syncVisualizerPosition(true);
-    await visualizerAudio.play();
-    updateVisualizerState();
-    return true;
-  } catch {
-    updateVisualizerState();
-    return false;
-  }
+  updateVisualizerState();
+  return canAnalyze;
 }
 
 function pauseVisualizerPlayback() {
-  visualizerAudio.pause();
   updateVisualizerState();
 }
 
 function drawVisualizerFrame(timestamp = 0) {
   if (!spectrogramCanvas || !scopeCanvas || !spectrumCanvas) return;
 
-  const spectrogramCtx = spectrogramCanvas.getContext('2d');
-  const scopeCtx = scopeCanvas.getContext('2d');
-  const spectrumCtx = spectrumCanvas.getContext('2d');
+  const spectrogramCtx = visualizerContexts.spectrogram;
+  const scopeCtx = visualizerContexts.scope;
+  const spectrumCtx = visualizerContexts.spectrum;
   if (!spectrogramCtx || !scopeCtx || !spectrumCtx) return;
 
-  const spectrogramSize = syncVisualizerCanvas(spectrogramCanvas, spectrogramCtx, visualizerSizes.spectrogram);
-  const scopeSize = syncVisualizerCanvas(scopeCanvas, scopeCtx, visualizerSizes.scope);
-  const spectrumSize = syncVisualizerCanvas(spectrumCanvas, spectrumCtx, visualizerSizes.spectrum);
+  const shouldMeasure = visualizerNeedsResize;
+  const spectrogramSize = syncVisualizerCanvas(spectrogramCanvas, spectrogramCtx, visualizerSizes.spectrogram, shouldMeasure);
+  const scopeSize = syncVisualizerCanvas(scopeCanvas, scopeCtx, visualizerSizes.scope, shouldMeasure);
+  const spectrumSize = syncVisualizerCanvas(spectrumCanvas, spectrumCtx, visualizerSizes.spectrum, shouldMeasure);
+  visualizerNeedsResize = false;
   const live = isVisualizerLive();
   updateVisualizerState(live);
 
@@ -667,18 +756,53 @@ function drawVisualizerFrame(timestamp = 0) {
   drawSpectrum(spectrumCtx, visualizerBuffers.freq, spectrumSize.width, spectrumSize.height, energy, timestamp, true);
 }
 
-function startVisualizerLoop() {
-  if (!visualizer || visualizerRaf) return;
+function shouldRunVisualizerLoop() {
+  return document.visibilityState !== 'hidden' && visualizerInView;
+}
 
-  const render = (timestamp) => {
-    visualizerRaf = requestAnimationFrame(render);
-    const frameMs = isVisualizerLive() ? VISUALIZER_ACTIVE_FRAME_MS : VISUALIZER_IDLE_FRAME_MS;
-    if (timestamp - visualizerLastFrame < frameMs) return;
+function runVisualizerFrame(timestamp) {
+  visualizerRaf = 0;
+  if (!shouldRunVisualizerLoop()) return;
+
+  const frameMs = isVisualizerLive() ? VISUALIZER_ACTIVE_FRAME_MS : VISUALIZER_IDLE_FRAME_MS;
+  if (timestamp - visualizerLastFrame >= frameMs) {
     visualizerLastFrame = timestamp;
     drawVisualizerFrame(timestamp);
-  };
+  }
+  visualizerRaf = requestAnimationFrame(runVisualizerFrame);
+}
 
-  visualizerRaf = requestAnimationFrame(render);
+function syncVisualizerLoop() {
+  if (!shouldRunVisualizerLoop()) {
+    if (visualizerRaf) cancelAnimationFrame(visualizerRaf);
+    visualizerRaf = 0;
+    return;
+  }
+  if (!visualizerRaf) visualizerRaf = requestAnimationFrame(runVisualizerFrame);
+}
+
+function startVisualizerLoop() {
+  if (!visualizer) return;
+  syncVisualizerLoop();
+
+  document.addEventListener('visibilitychange', syncVisualizerLoop);
+  window.addEventListener('resize', () => {
+    visualizerNeedsResize = true;
+    syncVisualizerLoop();
+  }, { passive: true });
+
+  if ('ResizeObserver' in window) {
+    new ResizeObserver(() => {
+      visualizerNeedsResize = true;
+    }).observe(visualizer);
+  }
+
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(([entry]) => {
+      visualizerInView = entry.isIntersecting;
+      syncVisualizerLoop();
+    }, { rootMargin: '180px 0px' }).observe(visualizer);
+  }
 }
 
 function setUploadStatus(message, progress = null) {
@@ -769,10 +893,12 @@ async function postUploadAction(body, key) {
 
 function applyCatalog(catalog) {
   if (!catalog?.tracks?.length) return;
+  catalogLoaded = true;
   tracks = sortTracks(catalog.tracks);
   rebuildTrackNumbers();
-  summary.textContent = `${tracks.length} exported tracks.`;
+  setArchiveSummary();
   render();
+  updatePlayerText(currentTrack);
   syncActiveRows();
 }
 
@@ -875,6 +1001,7 @@ async function uploadFiles(fileList, group = null) {
 function renderTrack(track, options = {}) {
   const { group = null, variant = false } = options;
   const isActive = currentTrack?.id === track.id;
+  const isFavorite = isFavoriteTrack(track.id);
   const item = document.createElement('div');
   item.className = variant ? 'music-archive-track music-track-variant' : 'music-archive-track';
   item.dataset.trackId = track.id;
@@ -910,10 +1037,10 @@ function renderTrack(track, options = {}) {
   favorite.type = 'button';
   favorite.className = 'music-track-favorite';
   favorite.dataset.trackId = track.id;
-  favorite.setAttribute('aria-pressed', isFavoriteTrack(track.id) ? 'true' : 'false');
-  favorite.setAttribute('aria-label', `${isFavoriteTrack(track.id) ? 'Remove favorite' : 'Favorite'} ${track.title}`);
-  favorite.title = isFavoriteTrack(track.id) ? 'Remove favorite' : 'Favorite track';
-  if (isFavoriteTrack(track.id)) favorite.classList.add('is-favorite');
+  favorite.setAttribute('aria-pressed', isFavorite ? 'true' : 'false');
+  favorite.setAttribute('aria-label', `${isFavorite ? 'Remove favorite' : 'Favorite'} ${track.title}`);
+  favorite.title = isFavorite ? 'Remove favorite' : 'Favorite track';
+  if (isFavorite) favorite.classList.add('is-favorite');
   favorite.innerHTML = `
     <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
       <path d="m12 3.6 2.6 5.2 5.8.8-4.2 4.1 1 5.7-5.2-2.7-5.2 2.7 1-5.7-4.2-4.1 5.8-.8z"></path>
@@ -1026,8 +1153,11 @@ function syncCurrentRowProgress() {
 }
 
 function updatePlayerText(track = currentTrack) {
+  const totalDuration = formatDurationSummary(totalTrackDuration(tracks));
   playerTitle.textContent = track?.title || 'Select a track';
-  playerMeta.textContent = track ? trackMeta(track) : `${tracks.length} tracks`;
+  playerMeta.textContent = track
+    ? trackMeta(track)
+    : [`${tracks.length} tracks`, totalDuration].filter(Boolean).join(' / ');
   playerDuration.textContent = formatClock(audio.duration || track?.durationSeconds);
 }
 
@@ -1159,13 +1289,44 @@ function shuffleTrack() {
   if (nextTrack) playTrack(nextTrack);
 }
 
+function scheduleGroupRender(callback) {
+  if ('requestIdleCallback' in window) {
+    window.requestIdleCallback(callback, { timeout: 140 });
+    return;
+  }
+  window.setTimeout(callback, 0);
+}
+
+function renderGroupList(groups) {
+  const revision = ++renderRevision;
+  let nextIndex = 0;
+  list.setAttribute('aria-busy', 'true');
+
+  const appendNextChunk = () => {
+    if (revision !== renderRevision) return;
+
+    const chunkSize = nextIndex ? GROUP_RENDER_CHUNK_SIZE : INITIAL_GROUP_RENDER_COUNT;
+    const nextGroups = groups.slice(nextIndex, nextIndex + chunkSize);
+    const elements = nextGroups.map(renderGroup);
+    if (nextIndex) list.append(...elements);
+    else list.replaceChildren(...elements);
+    nextIndex += nextGroups.length;
+
+    if (nextIndex < groups.length) {
+      scheduleGroupRender(appendNextChunk);
+      return;
+    }
+    list.setAttribute('aria-busy', 'false');
+  };
+
+  appendNextChunk();
+}
+
 function render() {
   const query = search.value.trim().toLowerCase();
   const searchedGroups = query
     ? trackGroups.filter(group => group.tracks.some(track => (
-      track.title.toLowerCase().includes(query)
-      || track.fileName.toLowerCase().includes(query)
-      || track.groupTitle?.toLowerCase().includes(query)
+      trackSearchTextById.get(track.id)?.includes(query)
     )))
     : trackGroups;
   const filteredGroups = showFavoritesOnly
@@ -1181,37 +1342,64 @@ function render() {
       }))
     : searchedGroups;
   const filteredTrackCount = filteredGroups.reduce((sum, group) => sum + group.tracks.length, 0);
+  const filteredDuration = formatDurationSummary(totalTrackDuration(filteredGroups.flatMap(group => group.tracks)));
+  const durationLabel = filteredDuration
+    ? `${filteredDuration} ${filteredTrackCount === tracks.length ? 'total' : 'visible'}`
+    : '';
 
   visibleGroups = filteredGroups;
   visibleTracks = filteredGroups.map(group => group.primary);
 
   if (filteredGroups.length) {
-    list.replaceChildren(...filteredGroups.map(renderGroup));
+    renderGroupList(filteredGroups);
   } else {
+    renderRevision += 1;
     const empty = document.createElement('p');
     empty.className = 'music-archive-empty';
-    empty.textContent = 'No tracks found.';
+    empty.textContent = catalogLoaded ? 'No tracks found.' : 'Loading tracks...';
     list.replaceChildren(empty);
+    list.setAttribute('aria-busy', catalogLoaded ? 'false' : 'true');
   }
 
   favoritesFilter?.classList.toggle('is-active', showFavoritesOnly);
   favoritesFilter?.setAttribute('aria-pressed', showFavoritesOnly ? 'true' : 'false');
-  count.textContent = `${filteredTrackCount} / ${tracks.length} tracks · ${filteredGroups.length} groups · ${favoriteTrackIds.size} favorites`;
+  count.textContent = [
+    `${filteredTrackCount} / ${tracks.length} tracks`,
+    durationLabel,
+    `${filteredGroups.length} groups`,
+    `${favoriteTrackIds.size} favorites`,
+  ].filter(Boolean).join(' · ');
 }
 
 async function loadCatalog() {
   try {
-    const response = await fetch('/api/music-catalog', { cache: 'no-store' });
-    if (!response.ok) return;
-    applyCatalog(await response.json());
+    const response = await fetch('/api/music-catalog');
+    const isJson = response.headers.get('content-type')?.includes('application/json');
+    if (response.ok && isJson) {
+      applyCatalog(await response.json());
+      return;
+    }
   } catch {
+    // The checked-in catalog below keeps local/static builds functional.
+  }
+
+  try {
+    const { default: fallbackCatalog } = await import('./data/yng-music.json');
+    applyCatalog(fallbackCatalog);
+  } catch {
+    catalogLoaded = true;
     render();
   }
 }
 
 rebuildTrackNumbers();
-summary.textContent = `${tracks.length} exported tracks.`;
-search.addEventListener('input', render);
+search.addEventListener('input', () => {
+  if (searchRenderRaf) cancelAnimationFrame(searchRenderRaf);
+  searchRenderRaf = requestAnimationFrame(() => {
+    searchRenderRaf = 0;
+    render();
+  });
+});
 sort.addEventListener('change', () => {
   tracks = sortTracks(tracks);
   rebuildTrackNumbers();
@@ -1317,7 +1505,6 @@ playerProgress.addEventListener('input', () => {
   isSeeking = true;
   const duration = audio.duration || currentTrack.durationSeconds || 0;
   audio.currentTime = duration * (Number(playerProgress.value) / 1000);
-  syncVisualizerPosition(true);
   updateProgress();
 });
 
@@ -1329,11 +1516,9 @@ playerProgress.addEventListener('change', () => {
 audio.addEventListener('loadedmetadata', () => {
   updatePlayerText();
   updateProgress();
-  syncVisualizerPosition(true);
 });
 audio.addEventListener('timeupdate', () => {
   updateProgress();
-  syncVisualizerPosition();
 });
 audio.addEventListener('play', () => {
   updatePlaybackState();
@@ -1368,12 +1553,6 @@ audio.addEventListener('ended', () => {
   updatePlaybackState();
   updateVisualizerState();
 });
-audio.addEventListener('seeking', () => syncVisualizerPosition(true));
-audio.addEventListener('seeked', () => syncVisualizerPosition(true));
-audio.addEventListener('ratechange', () => {
-  visualizerAudio.playbackRate = audio.playbackRate || 1;
-});
-visualizerAudio.addEventListener('loadedmetadata', () => syncVisualizerPosition(true));
 uploadButton.addEventListener('click', () => {
   pendingUploadGroup = null;
   uploadInput.click();

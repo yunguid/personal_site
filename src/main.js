@@ -12,6 +12,8 @@ if ('serviceWorker' in navigator) {
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-  initFluidSimulation();
   initApp();
+  requestAnimationFrame(() => {
+    requestAnimationFrame(initFluidSimulation);
+  });
 });

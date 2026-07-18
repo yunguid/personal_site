@@ -1,6 +1,8 @@
 /**
  * WebGL Shader Program wrapper
  */
+const shaderCaches = new WeakMap();
+
 export class Program {
   constructor(gl, vertexSource, fragmentSource) {
     this.gl = gl;
@@ -30,6 +32,16 @@ export class Program {
 
   compileShader(type, source) {
     const gl = this.gl;
+    let cache = shaderCaches.get(gl);
+    if (!cache) {
+      cache = new Map();
+      shaderCaches.set(gl, cache);
+    }
+
+    const cacheKey = `${type}:${source}`;
+    const cached = cache.get(cacheKey);
+    if (cached) return cached;
+
     const shader = gl.createShader(type);
     gl.shaderSource(shader, source);
     gl.compileShader(shader);
@@ -39,6 +51,7 @@ export class Program {
       gl.deleteShader(shader);
       return null;
     }
+    cache.set(cacheKey, shader);
     return shader;
   }
 

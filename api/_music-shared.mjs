@@ -30,11 +30,18 @@ const UPLOAD_FORMATS = {
 
 const s3 = new S3Client({ region: REGION });
 
-export function sendJson(response, statusCode, data) {
+export function sendJson(response, statusCode, data, options = {}) {
   response.statusCode = statusCode;
   response.setHeader('Content-Type', 'application/json; charset=utf-8');
-  response.setHeader('Cache-Control', 'no-store');
+  response.setHeader('Cache-Control', options.cacheControl || 'no-store');
   response.end(JSON.stringify(data));
+}
+
+export function publicCatalog(catalog) {
+  return {
+    ...catalog,
+    tracks: (catalog.tracks || []).map(({ sha256, s3Key, ...track }) => track),
+  };
 }
 
 export async function readJsonBody(request) {

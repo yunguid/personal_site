@@ -9,7 +9,9 @@ h1, h2, h3 {
 
 .link {
   color: var(--color-indigo-light);
-  text-decoration: none;
+  text-decoration: underline;
+  text-decoration-color: rgba(165, 180, 252, 0.72);
+  text-underline-offset: 0.16em;
   border-bottom: 1px solid transparent;
   transition: all var(--transition-normal);
 }
