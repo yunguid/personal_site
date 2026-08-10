@@ -36,7 +36,10 @@
   padding-bottom: 8rem;
   position: relative;
   z-index: 1;
-  background: #080808;
+  /* Translucent scrim over the fixed fluid layer: keeps text readable while
+     the simulation stays visible from top to bottom. Fades in from the hero
+     so there is no hard seam where the content begins. */
+  background: linear-gradient(to bottom, rgba(2, 4, 10, 0), rgba(2, 4, 10, 0.45) 22rem);
   pointer-events: none;
 }
 

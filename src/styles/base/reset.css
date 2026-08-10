@@ -1,8 +1,13 @@
+html {
+  /* Base page color behind everything: matches the fluid's zero-density
+     navy so a slow load or missing canvas never flashes white. */
+  background-color: #00000d;
+}
+
 body, html {
   margin: 0;
   padding: 0;
   width: 100%;
-  background-color: transparent;
   color: var(--color-ivory);
   font-family: var(--font-sans);
   overflow-x: hidden;

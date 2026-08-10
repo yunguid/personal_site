@@ -1,9 +1,21 @@
-canvas {
+/* Fluid background layer: fixed behind all content at every scroll position */
+#glcanvas {
   display: block;
   width: 100%;
   height: 100vh;
+  height: 100dvh;
   position: fixed;
   top: 0;
   left: 0;
   z-index: 0;
+  /* Matches the display shader's zero-density color so the first paint and
+     any un-rendered moment blend seamlessly with the fluid. */
+  background-color: #00000d;
+  pointer-events: none;
+}
+
+/* Deliberate fallback when WebGL is unavailable or the context is lost:
+   a static gradient in the same deep-blue family, never a void. */
+html.no-fluid {
+  background: radial-gradient(120% 80% at 50% 14%, #0c1a3d 0%, #050a1c 52%, #00000d 100%);
 }

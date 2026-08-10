@@ -3,20 +3,23 @@
  */
 const shaderCaches = new WeakMap();
 
+// After a context restore every cached shader object is invalid.
+export function clearShaderCache(gl) {
+  shaderCaches.delete(gl);
+}
+
 export class Program {
   constructor(gl, vertexSource, fragmentSource) {
     this.gl = gl;
     this.program = this.createProgram(vertexSource.trim(), fragmentSource.trim());
-    if (this.program) {
-      this.uniforms = this.getUniforms(this.program);
-    }
+    this.uniforms = this.getUniforms(this.program);
   }
 
   createProgram(vSource, fSource) {
     const gl = this.gl;
     const vs = this.compileShader(gl.VERTEX_SHADER, vSource);
     const fs = this.compileShader(gl.FRAGMENT_SHADER, fSource);
-    if (!vs || !fs) return null;
+    if (!vs || !fs) throw new Error('Shader compilation failed');
 
     const program = gl.createProgram();
     gl.attachShader(program, vs);
@@ -24,8 +27,9 @@ export class Program {
     gl.linkProgram(program);
 
     if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-      console.error("Program Link Error:", gl.getProgramInfoLog(program));
-      return null;
+      const log = gl.getProgramInfoLog(program);
+      console.error("Program Link Error:", log);
+      throw new Error(`Program link failed: ${log}`);
     }
     return program;
   }
@@ -67,8 +71,6 @@ export class Program {
   }
 
   bind() {
-    if (this.program) {
-      this.gl.useProgram(this.program);
-    }
+    this.gl.useProgram(this.program);
   }
 }

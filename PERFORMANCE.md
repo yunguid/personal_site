@@ -133,10 +133,18 @@ page's lower SEO score is intentional while it remains `noindex`.
 
 - Changed both audio players to `preload="none"`, removing about 380KB of MP3
   traffic from the initial page load.
-- Stage WebGL shader creation across animation frames, cache shared shaders,
-  lower pressure iterations, cap the simulation at 30fps, and debounce resize.
-- Suspend WebGL work when hidden or below the first viewport and render a single
-  stable frame for reduced-motion users.
+- Stage WebGL shader creation across animation frames and cache shared shaders.
+- Fluid simulation rework (2026-08-09): the field now runs behind the entire
+  page scroll instead of stopping past the first viewport, at 60fps with
+  frame-rate-independent physics (dt-scaled dissipation, injection, and forces).
+  R16F/RG16F render targets halve texture bandwidth, resizes re-project the
+  field instead of clearing it and dispose old GPU targets, and WebGL context
+  loss recovers in place. A one-way adaptive ladder (pressure iterations, grid
+  scale, then a 30fps floor) degrades under sustained overload only. Measured
+  full-frame cost (sim + display + finish) at 1280x800 on an M-series iGPU:
+  0.01-0.42ms. Work suspends when the tab is hidden; reduced-motion users get a
+  single pre-seeded stable frame; unsupported WebGL falls back to a static CSS
+  gradient in the same palette.
 - Corrected content contrast, control labels, link affordances, and analytics
   protocol handling.
 
