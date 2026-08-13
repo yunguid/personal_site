@@ -125,6 +125,13 @@ page's lower SEO score is intentional while it remains `noindex`.
   removes the duplicate fallback media request and eliminates analyzer drift.
 - Cache canvas contexts and dimensions, avoid per-frame layout reads, run at
   30fps while live and 12.5fps while idle, and suspend when hidden or offscreen.
+- Track startup rework (2026-08-13): WAV tracks previously downloaded in full
+  before playback (size-proportional startup: ~1 minute for 14MB at 2Mbps).
+  Playback now starts via native range streaming with the full file filled into
+  the Cache API in the background (stall rescue swaps to the blob in place).
+  Measured cold-start to playable for a 14MB WAV: 1174ms -> 56ms at 78Mbps;
+  startup is now roughly constant in file size. The first five visible tracks
+  pre-fill at idle after load, and hover/next-track prefetch now includes WAV.
 - Rebuilt the rightmost spectrum with logarithmic 28Hz-18kHz sampling, fast
   attack/slow release, an 84-cell damped physical envelope, and the warm Vangelis
   palette. One reusable gradient replaces per-bar gradients.

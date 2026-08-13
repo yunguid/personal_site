@@ -1,21 +1,25 @@
 // Resilient audio source loader for the YNG music archive.
 //
-// The browser's native <audio> streaming does just-in-time HTTP range requests
-// straight from S3 (no CDN), so it stalls the instant the connection dips. This
-// loader instead pulls each compressed track with a single continuous fetch and
-// races the download ahead of playback, guaranteeing a smooth, gap-free listen
-// once playback begins. Strategy, in order of preference:
+// Startup latency must never scale with file size: a 14MB WAV on a 2Mbps
+// connection is a minute of silence if it has to download before play. So
+// playback always starts from the fastest available source and the full file
+// is filled into the caches in the background. Strategy, in order:
 //
-//   1. In-memory blob       -> instant replay within a session.
+//   1. In-memory blob        -> instant replay within a session.
 //   2. Cache API blob        -> instant replay across reloads / offline.
-//   3. MediaSource streaming -> start in ~2s, buffer the rest ahead at line rate
-//                               (MP3 on Chromium/Firefox/Android).
-//   4. Full-download blob     -> fetch everything, then play (WAV, or no MSE).
-//   5. Native element src     -> last resort, never worse than before.
+//   3. MediaSource streaming -> compressed audio: starts on the first chunk,
+//                               buffers the rest ahead at line rate.
+//   4. Native src + fill     -> WAV / no MSE: native range streaming starts in
+//                               a couple of round-trips; once initial buffering
+//                               settles, the full file is fetched in the
+//                               background for stall rescue and instant replay.
+//                               If the native stream runs dry and the fill is
+//                               done, the element swaps to the blob in place.
+//   5. Bare native src       -> last resort, never worse than before.
 //
 // Downloaded bytes are always persisted to the Cache API and a small in-memory
-// LRU, so the next play of the same track is instant. The next track in the
-// queue can be prefetched in the background for an instant transition.
+// LRU. warmup() pre-fills the first few visible tracks after load, and
+// prefetch() warms hovered or upcoming tracks, so likely clicks play instantly.
 
 const AUDIO_CACHE_NAME = 'yng-music-audio-v1';
 const CACHE_INDEX_KEY = 'yngMusicAudioCacheIndex';
@@ -125,6 +129,9 @@ export function createTrackLoader({ onState, onProgress } = {}) {
   const memoryBlobs = new Map(); // trackId -> { url, size }
   let session = null;
   let prefetchInFlight = 0;
+  let warmupQueue = [];
+  let warmupRunning = false;
+  let warmupController = null;
 
   function emitState(track, state) {
     try {
@@ -187,6 +194,11 @@ export function createTrackLoader({ onState, onProgress } = {}) {
       session.abort?.();
     } catch {
       // AbortController may already be settled.
+    }
+    try {
+      session.cleanup?.();
+    } catch {
+      // Element listeners may already be gone.
     }
     teardownMediaSource(session);
     session = null;
@@ -281,6 +293,7 @@ export function createTrackLoader({ onState, onProgress } = {}) {
           const blob = new Blob(chunks, { type: MSE_MIME });
           rememberBlob(track, blob);
           cachePut(track.url, blob, MSE_MIME);
+          localSession.fillDone = true;
         } catch (error) {
           if (controller.signal.aborted || localSession.disposed) return;
           if (!resolved) reject(error);
@@ -296,56 +309,106 @@ export function createTrackLoader({ onState, onProgress } = {}) {
     });
   }
 
-  async function streamToBlob(element, track, localSession) {
+  // Start playing from the network immediately; fill the caches behind it.
+  function streamNative(element, track, localSession) {
     const controller = new AbortController();
     localSession.abort = () => controller.abort();
 
-    const response = await fetch(track.url, { signal: controller.signal, cache: 'force-cache' });
-    if (!response.ok) throw new Error(`fetch ${response.status}`);
+    element.src = track.url;
+    localSession.activeUrl = track.url;
 
-    const total = Number(response.headers.get('Content-Length')) || Number(track.sizeBytes) || 0;
-    const mime = mimeForTrack(track);
+    let readyBlobUrl = null;
+    let settled = false;
 
-    let blob;
-    if (response.body && typeof response.body.getReader === 'function') {
-      const reader = response.body.getReader();
-      const chunks = [];
-      let received = 0;
-      for (;;) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        if (localSession.disposed) return { source: 'aborted' };
-        chunks.push(value);
-        received += value.length;
-        emitProgress(track, {
-          receivedBytes: received,
-          totalBytes: total,
-          fraction: total ? Math.min(1, received / total) : 0,
-        });
+    const swapToBlob = () => {
+      if (localSession.disposed || !readyBlobUrl) return;
+      const at = element.currentTime;
+      const wasPlaying = !element.paused && !element.ended;
+      localSession.activeUrl = readyBlobUrl;
+      element.src = readyBlobUrl;
+      try {
+        element.currentTime = at;
+      } catch {
+        // Metadata not parsed yet; the blob starts from zero.
       }
-      blob = new Blob(chunks, { type: mime });
-    } else {
-      blob = await response.blob();
-    }
+      if (wasPlaying) element.play().catch(() => {});
+      cleanup();
+    };
 
-    if (localSession.disposed) return { source: 'aborted' };
+    const onWaiting = () => swapToBlob();
 
-    const url = rememberBlob(track, blob);
-    localSession.activeUrl = url;
-    element.src = url;
-    cachePut(track.url, blob, mime);
-    return { source: 'blob' };
+    const onSettle = () => {
+      if (settled || localSession.disposed) return;
+      settled = true;
+      element.removeEventListener('canplaythrough', onSettle);
+      backgroundFill().catch(() => {});
+    };
+
+    const cleanup = () => {
+      element.removeEventListener('waiting', onWaiting);
+      element.removeEventListener('canplaythrough', onSettle);
+    };
+    localSession.cleanup = cleanup;
+
+    const backgroundFill = async () => {
+      const response = await fetch(track.url, { signal: controller.signal, cache: 'force-cache' });
+      if (!response.ok) return;
+
+      const total = Number(response.headers.get('Content-Length')) || Number(track.sizeBytes) || 0;
+      const mime = mimeForTrack(track);
+
+      let blob;
+      if (response.body && typeof response.body.getReader === 'function') {
+        const reader = response.body.getReader();
+        const chunks = [];
+        let received = 0;
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          if (localSession.disposed) return;
+          chunks.push(value);
+          received += value.length;
+          emitProgress(track, {
+            receivedBytes: received,
+            totalBytes: total,
+            fraction: total ? Math.min(1, received / total) : 0,
+          });
+        }
+        blob = new Blob(chunks, { type: mime });
+      } else {
+        blob = await response.blob();
+      }
+
+      if (localSession.disposed) return;
+      readyBlobUrl = rememberBlob(track, blob);
+      cachePut(track.url, blob, mime);
+      localSession.fillDone = true;
+
+      // The stream ran dry while the fill was in flight: rescue right away.
+      if (!element.paused && element.readyState < 3) swapToBlob();
+    };
+
+    element.addEventListener('waiting', onWaiting);
+    element.addEventListener('canplaythrough', onSettle);
+    // Never wait on a canplaythrough that may not come (e.g. paused loads).
+    window.setTimeout(onSettle, 4000);
+
+    return { source: 'native-stream' };
   }
 
   async function attach(element, track) {
     teardown();
+    // A real play takes priority: abort any warmup download in flight.
+    pauseWarmup();
     const localSession = {
       track,
       abort: null,
+      cleanup: null,
       mediaSource: null,
       objectUrl: null,
       activeUrl: null,
       disposed: false,
+      fillDone: false,
     };
     session = localSession;
 
@@ -356,6 +419,7 @@ export function createTrackLoader({ onState, onProgress } = {}) {
       memoryBlobs.set(track.id, remembered);
       element.src = remembered.url;
       localSession.activeUrl = remembered.url;
+      localSession.fillDone = true;
       emitState(track, 'cached');
       return { source: 'memory' };
     }
@@ -367,6 +431,7 @@ export function createTrackLoader({ onState, onProgress } = {}) {
       const url = rememberBlob(track, cachedBlob);
       element.src = url;
       localSession.activeUrl = url;
+      localSession.fillDone = true;
       emitState(track, 'cached');
       return { source: 'cache' };
     }
@@ -387,39 +452,79 @@ export function createTrackLoader({ onState, onProgress } = {}) {
       }
     }
 
-    // 4. Full-download blob — bulletproof, used for WAV / Safari / MSE failures.
+    // 4. Native streaming with a background cache fill — startup cost is a few
+    //    round-trips regardless of file size. The buffering spinner clears on
+    //    the element's own canplay event.
     try {
-      const result = await streamToBlob(element, track, localSession);
-      if (localSession.disposed) return { source: 'aborted' };
-      if (result.source !== 'aborted') emitState(track, 'ready');
-      return result;
+      return streamNative(element, track, localSession);
     } catch {
       if (localSession.disposed) return { source: 'aborted' };
     }
 
-    // 5. Native streaming — last resort, identical to the previous behaviour.
+    // 5. Bare native src — last resort, identical to the original behaviour.
     element.src = track.url;
     localSession.activeUrl = track.url;
+    localSession.fillDone = true;
     emitState(track, 'native');
     return { source: 'native' };
   }
 
-  async function prefetch(track) {
-    if (!track || track.format === 'wav') return;
-    if (prefetchInFlight > 0) return; // One background download at a time — never steal bandwidth from playback.
-    if (memoryBlobs.has(track.id)) return;
-    if (await cacheHas(track.url)) return;
+  async function prefetch(track, { force = false, signal = null } = {}) {
+    if (!track?.url) return false;
+    if (!force && prefetchInFlight > 0) return false; // One background download at a time.
+    if (memoryBlobs.has(track.id)) return true;
+    if (await cacheHas(track.url)) return true;
 
     prefetchInFlight += 1;
     try {
-      const response = await fetch(track.url, { cache: 'force-cache' });
-      if (!response.ok) return;
+      const response = await fetch(track.url, { cache: 'force-cache', signal });
+      if (!response.ok) return false;
       const blob = await response.blob();
       await cachePut(track.url, blob, mimeForTrack(track));
+      return true;
     } catch {
       // Prefetch is best-effort.
+      return false;
     } finally {
       prefetchInFlight -= 1;
+    }
+  }
+
+  function loaderIdle() {
+    return !session || session.fillDone || session.disposed;
+  }
+
+  // Sequentially pre-fill the given tracks (typically the first few visible)
+  // so clicking the top of the list plays instantly. Defers to any foreground
+  // load: attach() aborts the in-flight warmup fetch, and the queue resumes
+  // the same track once the foreground stream has finished filling.
+  async function warmup(tracks) {
+    if (navigator.connection?.saveData) return;
+    warmupQueue = tracks.filter(Boolean);
+    if (warmupRunning) return;
+    warmupRunning = true;
+    try {
+      while (warmupQueue.length) {
+        while (!loaderIdle()) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        const track = warmupQueue[0];
+        warmupController = new AbortController();
+        const done = await prefetch(track, { force: true, signal: warmupController.signal });
+        warmupController = null;
+        if (done || loaderIdle()) warmupQueue.shift();
+      }
+    } finally {
+      warmupRunning = false;
+      warmupController = null;
+    }
+  }
+
+  function pauseWarmup() {
+    try {
+      warmupController?.abort();
+    } catch {
+      // Already settled.
     }
   }
 
@@ -431,5 +536,5 @@ export function createTrackLoader({ onState, onProgress } = {}) {
     return memoryBlobs.has(track?.id);
   }
 
-  return { attach, prefetch, getReadyUrl, isReady, teardown };
+  return { attach, prefetch, warmup, getReadyUrl, isReady, teardown };
 }

@@ -900,6 +900,22 @@ function applyCatalog(catalog) {
   render();
   updatePlayerText(currentTrack);
   syncActiveRows();
+  scheduleInitialWarmup();
+}
+
+// Pre-fill the first few tracks of the list once the page has settled, so the
+// most likely clicks play instantly even on a cold cache.
+const WARMUP_TRACK_COUNT = 5;
+function scheduleInitialWarmup() {
+  const start = () => {
+    const pool = trackGroups.slice(0, WARMUP_TRACK_COUNT).map(group => group.primary);
+    trackLoader.warmup(pool);
+  };
+  if (typeof window.requestIdleCallback === 'function') {
+    window.requestIdleCallback(start, { timeout: 4000 });
+  } else {
+    window.setTimeout(start, 1500);
+  }
 }
 
 function putFileWithProgress(url, headers, file, onProgress) {
