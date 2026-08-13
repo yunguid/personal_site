@@ -297,14 +297,13 @@ function trackMeta(track) {
   return trackMetaById.get(track.id) || buildTrackMeta(track);
 }
 
-function activeTrackMeta(track) {
-  const duration = audio.duration || track.durationSeconds || 0;
-  return [
-    track.format.toUpperCase(),
-    formatUploadedDate(track),
-    `${formatClock(audio.currentTime)} / ${formatClock(duration)}`,
-    formatBytes(track.sizeBytes),
-  ].filter(Boolean).join(' / ');
+function trackSubMeta(track) {
+  return [track.format, formatUploadedDate(track)].filter(Boolean).join(' · ');
+}
+
+function activeTrackClock(track) {
+  const duration = audio.duration || track?.durationSeconds || 0;
+  return `${formatClock(audio.currentTime)} / ${formatClock(duration)}`;
 }
 
 function clamp(value, min = 0, max = 1) {
@@ -1011,10 +1010,6 @@ function renderTrack(track, options = {}) {
   item.setAttribute('aria-pressed', isActive ? 'true' : 'false');
   if (isActive) item.classList.add('is-active');
 
-  const number = document.createElement('span');
-  number.className = 'music-track-number';
-  number.textContent = isActive ? (audio.paused ? 'Play' : 'Pause') : trackNumbers.get(track.id);
-
   const title = document.createElement('span');
   title.className = 'music-track-title';
 
@@ -1030,9 +1025,17 @@ function renderTrack(track, options = {}) {
     title.append(badge);
   }
 
-  const meta = document.createElement('p');
-  meta.className = 'music-archive-meta';
-  meta.textContent = isActive ? activeTrackMeta(track) : trackMeta(track);
+  const sub = document.createElement('p');
+  sub.className = 'music-track-sub';
+  sub.textContent = trackSubMeta(track);
+
+  const main = document.createElement('div');
+  main.className = 'music-track-main';
+  main.append(title, sub);
+
+  const duration = document.createElement('span');
+  duration.className = 'music-track-duration';
+  duration.textContent = isActive ? activeTrackClock(track) : (track.duration || '');
 
   const favorite = document.createElement('button');
   favorite.type = 'button';
@@ -1048,7 +1051,14 @@ function renderTrack(track, options = {}) {
     </svg>
   `;
 
-  item.append(number, title, meta, favorite);
+  if (variant) {
+    item.append(main, duration, favorite);
+  } else {
+    const number = document.createElement('span');
+    number.className = 'music-track-number';
+    number.textContent = isActive ? (audio.paused ? 'play' : 'pause') : trackNumbers.get(track.id);
+    item.append(number, main, duration, favorite);
+  }
   return item;
 }
 
@@ -1101,7 +1111,6 @@ function renderGroupToggle(group, isExpanded) {
   button.setAttribute('aria-label', `${isExpanded ? 'Collapse' : 'Show'} ${group.tracks.length - 1} more track${group.tracks.length === 2 ? '' : 's'} for ${group.primary.title}`);
   button.title = isExpanded ? 'Collapse tracks' : 'Show tracks';
   button.innerHTML = `
-    <span class="music-group-action-count">${group.tracks.length - 1}</span>
     <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
       <path d="m6 9 6 6 6-6"></path>
     </svg>
@@ -1135,12 +1144,16 @@ function syncTrackRow(trackId) {
     const isActive = track.id === currentTrack?.id;
     item.classList.toggle('is-active', isActive);
     item.setAttribute('aria-pressed', isActive ? 'true' : 'false');
-    item.querySelector('.music-track-number').textContent = isActive
-      ? (audio.paused ? 'Play' : 'Pause')
-      : trackNumbers.get(item.dataset.trackId);
-    item.querySelector('.music-archive-meta').textContent = isActive
-      ? activeTrackMeta(track)
-      : trackMeta(track);
+    const number = item.querySelector('.music-track-number');
+    if (number) {
+      number.textContent = isActive
+        ? (audio.paused ? 'play' : 'pause')
+        : trackNumbers.get(item.dataset.trackId);
+    }
+    const duration = item.querySelector('.music-track-duration');
+    if (duration) {
+      duration.textContent = isActive ? activeTrackClock(track) : (track.duration || '');
+    }
   });
 }
 
