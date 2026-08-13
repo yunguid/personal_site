@@ -1,5 +1,6 @@
 import './styles/music-page.css';
 import { createTrackLoader } from './js/audio/track-loader.js';
+import { initFluidSimulation } from './js/webgl/FluidSimulation.js';
 
 const list = document.getElementById('music-list');
 const search = document.getElementById('music-search');
@@ -1584,3 +1585,8 @@ updateVisualizerState();
 startVisualizerLoop();
 render();
 loadCatalog();
+
+// Fluid background: deferred so the catalog paints first
+requestAnimationFrame(() => {
+  requestAnimationFrame(() => initFluidSimulation());
+});

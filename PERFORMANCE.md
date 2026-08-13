@@ -144,7 +144,9 @@ page's lower SEO score is intentional while it remains `noindex`.
   full-frame cost (sim + display + finish) at 1280x800 on an M-series iGPU:
   0.01-0.42ms. Work suspends when the tab is hidden; reduced-motion users get a
   single pre-seeded stable frame; unsupported WebGL falls back to a static CSS
-  gradient in the same palette.
+  gradient in the same palette. The same fluid layer now also runs behind the
+  YNG Music page (2026-08-13), measured there at ~7ms rAF cadence with zero
+  missed frames on a 144Hz M-series display.
 - Corrected content contrast, control labels, link affordances, and analytics
   protocol handling.
 

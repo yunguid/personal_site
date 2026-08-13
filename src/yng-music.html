@@ -5,12 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>YNG Music</title>
     <meta name="robots" content="noindex,nofollow">
-    <meta name="theme-color" content="#0d0d0c">
+    <meta name="theme-color" content="#00000d">
     <link rel="preconnect" href="https://yng-music-archive.s3.us-east-1.amazonaws.com" crossorigin>
     <link rel="dns-prefetch" href="https://yng-music-archive.s3.us-east-1.amazonaws.com">
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 </head>
 <body class="music-archive-page">
+    <canvas id="glcanvas"></canvas>
     <main class="music-archive-shell">
         <header class="music-archive-header">
             <a class="music-archive-back" href="/" aria-label="Back to main site">
@@ -83,7 +84,7 @@
             </div>
             <div class="music-player-now">
                 <h2 id="music-player-title">Select a track</h2>
-                <p id="music-player-meta">Ready</p>
+                <p id="music-player-meta" class="music-player-meta">Ready</p>
             </div>
             <div class="music-player-timeline">
                 <span id="music-player-current">0:00</span>
