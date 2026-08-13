@@ -1170,8 +1170,8 @@ function updatePlayerText(track = currentTrack) {
   const totalDuration = formatDurationSummary(totalTrackDuration(tracks));
   playerTitle.textContent = track?.title || 'Select a track';
   playerMeta.textContent = track
-    ? trackMeta(track)
-    : [`${tracks.length} tracks`, totalDuration].filter(Boolean).join(' / ');
+    ? trackSubMeta(track)
+    : [`${tracks.length} tracks`, totalDuration].filter(Boolean).join(' · ');
   playerDuration.textContent = formatClock(audio.duration || track?.durationSeconds);
 }
 
@@ -1378,10 +1378,12 @@ function render() {
   favoritesFilter?.classList.toggle('is-active', showFavoritesOnly);
   favoritesFilter?.setAttribute('aria-pressed', showFavoritesOnly ? 'true' : 'false');
   count.textContent = [
-    `${filteredTrackCount} / ${tracks.length} tracks`,
+    filteredTrackCount === tracks.length
+      ? `${tracks.length} tracks`
+      : `${filteredTrackCount} / ${tracks.length} tracks`,
     durationLabel,
     `${filteredGroups.length} groups`,
-    `${favoriteTrackIds.size} favorites`,
+    favoriteTrackIds.size ? `${favoriteTrackIds.size} favorites` : '',
   ].filter(Boolean).join(' · ');
 }
 
