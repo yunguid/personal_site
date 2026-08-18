@@ -10,6 +10,7 @@ const count = document.getElementById('music-count');
 const summary = document.getElementById('music-summary');
 const playerToggle = document.getElementById('music-player-toggle');
 const playerShuffle = document.getElementById('music-player-shuffle');
+const playerFavorite = document.getElementById('music-player-favorite');
 const playerTitle = document.getElementById('music-player-title');
 const playerMeta = document.getElementById('music-player-meta');
 const playerCurrent = document.getElementById('music-player-current');
@@ -24,6 +25,10 @@ const uploadInput = document.getElementById('music-upload-input');
 const uploadButton = document.getElementById('music-upload-button');
 const uploadStatus = document.getElementById('music-upload-status');
 const uploadProgressBar = document.getElementById('music-upload-progress-bar');
+const pagination = document.getElementById('music-pagination');
+const pagePrevious = document.getElementById('music-page-previous');
+const pageNext = document.getElementById('music-page-next');
+const pageStatus = document.getElementById('music-page-status');
 
 let tracks = [];
 let visibleTracks = tracks;
@@ -45,8 +50,8 @@ const VISUALIZER_ACTIVE_FRAME_MS = 33;
 const VISUALIZER_IDLE_FRAME_MS = 80;
 const VISUALIZER_DPR_LIMIT = 2;
 const SPECTRUM_CELLS = 84;
-const LIST_WINDOW_INITIAL = 48;
-const LIST_WINDOW_STEP = 48;
+const MOBILE_GROUPS_PER_PAGE = 5;
+const DESKTOP_GROUPS_PER_PAGE = 10;
 const FAVORITES_STORAGE_KEY = 'yngMusicFavoriteTracks';
 
 const UPLOAD_CONTENT_TYPES = {
@@ -74,17 +79,7 @@ let visualizerNeedsResize = true;
 let visualizerStateKey = '';
 let catalogLoaded = false;
 let searchRenderRaf = 0;
-let listWindowLimit = LIST_WINDOW_INITIAL;
-let listWindowSignature = '';
-let renderedGroupCount = 0;
-let listSentinel = null;
-
-// Without IntersectionObserver the whole list renders at once (old behaviour).
-const listSentinelObserver = 'IntersectionObserver' in window
-  ? new IntersectionObserver((entries) => {
-    if (entries.some(entry => entry.isIntersecting)) extendListWindow();
-  }, { rootMargin: '600px 0px' })
-  : null;
+let currentGroupPage = 0;
 
 const visualizerContexts = {
   spectrogram: spectrogramCanvas?.getContext('2d', { alpha: false }),
@@ -371,6 +366,20 @@ function syncFavoriteButtons(trackId) {
     button.title = isFavorite ? 'Remove favorite' : 'Favorite track';
     button.setAttribute('aria-label', `${isFavorite ? 'Remove favorite' : 'Favorite'} ${trackById.get(trackId)?.title || 'track'}`);
   });
+  syncPlayerFavorite();
+}
+
+function syncPlayerFavorite() {
+  const hasTrack = Boolean(currentTrack);
+  const isFavorite = hasTrack && isFavoriteTrack(currentTrack.id);
+  const label = hasTrack
+    ? `${isFavorite ? 'Remove favorite' : 'Favorite'} ${currentTrack.title}`
+    : 'Select a track to favorite';
+  playerFavorite.disabled = !hasTrack;
+  playerFavorite.classList.toggle('is-favorite', isFavorite);
+  playerFavorite.setAttribute('aria-pressed', isFavorite ? 'true' : 'false');
+  playerFavorite.setAttribute('aria-label', label);
+  playerFavorite.title = label;
 }
 
 function syncVisualizerCanvas(canvas, ctx, sizeRef, shouldMeasure) {
@@ -1042,8 +1051,12 @@ async function uploadFiles(fileList, group = null) {
   }
 }
 
+function trackArtworkUrl(track) {
+  return track.artworkUrl || track.artwork?.url || track.imageUrl || '';
+}
+
 function renderTrack(track, options = {}) {
-  const { group = null, variant = false } = options;
+  const { group = null, variant = false, artworkUrl = trackArtworkUrl(track) } = options;
   const isActive = currentTrack?.id === track.id;
   const isFavorite = isFavoriteTrack(track.id);
   const item = document.createElement('div');
@@ -1053,6 +1066,30 @@ function renderTrack(track, options = {}) {
   item.tabIndex = 0;
   item.setAttribute('aria-pressed', isActive ? 'true' : 'false');
   if (isActive) item.classList.add('is-active');
+  if (isActive && !audio.paused) item.classList.add('is-playing');
+  item.setAttribute('aria-label', `${isActive && !audio.paused ? 'Pause' : 'Play'} ${track.title}`);
+
+  const record = document.createElement('span');
+  record.className = 'music-track-record';
+  record.setAttribute('aria-hidden', 'true');
+  if (artworkUrl) {
+    const artwork = document.createElement('img');
+    artwork.src = artworkUrl;
+    artwork.alt = '';
+    artwork.loading = 'lazy';
+    artwork.decoding = 'async';
+    artwork.addEventListener('error', () => {
+      artwork.remove();
+      record.classList.remove('has-artwork');
+    }, { once: true });
+    record.classList.add('has-artwork');
+    record.append(artwork);
+  }
+
+  const recordLabel = document.createElement('span');
+  recordLabel.className = 'music-track-record-label';
+  recordLabel.textContent = String(track.title || '?').trim().charAt(0).toUpperCase() || '?';
+  record.append(recordLabel);
 
   const title = document.createElement('span');
   title.className = 'music-track-title';
@@ -1096,18 +1133,16 @@ function renderTrack(track, options = {}) {
   `;
 
   if (variant) {
-    item.append(main, duration, favorite);
+    item.append(record, main, duration, favorite);
   } else {
-    const number = document.createElement('span');
-    number.className = 'music-track-number';
-    number.textContent = isActive ? activeTrackNumberLabel() : trackNumbers.get(track.id);
-    item.append(number, main, duration, favorite);
+    item.append(record, main, duration, favorite);
   }
   return item;
 }
 
 function renderGroup(group) {
-  if (group.tracks.length === 1) return renderTrack(group.primary, { group });
+  const artworkUrl = group.tracks.map(trackArtworkUrl).find(Boolean) || '';
+  if (group.tracks.length === 1) return renderTrack(group.primary, { group, artworkUrl });
 
   const isExpanded = isGroupExpanded(group);
   const wrapper = document.createElement('div');
@@ -1126,10 +1161,12 @@ function renderGroup(group) {
   variants.id = groupElementId(group);
   variants.setAttribute('aria-label', `Variants of ${group.primary.title}`);
   if (isExpanded) {
-    variants.replaceChildren(...group.tracks.slice(1).map(track => renderTrack(track, { group, variant: true })));
+    variants.replaceChildren(...group.tracks.slice(1).map(track => (
+      renderTrack(track, { group, variant: true, artworkUrl })
+    )));
   }
 
-  primaryRow.append(renderTrack(group.primary, { group }), actions);
+  primaryRow.append(renderTrack(group.primary, { group, artworkUrl }), actions);
   wrapper.append(primaryRow, variants);
   return wrapper;
 }
@@ -1187,7 +1224,9 @@ function syncTrackRow(trackId) {
 
     const isActive = track.id === currentTrack?.id;
     item.classList.toggle('is-active', isActive);
+    item.classList.toggle('is-playing', isActive && !audio.paused);
     item.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+    item.setAttribute('aria-label', `${isActive && !audio.paused ? 'Pause' : 'Play'} ${track.title}`);
     const number = item.querySelector('.music-track-number');
     if (number) {
       number.textContent = isActive
@@ -1280,6 +1319,7 @@ function updatePlaybackState() {
   playerToggle.setAttribute('aria-label', label);
   playerToggle.title = label;
   playerToggle.querySelector('.music-player-toggle-label').textContent = audio.paused ? 'Play' : 'Pause';
+  syncPlayerFavorite();
   syncActiveRows();
 }
 
@@ -1369,40 +1409,33 @@ function shuffleTrack() {
   if (nextTrack) playTrack(nextTrack);
 }
 
-function removeListSentinel() {
-  if (!listSentinel) return;
-  listSentinelObserver?.unobserve(listSentinel);
-  listSentinel.remove();
-  listSentinel = null;
+function groupsPerPage() {
+  return window.matchMedia?.('(max-width: 760px)')?.matches
+    ? MOBILE_GROUPS_PER_PAGE
+    : DESKTOP_GROUPS_PER_PAGE;
 }
 
-function appendListSentinel() {
-  listSentinel = document.createElement('div');
-  listSentinel.className = 'music-archive-sentinel';
-  listSentinel.setAttribute('aria-hidden', 'true');
-  list.append(listSentinel);
-  listSentinelObserver.observe(listSentinel);
-}
-
-// Render only the rows above the scroll frontier; the sentinel pulls the next
-// window in as the listener approaches the bottom. Search, sort, and shuffle
-// still operate on the full catalog — this only bounds the DOM.
 function renderGroupList(groups) {
-  removeListSentinel();
-  const windowGroups = listSentinelObserver ? groups.slice(0, listWindowLimit) : groups;
-  list.replaceChildren(...windowGroups.map(renderGroup));
-  renderedGroupCount = windowGroups.length;
+  list.setAttribute('aria-busy', 'true');
+  list.replaceChildren(...groups.map(renderGroup));
   list.setAttribute('aria-busy', 'false');
-  if (renderedGroupCount < groups.length) appendListSentinel();
 }
 
-function extendListWindow() {
-  if (!listSentinel || renderedGroupCount >= visibleGroups.length) return;
-  const nextGroups = visibleGroups.slice(renderedGroupCount, renderedGroupCount + LIST_WINDOW_STEP);
-  listSentinel.before(...nextGroups.map(renderGroup));
-  renderedGroupCount += nextGroups.length;
-  listWindowLimit = Math.max(listWindowLimit, renderedGroupCount);
-  if (renderedGroupCount >= visibleGroups.length) removeListSentinel();
+function updatePagination(totalGroups) {
+  const pageSize = groupsPerPage();
+  const pageCount = Math.max(1, Math.ceil(totalGroups / pageSize));
+  currentGroupPage = Math.min(currentGroupPage, pageCount - 1);
+  const start = currentGroupPage * pageSize;
+  const end = Math.min(totalGroups, start + pageSize);
+
+  pagination.hidden = totalGroups === 0;
+  pagePrevious.disabled = currentGroupPage === 0;
+  pageNext.disabled = currentGroupPage >= pageCount - 1;
+  pageStatus.textContent = totalGroups
+    ? `${start + 1}–${end} of ${totalGroups}`
+    : '';
+
+  return { start, end };
 }
 
 function render() {
@@ -1433,24 +1466,16 @@ function render() {
   visibleGroups = filteredGroups;
   visibleTracks = filteredGroups.map(group => group.primary);
 
-  // A new query, sort, or filter starts back at a fresh window; re-renders of
-  // the same view (favorite stars, group toggles) keep the scrolled depth.
-  const signature = `${query}|${currentSortMode()}|${showFavoritesOnly}`;
-  if (signature !== listWindowSignature) {
-    listWindowSignature = signature;
-    listWindowLimit = LIST_WINDOW_INITIAL;
-  }
-
   if (filteredGroups.length) {
-    renderGroupList(filteredGroups);
+    const { start, end } = updatePagination(filteredGroups.length);
+    renderGroupList(filteredGroups.slice(start, end));
   } else {
-    removeListSentinel();
-    renderedGroupCount = 0;
     const empty = document.createElement('p');
     empty.className = 'music-archive-empty';
     empty.textContent = catalogLoaded ? 'No tracks found.' : 'Loading tracks...';
     list.replaceChildren(empty);
     list.setAttribute('aria-busy', catalogLoaded ? 'false' : 'true');
+    updatePagination(0);
   }
 
   favoritesFilter?.classList.toggle('is-active', showFavoritesOnly);
@@ -1491,19 +1516,33 @@ search.addEventListener('input', () => {
   if (searchRenderRaf) cancelAnimationFrame(searchRenderRaf);
   searchRenderRaf = requestAnimationFrame(() => {
     searchRenderRaf = 0;
+    currentGroupPage = 0;
     render();
   });
 });
 sort.addEventListener('change', () => {
+  currentGroupPage = 0;
   tracks = sortTracks(tracks);
   rebuildTrackNumbers();
   render();
   syncActiveRows();
 });
 favoritesFilter?.addEventListener('click', () => {
+  currentGroupPage = 0;
   showFavoritesOnly = !showFavoritesOnly;
   render();
   syncActiveRows();
+});
+pagePrevious?.addEventListener('click', () => {
+  if (currentGroupPage === 0) return;
+  currentGroupPage -= 1;
+  render();
+  list.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+pageNext?.addEventListener('click', () => {
+  currentGroupPage += 1;
+  render();
+  list.scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
 list.addEventListener('click', (event) => {
   const favoriteButton = event.target.closest('.music-track-favorite');
@@ -1611,6 +1650,12 @@ playerToggle.addEventListener('click', () => {
   }
 });
 playerShuffle.addEventListener('click', shuffleTrack);
+playerFavorite.addEventListener('click', () => {
+  if (!currentTrack) return;
+  setFavoriteTrack(currentTrack.id, !isFavoriteTrack(currentTrack.id));
+  render();
+  syncActiveRows();
+});
 
 playerProgress.addEventListener('input', () => {
   if (!currentTrack) return;

@@ -23,6 +23,8 @@ const CATALOG_PATH = process.env.YNG_MUSIC_CATALOG_PATH
   : join(ROOT, 'src/data/yng-music.json');
 const TMP_DIR = join(ROOT, 'tmp');
 const DRY_RUN_PATH = join(TMP_DIR, 'yng-music-dry-run.json');
+const UPLOAD_CONCURRENCY = Math.max(1, Number(process.env.YNG_MUSIC_UPLOAD_CONCURRENCY || 1));
+const CATALOG_CHECKPOINT_EVERY = Math.max(0, Number(process.env.YNG_MUSIC_CATALOG_CHECKPOINT_EVERY || 0));
 
 const AUDIO_EXTENSIONS = new Set(
   (process.env.YNG_MUSIC_EXTENSIONS || '.wav,.mp3')
@@ -460,6 +462,10 @@ async function writeCatalog(tracks, options = {}) {
       modifiedAt: track.modifiedAt,
       durationSeconds: track.durationSeconds,
       duration: track.duration,
+      ...(track.artworkUrl ? { artworkUrl: track.artworkUrl } : {}),
+      ...(track.artworkStatus ? { artworkStatus: track.artworkStatus } : {}),
+      ...(track.soundcloudUrl ? { soundcloudUrl: track.soundcloudUrl } : {}),
+      ...(track.soundcloudIndex ? { soundcloudIndex: track.soundcloudIndex } : {}),
       sha256: track.sha256,
       s3Key: track.s3Key,
       url: track.url,
@@ -544,13 +550,39 @@ async function syncCommand() {
   const { uploadTracks: tracks, skippedExistingCatalogHashes } = mergeCatalog
     ? existingCatalogHashSkips(uniqueTracks, existingCatalog)
     : { uploadTracks: uniqueTracks, skippedExistingCatalogHashes: [] };
-  const verified = [];
+  const verified = new Array(tracks.length);
+  let nextIndex = 0;
+  let completedCount = 0;
+  let catalogCheckpoint = Promise.resolve();
 
-  for (const [index, track] of tracks.entries()) {
-    const result = await uploadAndVerify(track);
-    verified.push(result);
-    console.log(`[${index + 1}/${tracks.length}] verified ${track.fileName}`);
+  async function uploadWorker() {
+    while (nextIndex < tracks.length) {
+      const index = nextIndex;
+      nextIndex += 1;
+      const track = tracks[index];
+      verified[index] = await uploadAndVerify(track);
+      completedCount += 1;
+      console.log(`[${index + 1}/${tracks.length}] verified ${track.fileName}`);
+      if (
+        !skipCatalog
+        && mergeCatalog
+        && CATALOG_CHECKPOINT_EVERY > 0
+        && completedCount % CATALOG_CHECKPOINT_EVERY === 0
+      ) {
+        const checkpointTracks = verified.filter(Boolean);
+        const checkpointCount = completedCount;
+        catalogCheckpoint = catalogCheckpoint.then(async () => {
+          const checkpoint = await writeCatalog(checkpointTracks, { merge: true });
+          console.log(`Catalog checkpoint: ${checkpoint.trackCount} tracks after ${checkpointCount} verified.`);
+        });
+      }
+    }
   }
+
+  await Promise.all(
+    Array.from({ length: Math.min(UPLOAD_CONCURRENCY, tracks.length) }, uploadWorker)
+  );
+  await catalogCheckpoint;
 
   const shouldWriteCatalog = !skipCatalog && verified.length > 0;
   const catalog = shouldWriteCatalog ? await writeCatalog(verified, { merge: mergeCatalog }) : null;
