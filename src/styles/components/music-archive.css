@@ -302,6 +302,15 @@
   contain-intrinsic-block-size: auto 4.25rem;
 }
 
+/* Invisible marker that pulls the next window of rows in as it nears the viewport */
+.music-archive-sentinel {
+  height: 1px;
+}
+
+.music-archive-list > .music-archive-sentinel::after {
+  content: none;
+}
+
 .music-visualizer {
   position: relative;
   overflow: hidden;

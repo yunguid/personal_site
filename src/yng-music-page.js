@@ -45,8 +45,8 @@ const VISUALIZER_ACTIVE_FRAME_MS = 33;
 const VISUALIZER_IDLE_FRAME_MS = 80;
 const VISUALIZER_DPR_LIMIT = 2;
 const SPECTRUM_CELLS = 84;
-const INITIAL_GROUP_RENDER_COUNT = 56;
-const GROUP_RENDER_CHUNK_SIZE = 32;
+const LIST_WINDOW_INITIAL = 48;
+const LIST_WINDOW_STEP = 48;
 const FAVORITES_STORAGE_KEY = 'yngMusicFavoriteTracks';
 
 const UPLOAD_CONTENT_TYPES = {
@@ -59,6 +59,7 @@ let currentTrack = null;
 let previousActiveTrackId = null;
 let playToken = 0;
 let isBuffering = false;
+let downloadFraction = 0;
 let isSeeking = false;
 let isUploading = false;
 let uploadDragDepth = 0;
@@ -71,9 +72,19 @@ let visualizerError = '';
 let visualizerInView = true;
 let visualizerNeedsResize = true;
 let visualizerStateKey = '';
-let renderRevision = 0;
 let catalogLoaded = false;
 let searchRenderRaf = 0;
+let listWindowLimit = LIST_WINDOW_INITIAL;
+let listWindowSignature = '';
+let renderedGroupCount = 0;
+let listSentinel = null;
+
+// Without IntersectionObserver the whole list renders at once (old behaviour).
+const listSentinelObserver = 'IntersectionObserver' in window
+  ? new IntersectionObserver((entries) => {
+    if (entries.some(entry => entry.isIntersecting)) extendListWindow();
+  }, { rootMargin: '600px 0px' })
+  : null;
 
 const visualizerContexts = {
   spectrogram: spectrogramCanvas?.getContext('2d', { alpha: false }),
@@ -109,11 +120,16 @@ const favoriteTrackIds = new Set(readFavoriteTrackIds());
 const trackLoader = createTrackLoader({
   onState: (track, state) => {
     if (track?.id !== currentTrack?.id) return;
-    setBuffering(state === 'buffering');
+    setBuffering(state === 'buffering' || state === 'rebuffering');
+    if (state === 'suspended') updatePlaybackState();
   },
   onProgress: (track, info) => {
     if (track?.id !== currentTrack?.id) return;
     updateDownloadProgress(info.fraction);
+  },
+  onFilled: (track) => {
+    // The current track is fully local; the connection is free for the next one.
+    if (track?.id === currentTrack?.id) prefetchUpcoming();
   },
 });
 
@@ -301,9 +317,20 @@ function trackSubMeta(track) {
   return [track.format, formatUploadedDate(track)].filter(Boolean).join(' · ');
 }
 
+// audio.duration is Infinity while MediaSource streaming is still appending;
+// prefer it only when finite, else fall back to the catalog duration.
+function currentDuration(track = currentTrack) {
+  if (Number.isFinite(audio.duration) && audio.duration > 0) return audio.duration;
+  return track?.durationSeconds || 0;
+}
+
 function activeTrackClock(track) {
-  const duration = audio.duration || track?.durationSeconds || 0;
-  return `${formatClock(audio.currentTime)} / ${formatClock(duration)}`;
+  return `${formatClock(audio.currentTime)} / ${formatClock(currentDuration(track))}`;
+}
+
+function activeTrackNumberLabel() {
+  if (isBuffering && downloadFraction < 1) return `${Math.round(downloadFraction * 100)}%`;
+  return audio.paused ? 'play' : 'pause';
 }
 
 function clamp(value, min = 0, max = 1) {
@@ -904,8 +931,9 @@ function applyCatalog(catalog) {
 }
 
 // Pre-fill the first few tracks of the list once the page has settled, so the
-// most likely clicks play instantly even on a cold cache.
-const WARMUP_TRACK_COUNT = 5;
+// most likely clicks play instantly even on a cold cache. Kept small: every
+// warmed track is a full download on a cold visit.
+const WARMUP_TRACK_COUNT = 3;
 function scheduleInitialWarmup() {
   const start = () => {
     const pool = trackGroups.slice(0, WARMUP_TRACK_COUNT).map(group => group.primary);
@@ -1072,7 +1100,7 @@ function renderTrack(track, options = {}) {
   } else {
     const number = document.createElement('span');
     number.className = 'music-track-number';
-    number.textContent = isActive ? (audio.paused ? 'play' : 'pause') : trackNumbers.get(track.id);
+    number.textContent = isActive ? activeTrackNumberLabel() : trackNumbers.get(track.id);
     item.append(number, main, duration, favorite);
   }
   return item;
@@ -1163,7 +1191,7 @@ function syncTrackRow(trackId) {
     const number = item.querySelector('.music-track-number');
     if (number) {
       number.textContent = isActive
-        ? (audio.paused ? 'play' : 'pause')
+        ? activeTrackNumberLabel()
         : trackNumbers.get(item.dataset.trackId);
     }
     const duration = item.querySelector('.music-track-duration');
@@ -1185,25 +1213,43 @@ function syncCurrentRowProgress() {
 function updatePlayerText(track = currentTrack) {
   const totalDuration = formatDurationSummary(totalTrackDuration(tracks));
   playerTitle.textContent = track?.title || 'Select a track';
-  playerMeta.textContent = track
-    ? trackSubMeta(track)
-    : [`${tracks.length} tracks`, totalDuration].filter(Boolean).join(' · ');
-  playerDuration.textContent = formatClock(audio.duration || track?.durationSeconds);
+  if (track) {
+    playerMeta.textContent = isBuffering ? bufferingLabel() : trackSubMeta(track);
+  } else {
+    playerMeta.textContent = [`${tracks.length} tracks`, totalDuration].filter(Boolean).join(' · ');
+  }
+  playerDuration.textContent = formatClock(currentDuration(track));
 }
 
 function setBuffering(next) {
+  const wasBuffering = isBuffering;
   isBuffering = Boolean(next);
   playerToggle.classList.toggle('is-buffering', isBuffering && Boolean(currentTrack));
   visualizer?.classList.toggle('is-buffering', isBuffering && Boolean(currentTrack));
+  if (wasBuffering !== isBuffering) {
+    updatePlayerText();
+    syncCurrentRowProgress();
+  }
+}
+
+function bufferingLabel() {
+  const pct = Math.round(downloadFraction * 100);
+  return pct > 0 && pct < 100 ? `Buffering · ${pct}%` : 'Buffering';
 }
 
 function updateDownloadProgress(fraction) {
   const clamped = clamp(Number.isFinite(fraction) ? fraction : 0, 0, 1);
+  const pctChanged = Math.round(clamped * 100) !== Math.round(downloadFraction * 100);
+  downloadFraction = clamped;
   playerProgress.style.setProperty('--player-download', `${clamped * 100}%`);
+  if (isBuffering && pctChanged) {
+    updatePlayerText();
+    syncCurrentRowProgress();
+  }
 }
 
 function bufferedFraction() {
-  const duration = audio.duration || currentTrack?.durationSeconds || 0;
+  const duration = currentDuration();
   if (!duration || !audio.buffered || !audio.buffered.length) return 0;
 
   let end = 0;
@@ -1238,7 +1284,7 @@ function updatePlaybackState() {
 }
 
 function updateProgress() {
-  const duration = audio.duration || currentTrack?.durationSeconds || 0;
+  const duration = currentDuration();
   const progress = duration ? Math.min(1, Math.max(0, audio.currentTime / duration)) : 0;
   if (!isSeeking) {
     playerProgress.value = duration ? String(progress * 1000) : '0';
@@ -1251,6 +1297,9 @@ function updateProgress() {
 }
 
 async function startAudioPlayback() {
+  // Replaying a finished track: rewind explicitly instead of relying on
+  // play()'s implicit ended-rewind, which races and intermittently no-ops.
+  if (audio.ended) audio.currentTime = 0;
   const playPromise = audio.play();
   startVisualizerPlayback()
     .then(() => updateVisualizerState())
@@ -1268,6 +1317,7 @@ async function playTrack(track) {
   updatePlaybackState();
 
   if (isNewTrack) {
+    downloadFraction = 0;
     updateDownloadProgress(0);
     try {
       await trackLoader.attach(audio, track);
@@ -1319,37 +1369,40 @@ function shuffleTrack() {
   if (nextTrack) playTrack(nextTrack);
 }
 
-function scheduleGroupRender(callback) {
-  if ('requestIdleCallback' in window) {
-    window.requestIdleCallback(callback, { timeout: 140 });
-    return;
-  }
-  window.setTimeout(callback, 0);
+function removeListSentinel() {
+  if (!listSentinel) return;
+  listSentinelObserver?.unobserve(listSentinel);
+  listSentinel.remove();
+  listSentinel = null;
 }
 
+function appendListSentinel() {
+  listSentinel = document.createElement('div');
+  listSentinel.className = 'music-archive-sentinel';
+  listSentinel.setAttribute('aria-hidden', 'true');
+  list.append(listSentinel);
+  listSentinelObserver.observe(listSentinel);
+}
+
+// Render only the rows above the scroll frontier; the sentinel pulls the next
+// window in as the listener approaches the bottom. Search, sort, and shuffle
+// still operate on the full catalog — this only bounds the DOM.
 function renderGroupList(groups) {
-  const revision = ++renderRevision;
-  let nextIndex = 0;
-  list.setAttribute('aria-busy', 'true');
+  removeListSentinel();
+  const windowGroups = listSentinelObserver ? groups.slice(0, listWindowLimit) : groups;
+  list.replaceChildren(...windowGroups.map(renderGroup));
+  renderedGroupCount = windowGroups.length;
+  list.setAttribute('aria-busy', 'false');
+  if (renderedGroupCount < groups.length) appendListSentinel();
+}
 
-  const appendNextChunk = () => {
-    if (revision !== renderRevision) return;
-
-    const chunkSize = nextIndex ? GROUP_RENDER_CHUNK_SIZE : INITIAL_GROUP_RENDER_COUNT;
-    const nextGroups = groups.slice(nextIndex, nextIndex + chunkSize);
-    const elements = nextGroups.map(renderGroup);
-    if (nextIndex) list.append(...elements);
-    else list.replaceChildren(...elements);
-    nextIndex += nextGroups.length;
-
-    if (nextIndex < groups.length) {
-      scheduleGroupRender(appendNextChunk);
-      return;
-    }
-    list.setAttribute('aria-busy', 'false');
-  };
-
-  appendNextChunk();
+function extendListWindow() {
+  if (!listSentinel || renderedGroupCount >= visibleGroups.length) return;
+  const nextGroups = visibleGroups.slice(renderedGroupCount, renderedGroupCount + LIST_WINDOW_STEP);
+  listSentinel.before(...nextGroups.map(renderGroup));
+  renderedGroupCount += nextGroups.length;
+  listWindowLimit = Math.max(listWindowLimit, renderedGroupCount);
+  if (renderedGroupCount >= visibleGroups.length) removeListSentinel();
 }
 
 function render() {
@@ -1380,10 +1433,19 @@ function render() {
   visibleGroups = filteredGroups;
   visibleTracks = filteredGroups.map(group => group.primary);
 
+  // A new query, sort, or filter starts back at a fresh window; re-renders of
+  // the same view (favorite stars, group toggles) keep the scrolled depth.
+  const signature = `${query}|${currentSortMode()}|${showFavoritesOnly}`;
+  if (signature !== listWindowSignature) {
+    listWindowSignature = signature;
+    listWindowLimit = LIST_WINDOW_INITIAL;
+  }
+
   if (filteredGroups.length) {
     renderGroupList(filteredGroups);
   } else {
-    renderRevision += 1;
+    removeListSentinel();
+    renderedGroupCount = 0;
     const empty = document.createElement('p');
     empty.className = 'music-archive-empty';
     empty.textContent = catalogLoaded ? 'No tracks found.' : 'Loading tracks...';
@@ -1486,6 +1548,8 @@ list.addEventListener('click', (event) => {
   if (!track) return;
 
   if (currentTrack?.id === track.id) {
+    // Clicking the buffering track again means "start with what you have".
+    if (trackLoader.forceStart()) return;
     if (audio.paused) {
       startAudioPlayback().catch(() => {
         updatePlaybackState();
@@ -1500,12 +1564,27 @@ list.addEventListener('click', (event) => {
 });
 const supportsHover = window.matchMedia?.('(hover: hover)')?.matches;
 if (supportsHover) {
+  // Warm the cache after a short hover dwell — a strong signal the listener is
+  // about to play it, without downloading every row the pointer crosses.
+  let hoverPrefetchTimer = 0;
+  let hoverPrefetchTrackId = null;
   list.addEventListener('pointerover', (event) => {
     const item = event.target.closest('.music-archive-track');
     if (!item) return;
     const track = trackById.get(item.dataset.trackId);
-    // Warm the cache on hover — a strong signal the listener is about to play it.
-    if (track && track.id !== currentTrack?.id) trackLoader.prefetch(track);
+    if (!track || track.id === currentTrack?.id || track.id === hoverPrefetchTrackId) return;
+    window.clearTimeout(hoverPrefetchTimer);
+    hoverPrefetchTrackId = track.id;
+    hoverPrefetchTimer = window.setTimeout(() => {
+      hoverPrefetchTrackId = null;
+      trackLoader.prefetch(track);
+    }, 150);
+  });
+  list.addEventListener('pointerout', (event) => {
+    if (event.target.closest('.music-archive-track')) {
+      window.clearTimeout(hoverPrefetchTimer);
+      hoverPrefetchTrackId = null;
+    }
   });
 }
 list.addEventListener('keydown', (event) => {
@@ -1521,6 +1600,7 @@ list.addEventListener('keydown', (event) => {
 
 playerToggle.addEventListener('click', () => {
   if (!currentTrack) return;
+  if (trackLoader.forceStart()) return;
   if (audio.paused) {
     startAudioPlayback().catch(() => {
       updatePlaybackState();
@@ -1535,8 +1615,7 @@ playerShuffle.addEventListener('click', shuffleTrack);
 playerProgress.addEventListener('input', () => {
   if (!currentTrack) return;
   isSeeking = true;
-  const duration = audio.duration || currentTrack.durationSeconds || 0;
-  audio.currentTime = duration * (Number(playerProgress.value) / 1000);
+  audio.currentTime = currentDuration() * (Number(playerProgress.value) / 1000);
   updateProgress();
 });
 
@@ -1558,13 +1637,20 @@ audio.addEventListener('play', () => {
 });
 audio.addEventListener('playing', () => {
   setBuffering(false);
-  prefetchUpcoming();
   startVisualizerPlayback()
     .then(() => updateVisualizerState())
     .catch(() => updateVisualizerState());
 });
-audio.addEventListener('canplay', () => setBuffering(false));
-audio.addEventListener('canplaythrough', () => setBuffering(false));
+// canplay fires while a gate is still holding playback — the gate decides.
+function gateHolding() {
+  return trackLoader.isGateWaiting() || trackLoader.isGatePaused();
+}
+audio.addEventListener('canplay', () => {
+  if (!gateHolding()) setBuffering(false);
+});
+audio.addEventListener('canplaythrough', () => {
+  if (!gateHolding()) setBuffering(false);
+});
 audio.addEventListener('waiting', () => {
   if (currentTrack && !audio.paused) setBuffering(true);
 });
@@ -1574,6 +1660,9 @@ audio.addEventListener('stalled', () => {
 audio.addEventListener('progress', updateBufferedDisplay);
 audio.addEventListener('error', () => setBuffering(false));
 audio.addEventListener('pause', () => {
+  // The loader holds playback while it rebuilds a buffer cushion; that pause
+  // is not the listener's and the UI should keep showing "buffering".
+  if (trackLoader.isGatePaused()) return;
   setBuffering(false);
   pauseVisualizerPlayback();
   updatePlaybackState();

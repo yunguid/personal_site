@@ -6,6 +6,35 @@ This document is the repeatable performance scorecard for the public homepage,
 YNG Music, and Montana gallery. Lighthouse results are isolated local production
 builds using Lighthouse 13.4.0. They are lab measurements, not field RUM.
 
+## Audio Streaming Model (2026-08-17)
+
+The music archive's playback engine (`src/js/audio/track-loader.js`) trades a
+short upfront wait for stall-free playback:
+
+- One fetch per track feeds MediaSource appends, progress UI, and the caches.
+  There is never a second parallel download of the same file.
+- A gate releases playback only when the element holds >= 5s of buffered audio
+  AND estimated remaining download time x 1.4 <= remaining play time. Under
+  steady throughput this guarantees the download frontier stays ahead of the
+  playhead through the end of the song.
+- If throughput collapses mid-song, the engine pauses once, shows
+  "Buffering - N%", and auto-resumes with an 8s cushion when the math is safe
+  again - one clean gap instead of stall/resume flapping. Clicking the track
+  during a hold force-starts it immediately.
+- Mid-stream network failures resume via HTTP Range requests (3 retries).
+- WAV (no MSE byte-stream support) downloads fully with visible progress and
+  plays from a local blob: slower to first note, impossible to stutter.
+- iOS Safari uses ManagedMediaSource when available; otherwise it takes the
+  download-then-play path.
+- The list renders 48 groups plus an IntersectionObserver sentinel; scrolling
+  appends the next 48. Warmup pre-fills the first 3 tracks (skipped on
+  save-data/2g), hover prefetch waits for a 150ms dwell, and every background
+  download aborts the moment a foreground play needs the bandwidth.
+
+Verified 2026-08-17 against a local S3 throttle proxy: gate wait ~2.7s then
+zero stalls at 1.3x bitrate; a single clean hold + auto-resume at 0.3x bitrate;
+instant replay from the Cache API after reload.
+
 ## Route Results
 
 Mobile Lighthouse, before -> after:
