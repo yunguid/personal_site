@@ -85,6 +85,7 @@ let searchRenderRaf = 0;
 let currentGroupPage = 0;
 let lastPreviousClickAt = -Infinity;
 let lastNextClickAt = -Infinity;
+const shuffleRankByTrackId = new Map();
 
 const visualizerContexts = {
   spectrogram: spectrogramCanvas?.getContext('2d', { alpha: false }),
@@ -140,7 +141,13 @@ const dateFormatter = new Intl.DateTimeFormat(undefined, {
 });
 
 function currentSortMode() {
-  return sort?.value || 'newest';
+  return sort?.value || 'shuffle';
+}
+
+function shuffleRank(track) {
+  const id = String(track.id);
+  if (!shuffleRankByTrackId.has(id)) shuffleRankByTrackId.set(id, Math.random());
+  return shuffleRankByTrackId.get(id);
 }
 
 function trackUploadedTimestamp(track) {
@@ -157,6 +164,7 @@ function compareTrackTitle(a, b) {
 function sortTracks(nextTracks) {
   const mode = currentSortMode();
   return [...nextTracks].sort((a, b) => {
+    if (mode === 'shuffle') return shuffleRank(a) - shuffleRank(b);
     if (mode === 'title') return compareTrackTitle(a, b);
 
     const dateDelta = mode === 'oldest'
@@ -246,6 +254,9 @@ function groupUploadedTimestamp(group) {
 
 function compareTrackGroups(a, b) {
   const mode = currentSortMode();
+  if (mode === 'shuffle') {
+    return Math.min(...a.tracks.map(shuffleRank)) - Math.min(...b.tracks.map(shuffleRank));
+  }
   if (mode === 'title') return compareTrackTitle(a.primary, b.primary);
 
   const dateDelta = mode === 'oldest'
