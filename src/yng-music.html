@@ -58,6 +58,12 @@
 
         <section class="music-player" aria-label="Music player">
             <div class="music-player-controls">
+                <button id="music-player-previous" class="music-player-shuffle music-player-transport" type="button" aria-label="Restart track; press twice for previous track" title="Restart track; press twice for previous track" disabled>
+                    <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
+                        <path d="M6 5v14"></path>
+                        <path d="m18 6-8 6 8 6z"></path>
+                    </svg>
+                </button>
                 <button id="music-player-toggle" class="music-player-toggle" type="button" aria-label="Select a track to play" title="Select a track to play" disabled>
                     <span class="music-player-icon music-player-icon-play" aria-hidden="true">
                         <svg viewBox="0 0 24 24" focusable="false">
@@ -71,6 +77,12 @@
                         </svg>
                     </span>
                     <span class="music-player-toggle-label">Play</span>
+                </button>
+                <button id="music-player-next" class="music-player-shuffle music-player-transport" type="button" aria-label="Next track" title="Next track" disabled>
+                    <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
+                        <path d="M18 5v14"></path>
+                        <path d="m6 6 8 6-8 6z"></path>
+                    </svg>
                 </button>
                 <button id="music-player-shuffle" class="music-player-shuffle" type="button" aria-label="Shuffle tracks" title="Shuffle tracks" disabled>
                     <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">

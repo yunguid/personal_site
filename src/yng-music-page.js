@@ -9,6 +9,8 @@ const favoritesFilter = document.getElementById('music-favorites-filter');
 const count = document.getElementById('music-count');
 const summary = document.getElementById('music-summary');
 const playerToggle = document.getElementById('music-player-toggle');
+const playerPrevious = document.getElementById('music-player-previous');
+const playerNext = document.getElementById('music-player-next');
 const playerShuffle = document.getElementById('music-player-shuffle');
 const playerFavorite = document.getElementById('music-player-favorite');
 const playerTitle = document.getElementById('music-player-title');
@@ -52,6 +54,7 @@ const VISUALIZER_DPR_LIMIT = 2;
 const SPECTRUM_CELLS = 84;
 const MOBILE_GROUPS_PER_PAGE = 5;
 const DESKTOP_GROUPS_PER_PAGE = 10;
+const TRANSPORT_DOUBLE_CLICK_MS = 350;
 const FAVORITES_STORAGE_KEY = 'yngMusicFavoriteTracks';
 
 const UPLOAD_CONTENT_TYPES = {
@@ -80,6 +83,8 @@ let visualizerStateKey = '';
 let catalogLoaded = false;
 let searchRenderRaf = 0;
 let currentGroupPage = 0;
+let lastPreviousClickAt = -Infinity;
+let lastNextClickAt = -Infinity;
 
 const visualizerContexts = {
   spectrogram: spectrogramCanvas?.getContext('2d', { alpha: false }),
@@ -1313,6 +1318,8 @@ function updatePlaybackState() {
     : 'Select a track to play';
 
   playerToggle.disabled = !hasTrack;
+  playerPrevious.disabled = !hasTrack;
+  playerNext.disabled = !hasTrack;
   playerShuffle.disabled = !trackGroups.length;
   playerProgress.disabled = !hasTrack;
   playerToggle.classList.toggle('is-playing', isPlaying);
@@ -1384,6 +1391,41 @@ function nextVisibleTrack() {
   const index = pool.findIndex(group => group.id === currentGroupId);
   const next = pool[(index + 1) % pool.length];
   return next?.primary || null;
+}
+
+function previousVisibleTrack() {
+  const pool = visibleGroups.length ? visibleGroups : trackGroups;
+  if (!pool.length) return null;
+
+  const currentGroupId = currentTrack ? groupByTrackId.get(currentTrack.id)?.id : null;
+  const index = pool.findIndex(group => group.id === currentGroupId);
+  const previousIndex = index <= 0 ? pool.length - 1 : index - 1;
+  return pool[previousIndex]?.primary || null;
+}
+
+function restartOrPlayPrevious() {
+  if (!currentTrack) return;
+  const now = performance.now();
+  const isRapidSecondPress = now - lastPreviousClickAt <= TRANSPORT_DOUBLE_CLICK_MS;
+  lastPreviousClickAt = isRapidSecondPress ? -Infinity : now;
+
+  if (isRapidSecondPress) {
+    const previousTrack = previousVisibleTrack();
+    if (previousTrack) playTrack(previousTrack);
+    return;
+  }
+
+  audio.currentTime = 0;
+  updateProgress();
+}
+
+function playNextTrack() {
+  if (!currentTrack) return;
+  const now = performance.now();
+  if (now - lastNextClickAt <= TRANSPORT_DOUBLE_CLICK_MS) return;
+  lastNextClickAt = now;
+  const nextTrack = nextVisibleTrack();
+  if (nextTrack) playTrack(nextTrack);
 }
 
 function prefetchUpcoming() {
@@ -1649,6 +1691,8 @@ playerToggle.addEventListener('click', () => {
     audio.pause();
   }
 });
+playerPrevious.addEventListener('click', restartOrPlayPrevious);
+playerNext.addEventListener('click', playNextTrack);
 playerShuffle.addEventListener('click', shuffleTrack);
 playerFavorite.addEventListener('click', () => {
   if (!currentTrack) return;
