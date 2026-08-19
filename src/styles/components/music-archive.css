@@ -1357,7 +1357,7 @@
   gap: 0.58rem;
   min-height: 100%;
   padding: 0.78rem;
-  border-color: rgba(255, 255, 240, 0.09);
+  border: 0;
   border-radius: 14px;
   background: rgba(4, 6, 14, 0.54);
   text-align: center;
@@ -1456,7 +1456,7 @@
 }
 
 .music-track-group {
-  border: 1px solid rgba(255, 255, 240, 0.09);
+  border: 0;
   border-radius: 14px;
   background: rgba(4, 6, 14, 0.54);
   overflow: hidden;
@@ -1549,6 +1549,40 @@
 
 .music-page-button:disabled {
   opacity: 0.28;
+}
+
+.music-player-toggle,
+.music-player-shuffle,
+.music-track-favorite,
+.music-group-action,
+.music-page-button,
+.music-upload-button {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.035));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 0.45rem 1.2rem rgba(0, 0, 0, 0.24);
+  backdrop-filter: blur(16px) saturate(145%);
+  -webkit-backdrop-filter: blur(16px) saturate(145%);
+}
+
+.music-player-toggle:not(:disabled):hover,
+.music-player-toggle:not(:disabled):focus-visible,
+.music-player-shuffle:not(:disabled):hover,
+.music-player-shuffle:not(:disabled):focus-visible,
+.music-track-favorite:hover,
+.music-track-favorite:focus-visible,
+.music-group-action:hover,
+.music-group-action:focus-visible,
+.music-page-button:hover:not(:disabled),
+.music-page-button:focus-visible,
+.music-upload-button:hover,
+.music-upload-button:focus-visible {
+  border-color: rgba(255, 255, 255, 0.36);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.2), rgba(165, 180, 252, 0.08));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.24),
+    0 0.65rem 1.5rem rgba(0, 0, 0, 0.3);
 }
 
 .music-page-status {
