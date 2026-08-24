@@ -56,6 +56,7 @@ const MOBILE_GROUPS_PER_PAGE = 5;
 const DESKTOP_GROUPS_PER_PAGE = 10;
 const TRANSPORT_DOUBLE_CLICK_MS = 350;
 const FAVORITES_STORAGE_KEY = 'yngMusicFavoriteTracks';
+const FALLBACK_TRACK_ARTWORK_URL = '/assets/img/music/yng-music-placeholder-signal-collapse.png';
 
 const UPLOAD_CONTENT_TYPES = {
   mp3: 'audio/mpeg',
@@ -1088,19 +1089,23 @@ function renderTrack(track, options = {}) {
   const record = document.createElement('span');
   record.className = 'music-track-record';
   record.setAttribute('aria-hidden', 'true');
-  if (artworkUrl) {
-    const artwork = document.createElement('img');
-    artwork.src = artworkUrl;
-    artwork.alt = '';
-    artwork.loading = 'lazy';
-    artwork.decoding = 'async';
-    artwork.addEventListener('error', () => {
+  const artwork = document.createElement('img');
+  artwork.src = artworkUrl || FALLBACK_TRACK_ARTWORK_URL;
+  artwork.alt = '';
+  artwork.loading = 'lazy';
+  artwork.decoding = 'async';
+  if (!artworkUrl) artwork.dataset.fallbackApplied = 'true';
+  artwork.addEventListener('error', () => {
+    if (artwork.dataset.fallbackApplied) {
       artwork.remove();
       record.classList.remove('has-artwork');
-    }, { once: true });
-    record.classList.add('has-artwork');
-    record.append(artwork);
-  }
+      return;
+    }
+    artwork.dataset.fallbackApplied = 'true';
+    artwork.src = FALLBACK_TRACK_ARTWORK_URL;
+  });
+  record.classList.add('has-artwork');
+  record.append(artwork);
 
   const recordLabel = document.createElement('span');
   recordLabel.className = 'music-track-record-label';
