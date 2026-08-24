@@ -61,7 +61,11 @@ export function requireUploadKey(request) {
     return { ok: false, statusCode: 503, message: 'Music uploads are not configured.' };
   }
 
-  const provided = String(request.headers['x-yng-upload-key'] || '');
+  const provided = String(
+    typeof request.headers?.get === 'function'
+      ? request.headers.get('x-yng-upload-key')
+      : request.headers?.['x-yng-upload-key'] || '',
+  );
   const expectedBuffer = Buffer.from(expected);
   const providedBuffer = Buffer.from(provided);
   const matches = expectedBuffer.length === providedBuffer.length
