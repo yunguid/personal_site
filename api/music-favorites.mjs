@@ -21,7 +21,12 @@ export default async function handler(request, response) {
   }
 
   const auth = requireUploadKey(request);
-  if (!auth.ok) return sendJson(response, auth.statusCode, { error: auth.message });
+  if (!auth.ok) {
+    return sendJson(response, auth.statusCode, {
+      error: auth.message,
+      ...(auth.diagnostic ? { diagnostic: auth.diagnostic } : {}),
+    });
+  }
 
   try {
     const body = await readJsonBody(request);

@@ -81,7 +81,16 @@ export function requireUploadKey(request) {
 
   return matches
     ? { ok: true }
-    : { ok: false, statusCode: 401, message: 'Upload key required.' };
+    : {
+        ok: false,
+        statusCode: 401,
+        message: 'Upload key required.',
+        diagnostic: {
+          expectedLength: expectedBuffer.length,
+          providedLength: providedBuffer.length,
+          headerMode: typeof request.headers?.get === 'function' ? 'web' : 'node',
+        },
+      };
 }
 
 export function titleFromFilename(fileName) {
