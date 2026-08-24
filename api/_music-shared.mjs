@@ -71,6 +71,14 @@ export function requireUploadKey(request) {
   const matches = expectedBuffer.length === providedBuffer.length
     && timingSafeEqual(expectedBuffer, providedBuffer);
 
+  if (!matches) {
+    console.warn('[music-auth] rejected', {
+      expectedLength: expectedBuffer.length,
+      providedLength: providedBuffer.length,
+      headerMode: typeof request.headers?.get === 'function' ? 'web' : 'node',
+    });
+  }
+
   return matches
     ? { ok: true }
     : { ok: false, statusCode: 401, message: 'Upload key required.' };
