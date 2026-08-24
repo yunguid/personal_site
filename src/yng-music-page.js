@@ -86,6 +86,9 @@ let searchRenderRaf = 0;
 let currentGroupPage = 0;
 let lastPreviousClickAt = -Infinity;
 let lastNextClickAt = -Infinity;
+let favoriteMutationVersion = 0;
+let favoriteSyncQueue = Promise.resolve();
+let favoriteRemoteExists = false;
 const shuffleRankByTrackId = new Map();
 
 const visualizerContexts = {
@@ -359,7 +362,12 @@ function readFavoriteTrackIds() {
 }
 
 function persistFavoriteTrackIds() {
-  window.localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify([...favoriteTrackIds]));
+  try {
+    window.localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify([...favoriteTrackIds]));
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function isFavoriteTrack(trackId) {
@@ -371,8 +379,83 @@ function setFavoriteTrack(trackId, isFavorite) {
   if (!id) return;
   if (isFavorite) favoriteTrackIds.add(id);
   else favoriteTrackIds.delete(id);
+  favoriteMutationVersion += 1;
   persistFavoriteTrackIds();
   syncFavoriteButtons(id);
+}
+
+function replaceFavoriteTrackIds(trackIds) {
+  favoriteTrackIds.clear();
+  trackIds.filter(Boolean).map(String).forEach(trackId => favoriteTrackIds.add(trackId));
+  persistFavoriteTrackIds();
+}
+
+function setFavoriteSyncState(state) {
+  const messages = {
+    local: 'Show favorites · saved on this browser',
+    syncing: 'Show favorites · syncing',
+    synced: 'Show favorites · synced',
+    error: 'Show favorites · sync failed; saved on this browser',
+  };
+  favoritesFilter.title = messages[state] || messages.local;
+  favoritesFilter.dataset.syncState = state;
+}
+
+async function loadFavoriteTrackIds() {
+  const mutationVersion = favoriteMutationVersion;
+  try {
+    const response = await fetch('/api/music-favorites', { cache: 'no-store' });
+    if (!response.ok) throw new Error('Favorites could not be loaded.');
+    const stored = await response.json();
+    favoriteRemoteExists = Boolean(stored.updatedAt);
+    if (favoriteRemoteExists && mutationVersion === favoriteMutationVersion) {
+      replaceFavoriteTrackIds(Array.isArray(stored.trackIds) ? stored.trackIds : []);
+      render();
+      syncActiveRows();
+    }
+    setFavoriteSyncState(favoriteRemoteExists ? 'synced' : 'local');
+  } catch {
+    setFavoriteSyncState('error');
+  }
+}
+
+async function writeFavoriteTrackIds(key) {
+  setFavoriteSyncState('syncing');
+  const response = await fetch('/api/music-favorites', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-yng-upload-key': key,
+    },
+    body: JSON.stringify({ trackIds: [...favoriteTrackIds] }),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    if (response.status === 401) window.localStorage.removeItem('yngMusicUploadKey');
+    throw new Error(payload.error || 'Favorites could not be saved.');
+  }
+  favoriteRemoteExists = true;
+  setFavoriteSyncState('synced');
+}
+
+function queueFavoriteSync(key) {
+  if (!key) {
+    setFavoriteSyncState('local');
+    return;
+  }
+  favoriteSyncQueue = favoriteSyncQueue
+    .catch(() => {})
+    .then(() => favoriteStateReady)
+    .then(() => writeFavoriteTrackIds(key))
+    .catch(() => setFavoriteSyncState('error'));
+}
+
+function toggleFavorite(trackId) {
+  const key = uploadKey('Music key to sync favorites');
+  setFavoriteTrack(trackId, !isFavoriteTrack(trackId));
+  render();
+  syncActiveRows();
+  queueFavoriteSync(key);
 }
 
 function syncFavoriteButtons(trackId) {
@@ -892,11 +975,11 @@ function uploadContentType(file) {
   return file.type || UPLOAD_CONTENT_TYPES[format] || 'application/octet-stream';
 }
 
-function uploadKey() {
+function uploadKey(promptLabel = 'Upload key') {
   const stored = window.localStorage.getItem('yngMusicUploadKey');
   if (stored) return stored;
 
-  const value = window.prompt('Upload key');
+  const value = window.prompt(promptLabel);
   if (value) window.localStorage.setItem('yngMusicUploadKey', value);
   return value;
 }
@@ -1605,10 +1688,7 @@ pageNext?.addEventListener('click', () => {
 list.addEventListener('click', (event) => {
   const favoriteButton = event.target.closest('.music-track-favorite');
   if (favoriteButton) {
-    const trackId = favoriteButton.dataset.trackId;
-    setFavoriteTrack(trackId, !isFavoriteTrack(trackId));
-    render();
-    syncActiveRows();
+    toggleFavorite(favoriteButton.dataset.trackId);
     return;
   }
 
@@ -1712,9 +1792,7 @@ playerNext.addEventListener('click', playNextTrack);
 playerShuffle.addEventListener('click', shuffleTrack);
 playerFavorite.addEventListener('click', () => {
   if (!currentTrack) return;
-  setFavoriteTrack(currentTrack.id, !isFavoriteTrack(currentTrack.id));
-  render();
-  syncActiveRows();
+  toggleFavorite(currentTrack.id);
 });
 
 playerProgress.addEventListener('input', () => {
@@ -1809,6 +1887,13 @@ updatePlaybackState();
 updateVisualizerState();
 startVisualizerLoop();
 render();
+setFavoriteSyncState('local');
+const favoriteStateReady = loadFavoriteTrackIds();
+favoriteStateReady.then(() => {
+  if (!favoriteRemoteExists && favoriteTrackIds.size) {
+    queueFavoriteSync(window.localStorage.getItem('yngMusicUploadKey'));
+  }
+});
 loadCatalog();
 
 // Fluid background: deferred so the catalog paints first

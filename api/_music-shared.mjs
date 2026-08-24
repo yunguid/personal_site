@@ -8,6 +8,7 @@ export const REGION = process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION |
 export const PREFIX = process.env.YNG_MUSIC_PREFIX || 'tracks/render-project';
 export const PUBLIC_BASE_URL = `https://${BUCKET}.s3.${REGION}.amazonaws.com`;
 export const CATALOG_KEY = `${PREFIX}/catalog.json`;
+export const FAVORITES_KEY = `${PREFIX}/favorites.json`;
 export const MAX_UPLOAD_BYTES = 500 * 1024 * 1024;
 
 const UPLOAD_FORMATS = {
@@ -227,6 +228,47 @@ export async function readCatalog() {
     ...catalog,
     tracks: await tracksWithUploadedAt(catalog.tracks || []),
   });
+}
+
+export async function readFavorites() {
+  try {
+    const object = await s3.send(new GetObjectCommand({
+      Bucket: BUCKET,
+      Key: FAVORITES_KEY,
+    }));
+    const stored = JSON.parse(await object.Body.transformToString());
+    return {
+      trackIds: Array.isArray(stored.trackIds)
+        ? [...new Set(stored.trackIds.filter(Boolean).map(String))]
+        : [],
+      updatedAt: String(stored.updatedAt || ''),
+    };
+  } catch (error) {
+    if (error?.name === 'NoSuchKey' || error?.$metadata?.httpStatusCode === 404) {
+      return { trackIds: [], updatedAt: '' };
+    }
+    throw error;
+  }
+}
+
+export async function writeFavorites(trackIds) {
+  const catalog = await readCatalog();
+  const catalogTrackIds = new Set((catalog.tracks || []).map(track => String(track.id)));
+  const favorites = {
+    trackIds: [...new Set(trackIds.filter(Boolean).map(String))]
+      .filter(trackId => catalogTrackIds.has(trackId)),
+    updatedAt: new Date().toISOString(),
+  };
+
+  await s3.send(new PutObjectCommand({
+    Bucket: BUCKET,
+    Key: FAVORITES_KEY,
+    Body: JSON.stringify(favorites, null, 2),
+    ContentType: 'application/json; charset=utf-8',
+    CacheControl: 'no-store',
+  }));
+
+  return favorites;
 }
 
 function sanitizeCatalog(catalog) {
