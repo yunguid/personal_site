@@ -677,7 +677,6 @@
   font-family: var(--font-mono);
   font-size: 0.72rem;
   letter-spacing: 0.04em;
-  text-transform: uppercase;
 }
 
 .music-upload-secondary {
@@ -685,6 +684,7 @@
   padding: 0;
   color: rgba(255, 255, 240, 0.55);
   line-height: 1;
+  text-transform: uppercase;
 }
 
 .music-upload-status {

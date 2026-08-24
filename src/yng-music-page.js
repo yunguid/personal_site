@@ -57,7 +57,14 @@ const DESKTOP_GROUPS_PER_PAGE = 10;
 const TRANSPORT_DOUBLE_CLICK_MS = 350;
 const FAVORITES_STORAGE_KEY = 'yngMusicFavoriteTracks';
 const FAVORITES_ACCESS_KEY = 'yngMusicFavoritesKey';
-const FALLBACK_TRACK_ARTWORK_URL = '/assets/img/music/yng-music-placeholder-signal-collapse.png';
+const FALLBACK_TRACK_ARTWORK_URLS = [
+  '/assets/img/music/yng-music-placeholder-asphalt-rupture.png',
+  '/assets/img/music/yng-music-placeholder-blue-static.png',
+  '/assets/img/music/yng-music-placeholder-burned-negative.png',
+  '/assets/img/music/yng-music-placeholder-signal-collapse.png',
+  '/assets/img/music/yng-music-placeholder-v2.png',
+  '/assets/img/music/yng-music-placeholder.png',
+];
 
 const UPLOAD_CONTENT_TYPES = {
   mp3: 'audio/mpeg',
@@ -331,6 +338,16 @@ function trackMeta(track) {
 
 function trackSubMeta(track) {
   return [track.format, formatUploadedDate(track)].filter(Boolean).join(' · ');
+}
+
+function fallbackTrackArtworkUrl(seed) {
+  const value = String(seed || 'track');
+  let hash = 2166136261;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return FALLBACK_TRACK_ARTWORK_URLS[(hash >>> 0) % FALLBACK_TRACK_ARTWORK_URLS.length];
 }
 
 // audio.duration is Infinity while MediaSource streaming is still appending;
@@ -1183,7 +1200,8 @@ function renderTrack(track, options = {}) {
   record.className = 'music-track-record';
   record.setAttribute('aria-hidden', 'true');
   const artwork = document.createElement('img');
-  artwork.src = artworkUrl || FALLBACK_TRACK_ARTWORK_URL;
+  const fallbackArtworkUrl = fallbackTrackArtworkUrl(group?.id || track.id);
+  artwork.src = artworkUrl || fallbackArtworkUrl;
   artwork.alt = '';
   artwork.loading = 'lazy';
   artwork.decoding = 'async';
@@ -1195,7 +1213,7 @@ function renderTrack(track, options = {}) {
       return;
     }
     artwork.dataset.fallbackApplied = 'true';
-    artwork.src = FALLBACK_TRACK_ARTWORK_URL;
+    artwork.src = fallbackArtworkUrl;
   });
   record.classList.add('has-artwork');
   record.append(artwork);
