@@ -56,6 +56,7 @@ const MOBILE_GROUPS_PER_PAGE = 5;
 const DESKTOP_GROUPS_PER_PAGE = 10;
 const TRANSPORT_DOUBLE_CLICK_MS = 350;
 const FAVORITES_STORAGE_KEY = 'yngMusicFavoriteTracks';
+const FAVORITES_ACCESS_KEY = 'yngMusicFavoritesKey';
 const FALLBACK_TRACK_ARTWORK_URL = '/assets/img/music/yng-music-placeholder-signal-collapse.png';
 
 const UPLOAD_CONTENT_TYPES = {
@@ -431,7 +432,7 @@ async function writeFavoriteTrackIds(key) {
   });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
-    if (response.status === 401) window.localStorage.removeItem('yngMusicUploadKey');
+    if (response.status === 401) window.localStorage.removeItem(FAVORITES_ACCESS_KEY);
     throw new Error(payload.error || 'Favorites could not be saved.');
   }
   favoriteRemoteExists = true;
@@ -451,11 +452,20 @@ function queueFavoriteSync(key) {
 }
 
 function toggleFavorite(trackId) {
-  const key = uploadKey('Music key to sync favorites');
+  const key = favoriteKey();
   setFavoriteTrack(trackId, !isFavoriteTrack(trackId));
   render();
   syncActiveRows();
   queueFavoriteSync(key);
+}
+
+function favoriteKey() {
+  const stored = window.localStorage.getItem(FAVORITES_ACCESS_KEY);
+  if (stored) return stored;
+
+  const value = window.prompt('Favorites sync key');
+  if (value) window.localStorage.setItem(FAVORITES_ACCESS_KEY, value);
+  return value;
 }
 
 function syncFavoriteButtons(trackId) {
@@ -1891,7 +1901,7 @@ setFavoriteSyncState('local');
 const favoriteStateReady = loadFavoriteTrackIds();
 favoriteStateReady.then(() => {
   if (!favoriteRemoteExists && favoriteTrackIds.size) {
-    queueFavoriteSync(window.localStorage.getItem('yngMusicUploadKey'));
+    queueFavoriteSync(window.localStorage.getItem(FAVORITES_ACCESS_KEY));
   }
 });
 loadCatalog();

@@ -1,7 +1,7 @@
 import {
   readFavorites,
   readJsonBody,
-  requireUploadKey,
+  requireFavoriteKey,
   sendJson,
   writeFavorites,
 } from './_music-shared.mjs';
@@ -20,13 +20,8 @@ export default async function handler(request, response) {
     return sendJson(response, 405, { error: 'Method not allowed.' });
   }
 
-  const auth = requireUploadKey(request);
-  if (!auth.ok) {
-    return sendJson(response, auth.statusCode, {
-      error: auth.message,
-      ...(auth.diagnostic ? { diagnostic: auth.diagnostic } : {}),
-    });
-  }
+  const auth = requireFavoriteKey(request);
+  if (!auth.ok) return sendJson(response, auth.statusCode, { error: auth.message });
 
   try {
     const body = await readJsonBody(request);

@@ -55,10 +55,9 @@ export async function readJsonBody(request) {
   return raw ? JSON.parse(raw) : {};
 }
 
-export function requireUploadKey(request) {
-  const expected = process.env.YNG_MUSIC_UPLOAD_KEY;
+function requireMusicKey(request, expected, missingMessage) {
   if (!expected) {
-    return { ok: false, statusCode: 503, message: 'Music uploads are not configured.' };
+    return { ok: false, statusCode: 503, message: missingMessage };
   }
 
   const provided = String(
@@ -71,26 +70,25 @@ export function requireUploadKey(request) {
   const matches = expectedBuffer.length === providedBuffer.length
     && timingSafeEqual(expectedBuffer, providedBuffer);
 
-  if (!matches) {
-    console.warn('[music-auth] rejected', {
-      expectedLength: expectedBuffer.length,
-      providedLength: providedBuffer.length,
-      headerMode: typeof request.headers?.get === 'function' ? 'web' : 'node',
-    });
-  }
-
   return matches
     ? { ok: true }
-    : {
-        ok: false,
-        statusCode: 401,
-        message: 'Upload key required.',
-        diagnostic: {
-          expectedLength: expectedBuffer.length,
-          providedLength: providedBuffer.length,
-          headerMode: typeof request.headers?.get === 'function' ? 'web' : 'node',
-        },
-      };
+    : { ok: false, statusCode: 401, message: 'Music key required.' };
+}
+
+export function requireUploadKey(request) {
+  return requireMusicKey(
+    request,
+    process.env.YNG_MUSIC_UPLOAD_KEY,
+    'Music uploads are not configured.',
+  );
+}
+
+export function requireFavoriteKey(request) {
+  return requireMusicKey(
+    request,
+    process.env.YNG_MUSIC_FAVORITES_KEY || process.env.YNG_MUSIC_UPLOAD_KEY,
+    'Favorite syncing is not configured.',
+  );
 }
 
 export function titleFromFilename(fileName) {
